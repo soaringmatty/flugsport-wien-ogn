@@ -1,0 +1,22 @@
+<table mat-table [dataSource]="flights" class="mat-elevation-z8">
+
+<ng-container matColumnDef="Registration">
+    <th mat-header-cell *matHeaderCellDef> Kennzeichen </th>
+    <td mat-cell *matCellDef="let element"> {{element.Registration}} </td>
+</ng-container>
+<ng-container matColumnDef="RegistrationShort">
+    <th mat-header-cell *matHeaderCellDef> Kurzbezeichnung </th>
+    <td mat-cell *matCellDef="let element"> {{element.RegistrationShort}} </td>
+</ng-container>
+<ng-container matColumnDef="DeviceId">
+    <th mat-header-cell *matHeaderCellDef> Flarm ID </th>
+    <td mat-cell *matCellDef="let element"> {{element.DeviceId}} </td>
+</ng-container>
+<ng-container matColumnDef="ElapsedSecondsSinceLastUpdate">
+    <th mat-header-cell *matHeaderCellDef> Letztes Update (Sekunden) </th>
+    <td mat-cell *matCellDef="let element"> {{element.ElapsedSecondsSinceLastUpdate}} </td>
+</ng-container>
+
+<tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+<tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>

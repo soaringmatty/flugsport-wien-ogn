@@ -1,0 +1,16 @@
+export interface OgnFlight {
+    Latitude?: number,
+    Longitude?: number,
+    RegistrationShort?: string,
+    Registration?: string,
+    Height?: number,
+    LastUpdate?: string,
+    ElapsedSecondsSinceLastUpdate?: number,
+    Direction?: number,
+    GroundSpeed?: number,
+    VerticalSpeed?: number,
+    UnknownProperty?: number,
+    GroundStation?: string,
+    DeviceId?: string,
+    FlightId?: string,
+}
