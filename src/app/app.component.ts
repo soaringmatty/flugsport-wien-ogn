@@ -16,7 +16,7 @@ export class AppComponent implements OnInit {
   }
 
   fetchMarkers(): void {
-    this.ognService.getOgnFlights().subscribe(
+    this.ognService.getFlights().subscribe(
       data => {
         this.markers = data;
         console.log('Markers:', this.markers);

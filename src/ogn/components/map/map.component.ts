@@ -1,7 +1,17 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import * as Leaflet from 'leaflet'; 
 import { OgnFlight } from 'src/ogn/models/ogn-flight.model';
 import { OgnService } from 'src/ogn/services/ogn.service';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import { fromLonLat } from 'ol/proj';
+import {Point, LineString} from 'ol/geom';
+import { Vector as VectorLayer } from 'ol/layer';
+import VectorSource from 'ol/source/Vector';
+import { Icon, Stroke, Style } from 'ol/style';
+import Polyline from 'ol/format/Polyline';
+import { Overlay, Map, View, Feature } from 'ol';
+import { Subject, interval, takeUntil } from 'rxjs';
 
 Leaflet.Icon.Default.imagePath = 'assets/';
 @Component({
@@ -9,27 +19,59 @@ Leaflet.Icon.Default.imagePath = 'assets/';
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss']
 })
-export class MapComponent {
-  loxnCoordinates = { lat: 47.837, lng: 16.222 }
-
-  map!: Leaflet.Map;
-  markers: Leaflet.Marker[] = [];
-  options = {
-    layers: [
-      Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      })
-    ],
-    zoom: 11,
-    center: { lat: 47.8, lng: 16 }
-  }
+export class MapComponent implements OnInit, OnDestroy {
+  map!: Map;
+  glidersVectorLayer!: VectorLayer<VectorSource>;
+  flightPathVectorLayer!: VectorLayer<VectorSource>;
+  showGliderPath = false;
+  
+  // Configs
+  updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
+  updatePositionTimeout = 5000 // Defines the timeout between glider position updates in ms
+  
+  private readonly flightPathStyle = new Style({
+    stroke: new Stroke({
+      color: 'red',
+      width: 2
+    })
+  });
+  private readonly loxnCoordinates = [16.222, 47.837] // [Long, Lat]
+  private readonly defaultCoordinates = [16, 47.8] // [Long, Lat]
+  private readonly onDestroy$ = new Subject<void>();
 
   constructor(private ognService: OgnService) {}
 
-  fetchMarkers(): void {
-    this.ognService.getOgnFlights().subscribe(
-      data => {
-        this.initMarkers(data);
+  ngOnInit(): void {
+    this.initializeMap();
+    // Load glider positions on map
+    if (this.updateGliderPositions) {
+      this.updateGliderPositionsOnMap();
+      this.initializeTimerForGliderPositionUpdates();
+    }
+    else {
+      this.updateGliderPositionsOnMap();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.onDestroy$.next();
+    this.onDestroy$.complete();
+  }
+
+  updateGliderPositionsOnMap() {
+    this.map.removeLayer(this.glidersVectorLayer)
+    this.glidersVectorLayer = new VectorLayer({
+      source: new VectorSource(),
+    });
+    this.loadAndDrawGliderMarkers();
+    this.map.addLayer(this.glidersVectorLayer);
+  }
+
+  loadAndDrawGliderMarkers(): void {
+    this.ognService.getFlights().subscribe(
+      ognFlights => {
+        this.drawGliderMarkers(ognFlights);
+        this.drawPlaneOverlays(ognFlights);
       },
       error => {
         console.error('Error fetching flights:', error);
@@ -37,48 +79,129 @@ export class MapComponent {
     );
   }
 
-  initMarkers(flights: OgnFlight[]) {
-    const markers: any[] = []
-    // Add flights to marker list
+  // Doesn't work right now because of CORS issues
+  loadAndDrawFlightPath(): void {
+    this.ognService.getFlightPath().subscribe(
+      encodedPath => {
+        this.drawEncodedFlightPath(encodedPath)
+      },
+      error => {
+        console.error('Error fetching flight path:', error);
+      }
+    );
+  }
+
+  drawGliderMarkers(flights: OgnFlight[]) {
     flights.forEach(flight => {
-      markers.push({
-        data: flight,
-        position: { 
-          lat: flight.Latitude, 
-          lng: flight.Longitude 
-        }
-      },)
+      if (!flight.Longitude || !flight.Latitude || !flight.Direction) {
+        return
+      }
+      const gliderMarkersFeature = new Feature({
+        geometry: new Point(fromLonLat([flight.Longitude, flight.Latitude]))
+      });
+      const iconStyle = new Style({
+        image: new Icon({
+          src: 'assets/glider.png',
+          anchor: [0.5, 0.5],
+          anchorXUnits: 'fraction',
+          anchorYUnits: 'fraction',
+          scale: 0.15,
+          rotation: flight.Direction * (Math.PI / 180), // Convert degrees to radians
+        }),
+      });
+      gliderMarkersFeature.setStyle(iconStyle);
+      this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
     });
-    for (let i = 0; i < markers.length; i++) {
-      const markerData = markers[i];
-      const marker = this.generateMarker(markerData, i);
-      marker.addTo(this.map).bindPopup(`<b>${markerData.data.Registration} (${markerData.data.RegistrationShort})</b>`);
-      this.markers.push(marker)
-    }
   }
 
-  generateMarker(markerData: any, index: number) {
-    const icon = Leaflet.divIcon({
-      //iconUrl: 'assets/glider.png',
-      className: 'airplane-icon',
-      html: `<img src="assets/glider.png" style="height: 80px; width: 80px; transform: rotate(${markerData.data.Direction}deg);" />`,
-      iconSize: [80, 80],
-      iconAnchor: [40, 40]
+  private initializeTimerForGliderPositionUpdates() {
+    interval(this.updatePositionTimeout)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(() => {
+        this.updateGliderPositionsOnMap();
+      });
+  }
+
+  private drawEncodedFlightPath(encodedPath: string): void {
+    const polylineFormat = new Polyline();
+    const decodedFeature = polylineFormat.readFeature(encodedPath, {
+      dataProjection: 'EPSG:4326', 
+      featureProjection: 'EPSG:900913'
     });
-    return Leaflet.marker(markerData.position, { icon: icon })
-      .on('click', (event) => this.markerClicked(event, index))
+    const decodedGeometry = decodedFeature.getGeometry();
+    const lineFeature = new Feature(decodedGeometry);
+    const lineStyle = new Style({
+      stroke: new Stroke({
+        color: 'red',
+        width: 2
+      })
+    });
+    lineFeature.setStyle(lineStyle);
+    this.flightPathVectorLayer.getSource()?.addFeature(lineFeature);
   }
 
-  onMapReady($event: Leaflet.Map) {
-    this.map = $event;
-    this.fetchMarkers();
+  private drawPlaneOverlays(flights: OgnFlight[]): void {
+    flights.forEach(flight => {
+      if (!flight.Longitude || !flight.Latitude || !flight.Direction) {
+        return
+      }
+      const customElement = document.createElement('div');
+      customElement.innerHTML = `
+        <div style="background-color: rgba(255, 255, 0, 1); padding: 5px; border-radius: 3px;">
+          ${flight.RegistrationShort}
+        </div>
+      `;
+      var marker = new Overlay({
+        position: fromLonLat([flight.Longitude, flight.Latitude]),
+        positioning: 'center-center',
+        element: customElement,
+        stopEvent: false
+      });
+      this.map.addOverlay(marker);
+    });
   }
 
-  mapClicked($event: any) {
-    console.log($event.latlng.lat, $event.latlng.lng);
+  // Not used at the moment
+  private drawPathFromCoordinates(coordinates: [number, number][]): void {
+    const projectedCoordinates = coordinates.map(coord => fromLonLat(coord));
+    const lineString = new LineString(projectedCoordinates);
+    const lineFeature = new Feature(lineString);
+    const lineStyle = new Style({
+      stroke: new Stroke({
+        color: 'red',
+        width: 2
+      })
+    });
+    lineFeature.setStyle(lineStyle);
+    this.flightPathVectorLayer.getSource()?.addFeature(lineFeature);
   }
 
-  markerClicked($event: any, index: number) {
-    console.log($event.latlng.lat, $event.latlng.lng);
+  private initializeMap() {
+    const osmTileLayer = new TileLayer({
+      source: new OSM(),
+    })
+    this.glidersVectorLayer = new VectorLayer({
+      source: new VectorSource(),
+    });
+    this.flightPathVectorLayer = new VectorLayer({
+      source: new VectorSource(),
+    });
+    this.map = new Map({
+      target: 'map',
+      layers: [
+        osmTileLayer,
+        this.glidersVectorLayer,
+        this.flightPathVectorLayer
+      ],
+      view: new View({
+        center: fromLonLat(this.defaultCoordinates),
+        zoom: 11
+      })
+    });
+    // change mouse cursor when over marker
+    this.map.on('pointermove', (e) => {
+      const hit = this.map.hasFeatureAtPixel(e.pixel);
+      this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+    });
   }
 }

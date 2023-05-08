@@ -18,7 +18,7 @@ export class FlightListComponent implements OnInit {
   }
 
   fetchMarkers(): void {
-    this.ognService.getOgnFlights().subscribe(
+    this.ognService.getFlights().subscribe(
       data => {
         this.flights = data;
       },
