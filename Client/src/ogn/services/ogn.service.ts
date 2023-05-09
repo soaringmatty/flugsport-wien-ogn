@@ -51,12 +51,12 @@ export class OgnService {
     const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
     const markers = xmlDoc.getElementsByTagName('m');
     const ognFlights: OgnFlight[] = [];
-  
+
     for (let i = 0; i < markers.length; i++) {
       const marker = markers[i];
       const attributes = marker.attributes;
       const ognFlight: OgnFlight = {};
-  
+
       for (let j = 0; j < attributes.length; j++) {
         const attribute = attributes[j];
         if (attribute.name === 'a') {
@@ -76,7 +76,7 @@ export class OgnService {
             DeviceId,
             FlightId,
           ] = attribute.value.split(',');
-  
+
           ognFlight.Latitude = parseFloat(Latitude);
           ognFlight.Longitude = parseFloat(Longitude);
           ognFlight.RegistrationShort = RegistrationShort;
@@ -93,10 +93,10 @@ export class OgnService {
           ognFlight.FlightId = FlightId;
         }
       }
-  
+
       ognFlights.push(ognFlight);
     }
-  
+
     return ognFlights;
   }
 
@@ -104,11 +104,11 @@ export class OgnService {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'application/xml');
     const markers = xmlDoc.getElementsByTagName('m');
-  
+
     for (let i = 0; i < markers.length; i++) {
       const marker = markers[i];
       const attributes = marker.attributes;
-  
+
       for (let j = 0; j < attributes.length; j++) {
         const attribute = attributes[j];
         if (attribute.name === 'r') {

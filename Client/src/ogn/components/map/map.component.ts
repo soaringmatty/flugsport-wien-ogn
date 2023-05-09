@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import * as Leaflet from 'leaflet'; 
+import * as Leaflet from 'leaflet';
 import { OgnFlight } from 'src/ogn/models/ogn-flight.model';
 import { OgnService } from 'src/ogn/services/ogn.service';
 import TileLayer from 'ol/layer/Tile';
@@ -12,6 +12,7 @@ import { Icon, Stroke, Style } from 'ol/style';
 import Polyline from 'ol/format/Polyline';
 import { Overlay, Map, View, Feature } from 'ol';
 import { Subject, interval, takeUntil } from 'rxjs';
+import { GlideAndSeekService } from 'src/ogn/services/glideandseek.service';
 
 Leaflet.Icon.Default.imagePath = 'assets/';
 @Component({
@@ -24,11 +25,11 @@ export class MapComponent implements OnInit, OnDestroy {
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
   showGliderPath = false;
-  
+
   // Configs
   updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
   updatePositionTimeout = 5000 // Defines the timeout between glider position updates in ms
-  
+
   private readonly flightPathStyle = new Style({
     stroke: new Stroke({
       color: 'red',
@@ -39,7 +40,8 @@ export class MapComponent implements OnInit, OnDestroy {
   private readonly defaultCoordinates = [16, 47.8] // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private ognService: OgnService) {}
+  constructor(private ognService: OgnService,
+              private glideAndSeekService: GlideAndSeekService) {}
 
   ngOnInit(): void {
     this.initializeMap();
@@ -51,6 +53,15 @@ export class MapComponent implements OnInit, OnDestroy {
     else {
       this.updateGliderPositionsOnMap();
     }
+    // Test load glide and seek flights
+    this.glideAndSeekService.getFlightsTmp().subscribe(
+      flights => {
+        console.log('flights', flights)
+      },
+      error => {
+        console.error('Error fetching flights:', error);
+      }
+    );
   }
 
   ngOnDestroy(): void {
@@ -125,7 +136,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private drawEncodedFlightPath(encodedPath: string): void {
     const polylineFormat = new Polyline();
     const decodedFeature = polylineFormat.readFeature(encodedPath, {
-      dataProjection: 'EPSG:4326', 
+      dataProjection: 'EPSG:4326',
       featureProjection: 'EPSG:900913'
     });
     const decodedGeometry = decodedFeature.getGeometry();
