@@ -1,20 +1,18 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import * as Leaflet from 'leaflet';
 import { Flight } from 'src/ogn/models/flight.model';
-import { OgnService } from 'src/ogn/services/ogn.service';
-import TileLayer from 'ol/layer/Tile';
-import OSM from 'ol/source/OSM';
+import { OSM, Vector as VectorSource } from 'ol/source';
 import { fromLonLat } from 'ol/proj';
-import {Point, LineString} from 'ol/geom';
-import { Vector as VectorLayer } from 'ol/layer';
-import VectorSource from 'ol/source/Vector';
+import { Point } from 'ol/geom';
+import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Polyline from 'ol/format/Polyline';
-import { Overlay, Map, View, Feature } from 'ol';
-import { Subject, flatMap, interval, takeUntil } from 'rxjs';
+import { Map, View, Feature } from 'ol';
+import { Subject, interval, takeUntil } from 'rxjs';
 import { ApiService } from 'src/ogn/services/api.service';
+import { Store, select } from '@ngrx/store';
+import { loadFlights } from 'src/app/store/app.actions';
+import { AppState } from 'src/app/store/app.reducer';
 
-Leaflet.Icon.Default.imagePath = 'assets/';
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -40,9 +38,19 @@ export class MapComponent implements OnInit, OnDestroy {
   private readonly defaultCoordinates = [16, 47.8] // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private apiService: ApiService, 
+    private store: Store<AppState>
+  ) {}
 
   ngOnInit(): void {
+    this.store.select(x => x.flights).subscribe(flights => {
+      console.log('select flights', flights)
+    })
+    this.store.pipe(select((state) => state.flights)).subscribe(flights => {
+      console.log('select flights 2', flights)
+    })
+
     this.initializeMap();
     // Load glider positions on map
     if (this.updateGliderPositions) {
@@ -65,6 +73,7 @@ export class MapComponent implements OnInit, OnDestroy {
       source: new VectorSource(),
     });
     this.loadAndDrawGliderMarkers();
+    this.store.dispatch(loadFlights());
     this.map.addLayer(this.glidersVectorLayer);
   }
 
