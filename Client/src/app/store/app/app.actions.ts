@@ -38,3 +38,12 @@ export const loadFlightPathFailure = createAction(
     AppActionTypes.loadFlightPathFailure,
     props<{error: any}>()
 );
+
+// export const AppActions = createActionGroup({
+//   source: 'App',
+//   events: {
+//     'LoadFlights Apps': emptyProps(),
+//     'LoadFlights Apps Success': props<{ data: unknown }>(),
+//     'LoadFlights Apps Failure': props<{ error: unknown }>(),
+//   }
+// });

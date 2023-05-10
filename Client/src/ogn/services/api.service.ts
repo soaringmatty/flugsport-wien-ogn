@@ -8,8 +8,6 @@ import { api } from 'src/environments/api';
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly getFlightPathUrl = 'https://localhost:/v2/track/{flarmId}'
-
   constructor(private http: HttpClient) { }
 
   getFlights(): Observable<Flight[]> {

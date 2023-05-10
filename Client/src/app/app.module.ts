@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { OgnModule } from 'src/ogn/ogn.module';
@@ -11,8 +10,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { HttpClientModule } from '@angular/common/http';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreModule } from '@ngrx/store';
-import { AppEffects } from './store/app.effects';
-import { appReducer } from './store/app.reducer';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { reducers, metaReducers } from './store';
+import { AppEffects } from './store/app/app.effects';
 
 @NgModule({
   declarations: [
@@ -27,8 +27,9 @@ import { appReducer } from './store/app.reducer';
     MatIconModule,
     MatButtonModule,
     HttpClientModule,
-    EffectsModule.forRoot(AppEffects),
-    StoreModule.forRoot(appReducer)
+    StoreModule.forRoot(reducers, { metaReducers }),
+    StoreDevtoolsModule.instrument(),
+    EffectsModule.forRoot([AppEffects]),
   ],
   providers: [],
   bootstrap: [AppComponent]

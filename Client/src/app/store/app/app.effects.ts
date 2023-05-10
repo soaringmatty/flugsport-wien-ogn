@@ -16,7 +16,6 @@ export class AppEffects {
     exhaustMap(() => this.apiService.getFlights()
         .pipe(
             map(flights => {
-                console.log('loadFlights Effects', flights);
                 return loadFlightsSuccess({flights})
             }),
             catchError(error => {

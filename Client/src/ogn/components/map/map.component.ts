@@ -8,11 +8,9 @@ import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Polyline from 'ol/format/Polyline';
 import { Map, View, Feature } from 'ol';
 import { Subject, interval, takeUntil } from 'rxjs';
-import { ApiService } from 'src/ogn/services/api.service';
-import { Store, select } from '@ngrx/store';
-import { loadFlights } from 'src/app/store/app.actions';
-import { AppState } from 'src/app/store/app.reducer';
-
+import { Store } from '@ngrx/store';
+import { State } from 'src/app/store';
+import { loadFlights } from 'src/app/store/app/app.actions';
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -38,27 +36,23 @@ export class MapComponent implements OnInit, OnDestroy {
   private readonly defaultCoordinates = [16, 47.8] // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(
-    private apiService: ApiService, 
-    private store: Store<AppState>
-  ) {}
+  constructor(private store: Store<State>) {}
 
   ngOnInit(): void {
-    this.store.select(x => x.flights).subscribe(flights => {
-      console.log('select flights', flights)
-    })
-    this.store.pipe(select((state) => state.flights)).subscribe(flights => {
-      console.log('select flights 2', flights)
-    })
-
     this.initializeMap();
-    // Load glider positions on map
+    // Redraw markers on map on every update
+    this.store.select(x => x.app.flights).pipe(
+      takeUntil(this.onDestroy$)
+    ).subscribe(flights => {
+      this.updateGliderPositionsOnMap(flights);
+    })
+    // Load and draw glider positions on map
     if (this.updateGliderPositions) {
-      this.updateGliderPositionsOnMap();
+      this.store.dispatch(loadFlights());
       this.initializeTimerForGliderPositionUpdates();
     }
     else {
-      this.updateGliderPositionsOnMap();
+      this.store.dispatch(loadFlights());
     }
   }
 
@@ -67,39 +61,16 @@ export class MapComponent implements OnInit, OnDestroy {
     this.onDestroy$.complete();
   }
 
-  updateGliderPositionsOnMap() {
+  private updateGliderPositionsOnMap(flights: Flight[]) {
     this.map.removeLayer(this.glidersVectorLayer)
     this.glidersVectorLayer = new VectorLayer({
       source: new VectorSource(),
     });
-    this.loadAndDrawGliderMarkers();
-    this.store.dispatch(loadFlights());
+    this.drawGliderMarkers(flights);
     this.map.addLayer(this.glidersVectorLayer);
   }
 
-  loadAndDrawGliderMarkers(): void {
-    this.apiService.getFlights().subscribe(
-      flights => {
-        this.drawGliderMarkers(flights);
-      },
-      error => {
-        console.error('Error fetching flights:', error);
-      }
-    );
-  }
-
-  loadAndDrawFlightPath(flarmId: string): void {
-    this.apiService.getFlightPath(flarmId).subscribe(
-      encodedPath => {
-        this.drawEncodedFlightPath(encodedPath)
-      },
-      error => {
-        console.error('Error fetching flight path:', error);
-      }
-    );
-  }
-
-  drawGliderMarkers(flights: Flight[]) {
+  private drawGliderMarkers(flights: Flight[]) {
     flights.forEach(flight => {
       if (!flight.longitude || !flight.latitude) {
         return
@@ -113,15 +84,15 @@ export class MapComponent implements OnInit, OnDestroy {
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           src: 'assets/marker_yellow.png',
-          scale: 0.4,
+          scale: 0.35,
         }),
         text: new Text({
           text: flight.displayName,
-          font: '12px Roboto',
+          font: '11px Roboto',
           fill: new Fill({
             color: 'black',
           }),
-          offsetY: -19
+          offsetY: -17
         }),
       })
       gliderMarkersFeature.setStyle(iconStyle);
@@ -133,7 +104,7 @@ export class MapComponent implements OnInit, OnDestroy {
     interval(this.updatePositionTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
-        this.updateGliderPositionsOnMap();
+        this.store.dispatch(loadFlights());
       });
   }
 

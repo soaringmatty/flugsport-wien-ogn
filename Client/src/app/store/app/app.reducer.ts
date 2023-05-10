@@ -13,7 +13,7 @@ export const initialState: AppState = {
 export const appReducer = createReducer(
   initialState,
   on(loadFlightsSuccess, (state, {flights}) => {
-    console.log('reducer loadFlightsSuccess')
     return {...state, flights }
   }),
 );
+
