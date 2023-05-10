@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { AppActionTypes, loadFlights, loadFlightsFailure, loadFlightsSuccess } from "./app.actions";
-import { EMPTY, catchError, exhaustMap, map, of } from "rxjs";
+import * as AppActions from './app.actions'
+import { catchError, exhaustMap, map, of } from "rxjs";
 import { ApiService } from "src/ogn/services/api.service";
 
 @Injectable()
@@ -12,15 +12,30 @@ export class AppEffects {
     ) {}
  
   loadFlights$ = createEffect(() => this.actions$.pipe(
-    ofType(AppActionTypes.loadFlights),
+    ofType(AppActions.loadFlights),
     exhaustMap(() => this.apiService.getFlights()
         .pipe(
             map(flights => {
-                return loadFlightsSuccess({flights})
+                return AppActions.loadFlightsSuccess({flights})
             }),
             catchError(error => {
                 console.log(error);
-                return of(loadFlightsFailure({error}))
+                return of(AppActions.loadFlightsFailure({error}))
+            })
+      ))
+    )
+  );
+
+  loadFlightPath$ = createEffect(() => this.actions$.pipe(
+    ofType(AppActions.loadFlightPath),
+    exhaustMap((action) => this.apiService.getFlightPath(action.flarmId)
+        .pipe(
+            map(encodedFlightPath => {
+                return AppActions.loadFlightPathSuccess({encodedFlightPath})
+            }),
+            catchError(error => {
+                console.log(error);
+                return of(AppActions.loadFlightPathFailure({error}))
             })
       ))
     )

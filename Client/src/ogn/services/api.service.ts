@@ -16,6 +16,6 @@ export class ApiService {
 
   getFlightPath(flarmId: string): Observable<string> {
     const url = api.getFlightPath.replace('{id}', flarmId)
-    return this.http.get<string>(url);
+    return this.http.get(url, {responseType: 'text'});
   }
 }

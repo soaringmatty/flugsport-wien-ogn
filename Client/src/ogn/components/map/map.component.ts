@@ -10,7 +10,7 @@ import { Map, View, Feature } from 'ol';
 import { Subject, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
-import { loadFlights } from 'src/app/store/app/app.actions';
+import { loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -46,6 +46,12 @@ export class MapComponent implements OnInit, OnDestroy {
     ).subscribe(flights => {
       this.updateGliderPositionsOnMap(flights);
     })
+    // Draw flight path on map when loaded
+    this.store.select(x => x.app.flightPath).pipe(
+      takeUntil(this.onDestroy$)
+    ).subscribe(encodedFlightPath => {
+      this.drawEncodedFlightPath(encodedFlightPath);
+    })
     // Load and draw glider positions on map
     if (this.updateGliderPositions) {
       this.store.dispatch(loadFlights());
@@ -70,33 +76,87 @@ export class MapComponent implements OnInit, OnDestroy {
     this.map.addLayer(this.glidersVectorLayer);
   }
 
+  // private drawGliderMarkers(flights: Flight[]) {
+  //   flights.forEach(flight => {
+  //     if (!flight.longitude || !flight.latitude) {
+  //       return
+  //     }
+  //     const gliderMarkersFeature = new Feature({
+  //       geometry: new Point(fromLonLat([flight.longitude, flight.latitude])),
+  //       flarmId: flight.flarmId,
+  //     });
+  //     const iconStyle = new Style({
+  //       image: new Icon({
+  //         anchor: [0.5, 1],
+  //         anchorXUnits: 'fraction',
+  //         anchorYUnits: 'fraction',
+  //         src: 'assets/marker_yellow.png',
+  //         scale: 0.35,
+  //       }),
+  //       text: new Text({
+  //         text: flight.displayName,
+  //         font: '11px Roboto',
+  //         fill: new Fill({
+  //           color: 'black',
+  //         }),
+  //         offsetY: -17
+  //       }),
+  //     })
+  //     gliderMarkersFeature.setStyle(iconStyle);
+  //     this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
+  //   });
+  // }
+
   private drawGliderMarkers(flights: Flight[]) {
     flights.forEach(flight => {
       if (!flight.longitude || !flight.latitude) {
-        return
+        return;
       }
-      const gliderMarkersFeature = new Feature({
-        geometry: new Point(fromLonLat([flight.longitude, flight.latitude]))
-      });
-      const iconStyle = new Style({
-        image: new Icon({
-          anchor: [0.5, 1],
-          anchorXUnits: 'fraction',
-          anchorYUnits: 'fraction',
-          src: 'assets/marker_yellow.png',
-          scale: 0.35,
-        }),
-        text: new Text({
-          text: flight.displayName,
-          font: '11px Roboto',
-          fill: new Fill({
-            color: 'black',
+  
+      // Try to find an existing feature for this flight
+      const existingFeature = this.glidersVectorLayer.getSource()?.getFeatureById(flight.flarmId);
+      if (existingFeature) {
+        // If the feature already exists, just update its geometry
+        existingFeature.setGeometry(new Point(fromLonLat([flight.longitude, flight.latitude])));
+      } else {
+        // If the feature does not exist, create it
+        const gliderMarkersFeature = new Feature({
+          geometry: new Point(fromLonLat([flight.longitude, flight.latitude])),
+          flarmId: flight.flarmId
+        });
+        gliderMarkersFeature.setId(flight.flarmId);  // Set the feature id to the flight flarmId
+  
+        // Set the style for the feature
+        const iconStyle = new Style({
+          image: new Icon({
+            anchor: [0.5, 1],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'fraction',
+            src: 'assets/marker_yellow.png',
+            scale: 0.35,
           }),
-          offsetY: -17
-        }),
-      })
-      gliderMarkersFeature.setStyle(iconStyle);
-      this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
+          text: new Text({
+            text: flight.displayName,
+            font: '11px Roboto',
+            fill: new Fill({
+              color: 'black',
+            }),
+            offsetY: -17
+          }),
+        });
+        gliderMarkersFeature.setStyle(iconStyle);
+  
+        // Add the feature to the layer's source
+        this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
+      }
+    });
+  
+    // Remove features that no longer exist in flights
+    this.glidersVectorLayer.getSource()?.getFeatures().forEach(feature => {
+      const flarmId = feature.getId();
+      if (!flights.find(flight => flight.flarmId === flarmId)) {
+        this.glidersVectorLayer.getSource()?.removeFeature(feature);
+      }
     });
   }
 
@@ -152,6 +212,16 @@ export class MapComponent implements OnInit, OnDestroy {
     this.map.on('pointermove', (e) => {
       const hit = this.map.hasFeatureAtPixel(e.pixel);
       this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+    });
+    // Dispatch store action when marker is clicked
+    this.map.on('singleclick', (e) => {
+      this.map.forEachFeatureAtPixel(e.pixel, (feature) => {
+        // Assuming that the flight ID is stored as a property in the feature
+        const flarmId = feature.get('flarmId');
+        if (flarmId) {
+          this.store.dispatch(loadFlightPath({flarmId}));
+        }
+      });
     });
   }
 }
