@@ -1,6 +1,6 @@
-﻿namespace FlugsportWienOgnApi.Models;
+﻿namespace FlugsportWienOgnApi.Models.Core;
 
-public class GlideAndSeekFlight
+public class Flight
 {
     public string FlarmId { get; set; }
     public string DisplayName { get; set; }
@@ -15,6 +15,6 @@ public class GlideAndSeekFlight
     public float Speed { get; set; }
     public float Vario { get; set; }
     public float VarioAverage { get; set; }
-    public string   ? Receiver { get; set; }
+    public string? Receiver { get; set; }
     public dynamic ReceiverPosition { get; set; }
 }

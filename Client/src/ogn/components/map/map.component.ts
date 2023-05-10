@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import * as Leaflet from 'leaflet';
-import { OgnFlight } from 'src/ogn/models/ogn-flight.model';
+import { Flight } from 'src/ogn/models/flight.model';
 import { OgnService } from 'src/ogn/services/ogn.service';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
@@ -8,11 +8,11 @@ import { fromLonLat } from 'ol/proj';
 import {Point, LineString} from 'ol/geom';
 import { Vector as VectorLayer } from 'ol/layer';
 import VectorSource from 'ol/source/Vector';
-import { Icon, Stroke, Style } from 'ol/style';
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Polyline from 'ol/format/Polyline';
 import { Overlay, Map, View, Feature } from 'ol';
-import { Subject, interval, takeUntil } from 'rxjs';
-import { GlideAndSeekService } from 'src/ogn/services/glideandseek.service';
+import { Subject, flatMap, interval, takeUntil } from 'rxjs';
+import { ApiService } from 'src/ogn/services/api.service';
 
 Leaflet.Icon.Default.imagePath = 'assets/';
 @Component({
@@ -40,8 +40,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private readonly defaultCoordinates = [16, 47.8] // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private ognService: OgnService,
-              private glideAndSeekService: GlideAndSeekService) {}
+  constructor(private apiService: ApiService) {}
 
   ngOnInit(): void {
     this.initializeMap();
@@ -53,15 +52,6 @@ export class MapComponent implements OnInit, OnDestroy {
     else {
       this.updateGliderPositionsOnMap();
     }
-    // Test load glide and seek flights
-    this.glideAndSeekService.getFlightsTmp().subscribe(
-      flights => {
-        console.log('flights', flights)
-      },
-      error => {
-        console.error('Error fetching flights:', error);
-      }
-    );
   }
 
   ngOnDestroy(): void {
@@ -79,10 +69,9 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   loadAndDrawGliderMarkers(): void {
-    this.ognService.getFlights().subscribe(
-      ognFlights => {
-        this.drawGliderMarkers(ognFlights);
-        this.drawPlaneOverlays(ognFlights);
+    this.apiService.getFlights().subscribe(
+      flights => {
+        this.drawGliderMarkers(flights);
       },
       error => {
         console.error('Error fetching flights:', error);
@@ -90,9 +79,8 @@ export class MapComponent implements OnInit, OnDestroy {
     );
   }
 
-  // Doesn't work right now because of CORS issues
-  loadAndDrawFlightPath(): void {
-    this.ognService.getFlightPath().subscribe(
+  loadAndDrawFlightPath(flarmId: string): void {
+    this.apiService.getFlightPath(flarmId).subscribe(
       encodedPath => {
         this.drawEncodedFlightPath(encodedPath)
       },
@@ -102,24 +90,31 @@ export class MapComponent implements OnInit, OnDestroy {
     );
   }
 
-  drawGliderMarkers(flights: OgnFlight[]) {
+  drawGliderMarkers(flights: Flight[]) {
     flights.forEach(flight => {
-      if (!flight.Longitude || !flight.Latitude || !flight.Direction) {
+      if (!flight.longitude || !flight.latitude) {
         return
       }
       const gliderMarkersFeature = new Feature({
-        geometry: new Point(fromLonLat([flight.Longitude, flight.Latitude]))
+        geometry: new Point(fromLonLat([flight.longitude, flight.latitude]))
       });
       const iconStyle = new Style({
         image: new Icon({
-          src: 'assets/glider.png',
-          anchor: [0.5, 0.5],
+          anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
-          scale: 0.15,
-          rotation: flight.Direction * (Math.PI / 180), // Convert degrees to radians
+          src: 'assets/marker_yellow.png',
+          scale: 0.4,
         }),
-      });
+        text: new Text({
+          text: flight.displayName,
+          font: '12px Roboto',
+          fill: new Fill({
+            color: 'black',
+          }),
+          offsetY: -19
+        }),
+      })
       gliderMarkersFeature.setStyle(iconStyle);
       this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
     });
@@ -141,42 +136,6 @@ export class MapComponent implements OnInit, OnDestroy {
     });
     const decodedGeometry = decodedFeature.getGeometry();
     const lineFeature = new Feature(decodedGeometry);
-    const lineStyle = new Style({
-      stroke: new Stroke({
-        color: 'red',
-        width: 2
-      })
-    });
-    lineFeature.setStyle(lineStyle);
-    this.flightPathVectorLayer.getSource()?.addFeature(lineFeature);
-  }
-
-  private drawPlaneOverlays(flights: OgnFlight[]): void {
-    flights.forEach(flight => {
-      if (!flight.Longitude || !flight.Latitude || !flight.Direction) {
-        return
-      }
-      const customElement = document.createElement('div');
-      customElement.innerHTML = `
-        <div style="background-color: rgba(255, 255, 0, 1); padding: 5px; border-radius: 3px;">
-          ${flight.RegistrationShort}
-        </div>
-      `;
-      var marker = new Overlay({
-        position: fromLonLat([flight.Longitude, flight.Latitude]),
-        positioning: 'center-center',
-        element: customElement,
-        stopEvent: false
-      });
-      this.map.addOverlay(marker);
-    });
-  }
-
-  // Not used at the moment
-  private drawPathFromCoordinates(coordinates: [number, number][]): void {
-    const projectedCoordinates = coordinates.map(coord => fromLonLat(coord));
-    const lineString = new LineString(projectedCoordinates);
-    const lineFeature = new Feature(lineString);
     const lineStyle = new Style({
       stroke: new Stroke({
         color: 'red',
@@ -209,7 +168,7 @@ export class MapComponent implements OnInit, OnDestroy {
         zoom: 11
       })
     });
-    // change mouse cursor when over marker
+    // change mouse cursor to "pointer" when hovering over marker
     this.map.on('pointermove', (e) => {
       const hit = this.map.hasFeatureAtPixel(e.pixel);
       this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';

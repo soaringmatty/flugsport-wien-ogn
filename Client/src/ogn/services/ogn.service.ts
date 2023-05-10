@@ -13,22 +13,7 @@ export class OgnService {
 
   constructor(private http: HttpClient) { }
 
-  getFlightPath(flightId: string = ''): Observable<string> {
-    const httpOptions = {
-      headers: new HttpHeaders({ 'Content-Type': 'application/xml', 'Access-Control-Allow-Origin' : '*', 'Access-Control-Allow-Credentials': 'true' }),
-      responseType: 'text' as 'json'
-    };
-    return this.http.get(this.flightPathUrl, httpOptions).pipe(
-      map(response => {
-        return this.parseFlightPath(response.toString());
-      }),
-      catchError(error => {
-        console.error('Error fetching markers:', error);
-        return throwError(error);
-      })
-    );
-  }
-
+  // Not used anymore -> Using own api instead
   getFlights(): Observable<OgnFlight[]> {
     const httpOptions = {
       headers: new HttpHeaders({ 'Content-Type': 'application/xml' }),
