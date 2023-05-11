@@ -80,5 +80,12 @@ export const privateGliders: Glider[] = [
         RegistrationShort: 'MI',
         Model: 'DG-600',
         FlarmId: 'D0114B'
+    },
+    {
+        Owner: 'Ernst Schicker',
+        Registration: 'D-7007',
+        RegistrationShort: 'SE',
+        Model: 'Mini Nimbus',
+        FlarmId: '3EFBF6'
     }
 ];
