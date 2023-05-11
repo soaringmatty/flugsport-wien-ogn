@@ -7,10 +7,13 @@ import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import Polyline from 'ol/format/Polyline';
 import { Map, View, Feature } from 'ol';
-import { Subject, interval, takeUntil } from 'rxjs';
+import { Subject, Subscription, fromEvent, interval, take, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
+import {cloneDeep} from 'lodash-es'
+import { HttpClient } from '@angular/common/http';
+
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
@@ -21,11 +24,13 @@ export class MapComponent implements OnInit, OnDestroy {
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
   showGliderPath = false;
+  flights: Flight[] = [];
+  selectedFlight: Flight | null = null;
 
   // Configs
   updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
   updatePositionTimeout = 5000 // Defines the timeout between glider position updates in ms
-
+  
   private readonly flightPathStyle = new Style({
     stroke: new Stroke({
       color: 'red',
@@ -36,7 +41,8 @@ export class MapComponent implements OnInit, OnDestroy {
   private readonly defaultCoordinates = [16, 47.8] // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>) {}
+  constructor(private store: Store<State>) {
+  }
 
   ngOnInit(): void {
     this.initializeMap();
@@ -44,6 +50,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.store.select(x => x.app.flights).pipe(
       takeUntil(this.onDestroy$)
     ).subscribe(flights => {
+      this.flights = flights;
       this.updateGliderPositionsOnMap(flights);
     })
     // Draw flight path on map when loaded
@@ -67,47 +74,21 @@ export class MapComponent implements OnInit, OnDestroy {
     this.onDestroy$.complete();
   }
 
-  private updateGliderPositionsOnMap(flights: Flight[]) {
-    this.map.removeLayer(this.glidersVectorLayer)
-    this.glidersVectorLayer = new VectorLayer({
-      source: new VectorSource(),
-    });
-    this.drawGliderMarkers(flights);
-    this.map.addLayer(this.glidersVectorLayer);
+  // Convert int timestamp to readable datetime string
+  getTimestamp(timestamp: number): string {
+    const time = new Date(timestamp);
+    return time.toLocaleTimeString();
   }
 
-  // private drawGliderMarkers(flights: Flight[]) {
-  //   flights.forEach(flight => {
-  //     if (!flight.longitude || !flight.latitude) {
-  //       return
-  //     }
-  //     const gliderMarkersFeature = new Feature({
-  //       geometry: new Point(fromLonLat([flight.longitude, flight.latitude])),
-  //       flarmId: flight.flarmId,
-  //     });
-  //     const iconStyle = new Style({
-  //       image: new Icon({
-  //         anchor: [0.5, 1],
-  //         anchorXUnits: 'fraction',
-  //         anchorYUnits: 'fraction',
-  //         src: 'assets/marker_yellow.png',
-  //         scale: 0.35,
-  //       }),
-  //       text: new Text({
-  //         text: flight.displayName,
-  //         font: '11px Roboto',
-  //         fill: new Fill({
-  //           color: 'black',
-  //         }),
-  //         offsetY: -17
-  //       }),
-  //     })
-  //     gliderMarkersFeature.setStyle(iconStyle);
-  //     this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
-  //   });
-  // }
+  selectGlider(flarmId: string): void {
 
-  private drawGliderMarkers(flights: Flight[]) {
+  }
+
+  unselectGlider(): void {
+    
+  }
+
+  private updateGliderPositionsOnMap(flights: Flight[]) {
     flights.forEach(flight => {
       if (!flight.longitude || !flight.latitude) {
         return;
@@ -127,21 +108,38 @@ export class MapComponent implements OnInit, OnDestroy {
         gliderMarkersFeature.setId(flight.flarmId);  // Set the feature id to the flight flarmId
   
         // Set the style for the feature
+        // const iconStyle = new Style({
+        //   image: new Icon({
+        //     anchor: [0.5, 1],
+        //     anchorXUnits: 'fraction',
+        //     anchorYUnits: 'fraction',
+        //     src: 'assets/marker_yellow.png',
+        //     scale: 0.35,
+        //     // img: this.createLabelledIcon(flight.displayName),  // Use a labelled icon instead of a normal icon
+        //     // imgSize: [88, 88]
+        //   }),
+        //   text: new Text({
+        //     text: flight.displayName,
+        //     font: '11px Roboto',
+        //     fill: new Fill({
+        //       color: 'black',
+        //     }),
+        //     stroke: new Stroke({
+        //       color: '#f2e80b',
+        //       width: 2,
+        //     }),
+        //     offsetY: -17
+        //   }),
+        // });
+        // Set the style for the feature (when using Canvas)
         const iconStyle = new Style({
           image: new Icon({
             anchor: [0.5, 1],
             anchorXUnits: 'fraction',
             anchorYUnits: 'fraction',
-            src: 'assets/marker_yellow.png',
-            scale: 0.35,
-          }),
-          text: new Text({
-            text: flight.displayName,
-            font: '11px Roboto',
-            fill: new Fill({
-              color: 'black',
-            }),
-            offsetY: -17
+            scale: 0.38,
+            img: this.createLabelledIcon(flight.displayName),  // Use a labelled icon instead of a normal icon
+            imgSize: [88, 88]
           }),
         });
         gliderMarkersFeature.setStyle(iconStyle);
@@ -158,6 +156,38 @@ export class MapComponent implements OnInit, OnDestroy {
         this.glidersVectorLayer.getSource()?.removeFeature(feature);
       }
     });
+  }
+
+  private createLabelledIcon(label: string): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+  
+    // Load the icon image
+    const image = new Image();
+    image.src = 'assets/marker_yellow.png';
+  
+    // Wait for the image to load
+    image.onload = () => {
+      if (!context) {
+        return;
+      }
+      // Draw the image on the canvas
+      context.drawImage(image, 0, 0);
+  
+      // Set the font properties
+      context.font = '32px Roboto';
+      context.fillStyle = 'black';
+  
+      // Calculate the position for the text
+      const textWidth = context.measureText(label).width;
+      const x = (image.width - textWidth) / 2;
+      const y = image.height / 2;
+  
+      // Draw the text on the canvas
+      context.fillText(label, x, y);
+    };
+  
+    return canvas;
   }
 
   private initializeTimerForGliderPositionUpdates() {
@@ -183,6 +213,9 @@ export class MapComponent implements OnInit, OnDestroy {
       })
     });
     lineFeature.setStyle(lineStyle);
+
+    // Clear the previous flight path before drawing the new one
+    this.flightPathVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.addFeature(lineFeature);
   }
 
@@ -200,8 +233,8 @@ export class MapComponent implements OnInit, OnDestroy {
       target: 'map',
       layers: [
         osmTileLayer,
+        this.flightPathVectorLayer,
         this.glidersVectorLayer,
-        this.flightPathVectorLayer
       ],
       view: new View({
         center: fromLonLat(this.defaultCoordinates),
@@ -223,5 +256,16 @@ export class MapComponent implements OnInit, OnDestroy {
         }
       });
     });
+    // Show information card when marker is clicked
+    this.map.on('click', (event) => {
+      this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
+        const flarmId = feature.get('flarmId');
+        const flight = this.flights.find(flight => flight.flarmId === flarmId);
+        if (flight) {
+          this.selectedFlight = flight;
+        }
+      });
+    });
+    
   }
 }

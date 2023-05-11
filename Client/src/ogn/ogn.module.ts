@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FlightListComponent } from './components/flight-list/flight-list.component';
 import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
 import { MapComponent } from './components/map/map.component';
 
 @NgModule({
@@ -11,7 +12,8 @@ import { MapComponent } from './components/map/map.component';
   ],
   imports: [
     CommonModule,
-    MatTableModule
+    MatTableModule,
+    MatCardModule
   ]
 })
 export class OgnModule { }
