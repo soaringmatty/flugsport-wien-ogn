@@ -87,5 +87,19 @@ export const privateGliders: Glider[] = [
         RegistrationShort: 'SE',
         Model: 'Mini Nimbus',
         FlarmId: '3EFBF6'
+    },
+    {
+        Owner: 'Stephan Haupt',
+        Registration: 'D-KEVA',
+        RegistrationShort: 'O2',
+        Model: 'DG-800',
+        FlarmId: 'D0019F'
+    },
+    {
+        Owner: 'Kathrin Havemann / Mario Neumann',
+        Registration: 'D-6928',
+        RegistrationShort: 'SI',
+        Model: 'ASW 28',
+        FlarmId: '?D-6928?' // TODO
     }
 ];

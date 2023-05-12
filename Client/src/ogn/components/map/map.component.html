@@ -1,16 +1,2 @@
 <div id="map" class="map"></div>
-<mat-card *ngIf="selectedFlight" style="position: absolute; top: 74px; right: 10px;">
-    <mat-card-header>
-      <mat-card-title>{{ selectedFlight.registration }} ({{ selectedFlight.displayName }})</mat-card-title>
-      <mat-card-subtitle>Flarm ID: {{ selectedFlight.flarmId }}</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <div>Modell: {{ selectedFlight.model }}</div>
-      <div>Letztes Update: {{ getTimestamp(selectedFlight.timestamp) }}</div>
-      <div>Höhe (MSL): {{ selectedFlight.heightMSL }}</div>
-      <div>Höhe ü. Grund: {{ selectedFlight.heightAGL }}</div>
-      <div>Geschwindigkeit: {{ selectedFlight.speed }}</div>
-      <div>Vario: {{ selectedFlight.vario }}</div>
-      <div>Vario (60s): {{ selectedFlight.varioAverage }}</div>
-    </mat-card-content>
-</mat-card>
+<app-info-card [flight]="selectedFlight" (close)="unselectGlider()" (toggleActiveTracking)="toggleActiveTracking($event)"></app-info-card>

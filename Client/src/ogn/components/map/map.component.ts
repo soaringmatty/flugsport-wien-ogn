@@ -1,13 +1,13 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Flight } from 'src/ogn/models/flight.model';
 import { OSM, Vector as VectorSource } from 'ol/source';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import { Point } from 'ol/geom';
 import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
 import { Icon, Style } from 'ol/style';
 import Polyline from 'ol/format/Polyline';
 import { Map, View, Feature } from 'ol';
-import { Subject, interval, takeUntil } from 'rxjs';
+import { Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
@@ -26,6 +26,8 @@ export class MapComponent implements OnInit, OnDestroy {
   showGliderPath = false;
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
+  isTracking: boolean = false;
+  trackingSubscription!: Subscription;
 
   // Configs
   updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
@@ -77,22 +79,55 @@ export class MapComponent implements OnInit, OnDestroy {
     this.onDestroy$.complete();
   }
 
-  // Convert int timestamp to readable datetime string
-  getTimestamp(timestamp: number): string {
-    const time = new Date(timestamp);
-    return time.toLocaleTimeString();
+  toggleActiveTracking(newIsTracking: boolean): void {
+    if (newIsTracking) {
+      this.startActiveTracking();
+    }
+    else {
+      this.stopActiveTracking();
+    }
+    this.isTracking = newIsTracking;
   }
 
-  selectGlider(flarmId: string): void {
-    const flight = this.flights.find(x => x.flarmId === flarmId);
-    if (flight) {
-      this.selectedFlight = flight;
+  private startActiveTracking(): void {
+    if (!this.selectedFlight) {
+      console.warn('Unable to start active tracking. No glider selected')
+      return;
     }
+    this.isTracking = true;
+    const flight = this.flights.find(x => x.flarmId === this.selectedFlight?.flarmId);
+    if (flight && flight.longitude && flight.latitude) {
+      const coordinate = fromLonLat([flight.longitude, flight.latitude]);
+      this.map.getView().setCenter(coordinate);
+      this.map.getView().setZoom(15); // adjust the zoom level as needed
+
+      // Subscribe to position updates
+      this.trackingSubscription = this.store.select(x => x.app.flights).subscribe(flights => {
+        const updatedFlight = flights.find(x => x.flarmId === this.selectedFlight?.flarmId);
+        if (updatedFlight && updatedFlight.longitude && updatedFlight.latitude) {
+          const updatedCoordinate = fromLonLat([updatedFlight.longitude, updatedFlight.latitude]);
+          this.map.getView().setCenter(updatedCoordinate);
+        }
+      })
+    }
+  }
+
+  private stopActiveTracking(): void {
+    this.isTracking = false;
+    this.trackingSubscription?.unsubscribe();
+    this.map.getView().setZoom(9)
   }
 
   unselectGlider(): void {
     this.selectedFlight = undefined;
     this.flightPathVectorLayer.getSource()?.clear();
+  }
+
+  private selectGlider(flarmId: string): void {
+    const flight = this.flights.find(x => x.flarmId === flarmId);
+    if (flight) {
+      this.selectedFlight = flight;
+    }
   }
 
   private updateGliderPositionsOnMap(flights: Flight[]) {
@@ -162,15 +197,37 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private initializeMap() {
+    // Load the stored map state or use the default values
+    const storedCenter = sessionStorage.getItem('mapCenter');
+    const storedZoom = sessionStorage.getItem('mapZoom');
+    const initialCenter = storedCenter ? JSON.parse(storedCenter) : this.defaultCoordinates;
+    const initialZoom = storedZoom ? +storedZoom : 11;
+  
     const osmTileLayer = new TileLayer({
       source: new OSM(),
-    })
+    });
     this.glidersVectorLayer = new VectorLayer({
       source: new VectorSource(),
     });
     this.flightPathVectorLayer = new VectorLayer({
       source: new VectorSource(),
     });
+    const mapView = new View({
+      center: fromLonLat(initialCenter),
+      zoom: initialZoom,
+    })
+    // Always store current map center and zoom in session storage
+    mapView.on('change', (event) => {
+      const zoom = this.map.getView().getZoom();
+      if (zoom !== undefined) {
+        sessionStorage.setItem('mapZoom', zoom.toString());
+      }
+      const center = this.map.getView().getCenter();
+      if (center) {
+        sessionStorage.setItem('mapCenter', JSON.stringify(toLonLat(center)));
+      }
+    });
+    
     this.map = new Map({
       target: 'map',
       layers: [
@@ -178,11 +235,9 @@ export class MapComponent implements OnInit, OnDestroy {
         this.flightPathVectorLayer,
         this.glidersVectorLayer,
       ],
-      view: new View({
-        center: fromLonLat(this.defaultCoordinates),
-        zoom: 11
-      })
+      view: mapView
     });
+
     // change mouse cursor to "pointer" when hovering over marker
     this.map.on('pointermove', (e) => {
       const hit = this.map.hasFeatureAtPixel(e.pixel);
@@ -205,6 +260,5 @@ export class MapComponent implements OnInit, OnDestroy {
         this.selectGlider(flarmId);
       });
     });
-    
   }
 }

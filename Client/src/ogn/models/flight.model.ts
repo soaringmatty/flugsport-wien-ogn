@@ -14,4 +14,6 @@ export interface Flight {
   varioAverage: number;
   receiver: string;
   receiverPosition: any;
+  pilot: string;
+  owner: string;
 }

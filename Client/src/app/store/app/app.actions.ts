@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { Flight } from 'src/ogn/models/flight.model';
+import { MapSettings } from 'src/ogn/models/map-settings.model';
 
 export enum AppActionTypes {
     loadFlights = '[App] Load Flights',
@@ -7,7 +8,10 @@ export enum AppActionTypes {
     loadFlightsFailure = '[App] Load Flights Failure',
     loadFlightPath = '[App] Load Flight Path',
     loadFlightPathSuccess = '[App] Load Flight Path Success',
-    loadFlightPathFailure = '[App] Load Flight Path Failure'
+    loadFlightPathFailure = '[App] Load Flight Path Failure',
+    saveSettings = '[App] Save Settings',
+    loadSettings = '[App] Load Settings',
+    loadSettingsSuccess = '[App] Load Settings Success'
   }
 
 export const loadFlights = createAction(
@@ -39,11 +43,16 @@ export const loadFlightPathFailure = createAction(
     props<{error: any}>()
 );
 
-// export const AppActions = createActionGroup({
-//   source: 'App',
-//   events: {
-//     'LoadFlights Apps': emptyProps(),
-//     'LoadFlights Apps Success': props<{ data: unknown }>(),
-//     'LoadFlights Apps Failure': props<{ error: unknown }>(),
-//   }
-// });
+export const saveSettings = createAction(
+    AppActionTypes.saveSettings,
+    props<{settings: MapSettings}>()
+);
+
+export const loadSettings = createAction(
+    AppActionTypes.loadSettings
+);
+
+export const loadSettingsSuccess = createAction(
+    AppActionTypes.loadSettingsSuccess,
+    props<{settings: MapSettings}>()
+);

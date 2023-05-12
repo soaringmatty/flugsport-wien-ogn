@@ -13,6 +13,7 @@ import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { reducers, metaReducers } from './store';
 import { AppEffects } from './store/app/app.effects';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
   declarations: [
@@ -30,6 +31,7 @@ import { AppEffects } from './store/app/app.effects';
     StoreModule.forRoot(reducers, { metaReducers }),
     StoreDevtoolsModule.instrument(),
     EffectsModule.forRoot([AppEffects]),
+    MatDialogModule
   ],
   providers: [],
   bootstrap: [AppComponent]

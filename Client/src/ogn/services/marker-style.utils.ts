@@ -1,5 +1,5 @@
 import { Icon, Stroke, Style } from "ol/style";
-import { GliderType } from "../constants/constants";
+import { GliderType } from "../models/glider-type";
 
 export const flightPathStyle = new Style({
     stroke: new Stroke({
@@ -21,7 +21,7 @@ export function getGliderMarkerStyle(label: string): Style {
       });
 }
 
-export function createLabelledGliderMarker(label: string, isSelected: boolean = false, gliderType: GliderType = GliderType.foreign): HTMLCanvasElement {
+export function createLabelledGliderMarker(label: string, isSelected: boolean = false, gliderType: GliderType = GliderType.all): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
   
@@ -44,7 +44,7 @@ export function createLabelledGliderMarker(label: string, isSelected: boolean = 
       context.drawImage(image, 0, 0);
   
       // Set the font properties
-      context.font = '32px Roboto';
+      context.font = 'bold 28px Roboto';
       context.fillStyle = 'black';
   
       // Calculate the position for the text
