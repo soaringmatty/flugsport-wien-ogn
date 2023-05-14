@@ -7,8 +7,8 @@ public class GetOgnFlightsResponseDto
     public string Registration { get; set; }
     public int Type { get; set; }
     public string Model { get; set; }
-    public float Lat { get; set; }
-    public float Lng { get; set; }
+    public double Lat { get; set; }
+    public double Lng { get; set; }
     public float Altitude { get; set; }
     public float Agl { get; set; }
     public long Timestamp { get; set; }

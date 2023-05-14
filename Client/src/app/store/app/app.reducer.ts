@@ -4,6 +4,7 @@ import { Flight } from 'src/ogn/models/flight.model';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
 import { GliderType } from 'src/ogn/models/glider-type';
 import { clubGliders, privateGliders } from 'src/ogn/constants/known-gliders';
+import { defaultSettings } from 'src/ogn/services/settings.service';
 
 export interface AppState {
   flights: Flight[];
@@ -14,10 +15,7 @@ export interface AppState {
 export const initialState: AppState = {
   flights: [],
   flightPath: '',
-  settings: {
-    gliderFilter: GliderType.all,
-    hideGlidersOnGround: false
-  }
+  settings: defaultSettings
 };
 
 export const appReducer = createReducer(

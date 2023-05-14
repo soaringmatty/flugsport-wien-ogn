@@ -1,11 +1,22 @@
 import { Icon, Stroke, Style } from "ol/style";
 import { GliderType } from "../models/glider-type";
 
+const darkRed = '#8B0000'
+const darkBlue = '#244485'
+const strokeWhite = '#FFFFFFA0'
+
+export const flightPathStrokeStyle = new Style({
+  stroke: new Stroke({
+    color: strokeWhite,
+    width: 6,
+  })
+});
+
 export const flightPathStyle = new Style({
-    stroke: new Stroke({
-      color: 'red',
-      width: 2
-    })
+  stroke: new Stroke({
+    color: darkRed,
+    width: 2
+  })
 });
 
 export function getGliderMarkerStyle(label: string): Style {

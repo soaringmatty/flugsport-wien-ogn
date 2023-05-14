@@ -2,15 +2,17 @@ import { Injectable } from '@angular/core';
 import { MapSettings } from '../models/map-settings.model';
 import { GliderType } from '../models/glider-type';
 
+export const defaultSettings: MapSettings = {
+  gliderFilter: GliderType.all,
+  hideGlidersOnGround: false,
+  useFlightPathSmoothing: true
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class SettingsService {
   private settingsKey = 'mapSettings';
-  private defaultSettings = {
-    gliderFilter: GliderType.all,
-    hideGlidersOnGround: false
-  }
 
   constructor() { }
 
@@ -24,6 +26,6 @@ export class SettingsService {
     if (settingsJson) {
       return JSON.parse(settingsJson);
     }
-    return this.defaultSettings;
+    return defaultSettings;
   }
 }

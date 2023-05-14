@@ -15,6 +15,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { InfoCardComponent } from './components/info-card/info-card.component';
 import { MatIconModule } from '@angular/material/icon';
 import { TimeAgoPipe } from './pipes/time-ago.pipe';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @NgModule({
   declarations: [
@@ -35,7 +36,8 @@ import { TimeAgoPipe } from './pipes/time-ago.pipe';
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
-    MatIconModule
+    MatIconModule,
+    MatTooltipModule
   ],
   exports: [
     SettingsDialogComponent

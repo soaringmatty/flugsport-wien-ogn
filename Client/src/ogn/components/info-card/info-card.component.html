@@ -45,7 +45,8 @@
                 {{ flight.varioAverage > 0 ? '+' : ''}}{{ roundVario(flight.varioAverage) }} m/s
             </span>
         </div>
-        <button mat-icon-button (click)="toggleTracking()" style="margin-left: -5px; margin-bottom: -10px;">
+
+        <button mat-icon-button (click)="toggleTracking()" style="margin-left: -5px; margin-bottom: -10px;" [matTooltip]="isTracking ? 'Tracking beenden' : 'Flugzeug tracken'">
           <mat-icon>{{isTracking ? 'location_disabled' : 'location_searching'}}</mat-icon>
         </button>
     </mat-card-content>

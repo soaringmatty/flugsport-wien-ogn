@@ -11,8 +11,9 @@ import { Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
-import { createLabelledGliderMarker, flightPathStyle, getGliderMarkerStyle } from 'src/ogn/services/marker-style.utils';
+import { createLabelledGliderMarker, flightPathStyle, flightPathStrokeStyle, getGliderMarkerStyle } from 'src/ogn/services/marker-style.utils';
 import { LineString } from 'ol/geom'
+import { Coordinate } from 'ol/coordinate';
 
 @Component({
   selector: 'app-map',
@@ -22,12 +23,16 @@ import { LineString } from 'ol/geom'
 export class MapComponent implements OnInit, OnDestroy {
   map!: Map;
   glidersVectorLayer!: VectorLayer<VectorSource>;
+  flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
   showGliderPath = false;
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
   isTracking: boolean = false;
   trackingSubscription!: Subscription;
+  mapZoomBeforeActiveTracking: number | undefined;
+  mapCenterBeforeActiveTracking: Coordinate | undefined;
+  lastHistoricalPosition: Coordinate | undefined;
 
   // Configs
   updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
@@ -51,10 +56,10 @@ export class MapComponent implements OnInit, OnDestroy {
       // If a glider is selected, update flight info and flight path
       const updatedSelectedFlight = this.flights.find(x => x.flarmId === this.selectedFlight?.flarmId);
       if (this.selectedFlight && updatedSelectedFlight) {
-        this.drawFlightPathExtension(
-          [this.selectedFlight.longitude, this.selectedFlight.latitude], 
-          [updatedSelectedFlight.longitude, updatedSelectedFlight.latitude]
-          )
+        // this.drawFlightPathExtension(
+        //   [this.selectedFlight.longitude, this.selectedFlight.latitude], 
+        //   [updatedSelectedFlight.longitude, updatedSelectedFlight.latitude]
+        //   )
         this.selectedFlight = updatedSelectedFlight;
       }
     })
@@ -95,11 +100,13 @@ export class MapComponent implements OnInit, OnDestroy {
       return;
     }
     this.isTracking = true;
+    this.mapZoomBeforeActiveTracking = this.map.getView().getZoom();
+    this.mapCenterBeforeActiveTracking = this.map.getView().getCenter();
     const flight = this.flights.find(x => x.flarmId === this.selectedFlight?.flarmId);
     if (flight && flight.longitude && flight.latitude) {
       const coordinate = fromLonLat([flight.longitude, flight.latitude]);
       this.map.getView().setCenter(coordinate);
-      this.map.getView().setZoom(15); // adjust the zoom level as needed
+      this.map.getView().setZoom(15);
 
       // Subscribe to position updates
       this.trackingSubscription = this.store.select(x => x.app.flights).subscribe(flights => {
@@ -115,12 +122,16 @@ export class MapComponent implements OnInit, OnDestroy {
   private stopActiveTracking(): void {
     this.isTracking = false;
     this.trackingSubscription?.unsubscribe();
-    this.map.getView().setZoom(9)
+    if (this.mapZoomBeforeActiveTracking && this.mapCenterBeforeActiveTracking) {
+      this.map.getView().setZoom(this.mapZoomBeforeActiveTracking);
+      this.map.getView().setCenter(this.mapCenterBeforeActiveTracking);
+    }
+    
   }
 
   unselectGlider(): void {
     this.selectedFlight = undefined;
-    this.flightPathVectorLayer.getSource()?.clear();
+    this.flightPathStrokeVectorLayer.getSource()?.clear();
   }
 
   private selectGlider(flarmId: string): void {
@@ -166,6 +177,9 @@ export class MapComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
         this.store.dispatch(loadFlights());
+        if (this.selectedFlight) {
+          this.store.dispatch(loadFlightPath({flarmId: this.selectedFlight.flarmId}));
+        }
       });
   }
 
@@ -175,25 +189,70 @@ export class MapComponent implements OnInit, OnDestroy {
       dataProjection: 'EPSG:4326',
       featureProjection: 'EPSG:900913'
     });
-    const decodedGeometry = decodedFeature.getGeometry();
-    const lineFeature = new Feature(decodedGeometry);
-    lineFeature.setStyle(flightPathStyle);
+    const decodedGeometry = decodedFeature.getGeometry() as LineString;
+    const coordinates = decodedGeometry.getCoordinates();
+    const smoothedCoords: Coordinate[] = this.chaikinsAlgorithm(coordinates);
+    if (!smoothedCoords?.length) {
+      return;
+    }
+
+    const outerLineFeature = new Feature(new LineString(smoothedCoords));
+    outerLineFeature.setStyle(flightPathStrokeStyle);
+    const innerLineFeature = new Feature(new LineString(smoothedCoords));
+    innerLineFeature.setStyle(flightPathStyle);
 
     // Clear the previous flight path before drawing the new one
+    this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
-    this.flightPathVectorLayer.getSource()?.addFeature(lineFeature);
+    this.flightPathStrokeVectorLayer.getSource()?.addFeature(outerLineFeature);
+    this.flightPathVectorLayer.getSource()?.addFeature(innerLineFeature);
+  }
+
+  chaikinsAlgorithm(coords: Coordinate[], iterations: number = 3, factor: number = 0.2): Coordinate[] {
+    let result = coords;
+  
+    for (let i = 0; i < iterations; i++) {
+      let smoothedCoords: Coordinate[] = [];
+  
+      for (let i = 0; i < result.length - 1; i++) {
+        const p0 = result[i];
+        const p1 = result[i + 1];
+  
+        const Q: Coordinate = [(1 - factor) * p0[0] + factor * p1[0], (1 - factor) * p0[1] + factor * p1[1]];
+        const R: Coordinate = [factor * p0[0] + (1 - factor) * p1[0], factor * p0[1] + (1 - factor) * p1[1]];
+  
+        smoothedCoords.push(Q);
+        smoothedCoords.push(R);
+      }
+  
+      result = smoothedCoords;
+    }
+  
+    return result;
   }
   
   private drawFlightPathExtension(start: [number, number], end: [number, number]): void {
     const startProj = fromLonLat(start);
     const endProj = fromLonLat(end);
   
-    const lineString = new LineString([startProj, endProj]);
-    const lineFeature = new Feature({
-      geometry: lineString,
-    });
-    lineFeature.setStyle(flightPathStyle);
-    this.flightPathVectorLayer.getSource()?.addFeature(lineFeature);
+    const lineString = new LineString([this.lastHistoricalPosition as Coordinate, startProj, endProj]);
+
+    const coordinates = lineString.getCoordinates();
+    const smoothedCoords: Coordinate[] = this.chaikinsAlgorithm(coordinates);
+    if (!smoothedCoords?.length) {
+      return;
+    }
+    
+    const outerLineFeature = new Feature(new LineString(smoothedCoords));
+    outerLineFeature.setStyle(flightPathStrokeStyle);
+    const innerLineFeature = new Feature(new LineString(smoothedCoords));
+    innerLineFeature.setStyle(flightPathStyle);
+
+    // Clear the previous flight path before drawing the new one
+    this.flightPathStrokeVectorLayer.getSource()?.addFeature(outerLineFeature);
+    this.flightPathVectorLayer.getSource()?.addFeature(innerLineFeature);
+
+    this.lastHistoricalPosition = startProj;
   }
 
   private initializeMap() {
@@ -207,6 +266,9 @@ export class MapComponent implements OnInit, OnDestroy {
       source: new OSM(),
     });
     this.glidersVectorLayer = new VectorLayer({
+      source: new VectorSource(),
+    });
+    this.flightPathStrokeVectorLayer = new VectorLayer({
       source: new VectorSource(),
     });
     this.flightPathVectorLayer = new VectorLayer({
@@ -232,6 +294,7 @@ export class MapComponent implements OnInit, OnDestroy {
       target: 'map',
       layers: [
         osmTileLayer,
+        this.flightPathStrokeVectorLayer,
         this.flightPathVectorLayer,
         this.glidersVectorLayer,
       ],
@@ -243,22 +306,18 @@ export class MapComponent implements OnInit, OnDestroy {
       const hit = this.map.hasFeatureAtPixel(e.pixel);
       this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
     });
-    // Dispatch store action when marker is clicked
+    // Show information card and load flight path when marker is clicked
     this.map.on('singleclick', (e) => {
-      this.map.forEachFeatureAtPixel(e.pixel, (feature) => {
-        // Assuming that the flight ID is stored as a property in the feature
-        const flarmId = feature.get('flarmId');
-        if (flarmId) {
-          this.store.dispatch(loadFlightPath({flarmId}));
-        }
-      });
-    });
-    // Show information card when marker is clicked
-    this.map.on('click', (event) => {
-      this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
-        const flarmId = feature.get('flarmId');
+      const features = this.map.getFeaturesAtPixel(e.pixel);
+      if (!features || features.length < 1) {
+        return;
+      }
+      const feature = features[0];
+      const flarmId = feature.get('flarmId');
+      if (flarmId) {
         this.selectGlider(flarmId);
-      });
+        this.store.dispatch(loadFlightPath({flarmId}));
+      } 
     });
   }
 }
