@@ -54,65 +54,95 @@ namespace FlugsportWienOgnApi.Controllers
         [HttpGet("{flarmId}/history")]
         public async Task<ActionResult<IEnumerable<FlightHistoryItem>>> GetFlightHistory(string flarmId)
         {
-            Console.WriteLine("Loading");
             string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
-            var response = await _httpClient.GetFromJsonAsync<GetFlightHistoryResponse>(url);
-            if (response == null || !response.Success)
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetStringAsync(url);
+            if (string.IsNullOrEmpty(response))
             {
                 return BadRequest();
             }
 
-            Console.WriteLine("Mapping");
-            var flightHistoryList = new List<FlightHistoryItem>();
-            foreach (var historyItem in response.Message)
+            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
+            var success = Convert.ToBoolean(data["success"]);
+
+            if (!success)
             {
+                return BadRequest("External API request failed.");
+            }
+
+            var message = data["message"] as JArray;
+            if (message == null)
+            {
+                return BadRequest();
+            }
+
+            var flightHistoryList = new List<FlightHistoryItem>();
+            foreach (var historyItem in message)
+            {
+                var itemArray = historyItem as JArray;
+                if (itemArray == null || itemArray.Count < 6)
+                {
+                    continue;
+                }
+
                 var flightData = new FlightHistoryItem
                 {
-                    Timestamp = Convert.ToInt64(historyItem[0].ToString()),
-                    Unknown = double.Parse(historyItem[1].ToString(), CultureInfo.InvariantCulture.NumberFormat),
-                    Latitude = double.Parse(historyItem[2].ToString(), CultureInfo.InvariantCulture.NumberFormat),
-                    Longitude = double.Parse(historyItem[3].ToString(), CultureInfo.InvariantCulture.NumberFormat),
-                    Altitude = double.Parse(historyItem[4].ToString(), CultureInfo.InvariantCulture.NumberFormat),
-                    GroundHeight = double.Parse(historyItem[5].ToString(), CultureInfo.InvariantCulture.NumberFormat),
+                    Timestamp = itemArray[0].Value<long>(),
+                    Unknown = itemArray[1].Value<double>(),
+                    Latitude = itemArray[2].Value<double>(),
+                    Longitude = itemArray[3].Value<double>(),
+                    Altitude = itemArray[4].Value<double>(),
+                    GroundHeight = itemArray[5].Value<double>(),
                 };
 
                 flightHistoryList.Add(flightData);
             }
+
             return flightHistoryList;
         }
 
+        //[HttpGet("{flarmId}/history/raw")]
+        //public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
+        //{
+        //    string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
+        //    var client = _httpClientFactory.CreateClient();
+        //    var response = await client.GetAsync(url);
 
+        //    if (!response.IsSuccessStatusCode)
+        //    {
+        //        return BadRequest("External API request failed.");
+        //    }
+
+        //    var content = await response.Content.ReadAsStringAsync();
+        //    var data = JObject.Parse(content);
+        //    var success = data["success"].Value<bool>();
+
+        //    if (!success)
+        //    {
+        //        return BadRequest("External API response indicates failure.");
+        //    }
+
+        //    var message = data["message"].ToString();
+        //    return Ok(message);
+        //}
 
         [HttpGet("{flarmId}/history/raw")]
-        public async Task<ActionResult<JArray>> GetFlightHistoryRaw(string flarmId)
+        public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
         {
-            Console.WriteLine("Loading");
             string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
-            //var response = await _httpClient.GetFromJsonAsync<GetFlightHistoryResponse>(url);
-            //if (response == null || !response.Success || response.Message == null)
-            //{
-            //    return BadRequest();
-            //}
-
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
             var client = _httpClientFactory.CreateClient();
-            var response = await client.SendAsync(request);
-            if (response.IsSuccessStatusCode)
+            var response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
             {
-                var responseString = await response.Content.ReadAsStringAsync();
-
-                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseString);
-                var success = Convert.ToBoolean(data["success"]);
-
-                if (!success)
-                {
-                    return BadRequest("External API request failed.");
-                }
-
-                var message = data["message"] as JArray;
-                return message;
+                return BadRequest("External API request failed.");
             }
-            return BadRequest();
+
+            var content = await response.Content.ReadAsStringAsync();
+            var data = JObject.Parse(content);
+
+            var message = data["message"].ToString();
+            return Ok(message);
         }
 
         private IEnumerable<Flight> MapOgnFlightsResponseToFlights(IEnumerable<GetOgnFlightsResponseDto> rawFlights)
