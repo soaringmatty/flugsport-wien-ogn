@@ -20,7 +20,7 @@ export class SettingsDialogComponent implements OnInit, OnDestroy {
   constructor(private store: Store<State>) {
 
   }
-  
+
   ngOnInit(): void {
     this.store.select(x => x.app.settings).pipe(
       takeUntil(this.onDestroy$)
@@ -36,6 +36,5 @@ export class SettingsDialogComponent implements OnInit, OnDestroy {
 
   save(): void {
     this.store.dispatch(saveSettings({settings: this.settings}));
-    this.store.dispatch(loadFlights());
   }
 }
