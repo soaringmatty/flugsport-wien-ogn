@@ -16,6 +16,8 @@ import { InfoCardComponent } from './components/info-card/info-card.component';
 import { MatIconModule } from '@angular/material/icon';
 import { TimeAgoPipe } from './pipes/time-ago.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { BarogramComponent } from './components/barogram/barogram.component';
+import { NgChartsModule } from 'ng2-charts';
 
 @NgModule({
   declarations: [
@@ -23,7 +25,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MapComponent,
     SettingsDialogComponent,
     InfoCardComponent,
-    TimeAgoPipe
+    TimeAgoPipe,
+    BarogramComponent
   ],
   imports: [
     CommonModule,
@@ -37,7 +40,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    NgChartsModule
   ],
   exports: [
     SettingsDialogComponent
