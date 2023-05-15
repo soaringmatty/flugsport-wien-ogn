@@ -1,6 +1,5 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FlightListComponent } from './components/flight-list/flight-list.component';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MapComponent } from './components/map/map.component';
@@ -21,7 +20,6 @@ import { NgChartsModule } from 'ng2-charts';
 
 @NgModule({
   declarations: [
-    FlightListComponent,
     MapComponent,
     SettingsDialogComponent,
     InfoCardComponent,

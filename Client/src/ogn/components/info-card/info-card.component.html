@@ -46,8 +46,13 @@
             </span>
         </div>
 
-        <button mat-icon-button (click)="toggleTracking()" style="margin-left: -5px; margin-bottom: -10px;" [matTooltip]="isTracking ? 'Tracking beenden' : 'Flugzeug tracken'">
-          <mat-icon>{{isTracking ? 'location_disabled' : 'location_searching'}}</mat-icon>
-        </button>
+        <div style="display: flex; justify-content: left; align-items: center; width: 100%;">
+            <button mat-icon-button (click)="toggleTracking()" style="margin-left: -5px; margin-bottom: -10px;" [matTooltip]="isTracking ? 'Verfolgung beenden' : 'Flugzeug verfolgen'">
+              <mat-icon>{{isTracking ? 'location_disabled' : 'location_searching'}}</mat-icon>
+            </button>
+            <button mat-icon-button (click)="toggleBarogramVisibility()" style="margin-bottom: -10px;" [matTooltip]="showBarogram ? 'Barogramm ausblenden' : 'Barogramm anzeigen'">
+              <mat-icon>area_chart</mat-icon>
+            </button>
+        </div>
     </mat-card-content>
 </mat-card>

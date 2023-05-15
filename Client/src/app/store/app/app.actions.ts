@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { Flight } from 'src/ogn/models/flight.model';
+import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
 
 export enum AppActionTypes {
@@ -9,6 +10,9 @@ export enum AppActionTypes {
     loadFlightPath = '[App] Load Flight Path',
     loadFlightPathSuccess = '[App] Load Flight Path Success',
     loadFlightPathFailure = '[App] Load Flight Path Failure',
+    loadFlightHistory = '[App] Load Flight History',
+    loadFlightHistorySuccess = '[App] Load Flight History Success',
+    loadFlightHistoryFailure = '[App] Load Flight History Failure',
     saveSettings = '[App] Save Settings',
     loadSettings = '[App] Load Settings',
     loadSettingsSuccess = '[App] Load Settings Success'
@@ -40,6 +44,21 @@ export const loadFlightPathSuccess = createAction(
 
 export const loadFlightPathFailure = createAction(
     AppActionTypes.loadFlightPathFailure,
+    props<{error: any}>()
+);
+
+export const loadFlightHistory = createAction(
+    AppActionTypes.loadFlightHistory,
+    props<{flarmId: string}>()
+);
+
+export const loadFlightHistorySuccess = createAction(
+    AppActionTypes.loadFlightHistorySuccess,
+    props<{flightHistory: HistoryEntry[]}>()
+);
+
+export const loadFlightHistoryFailure = createAction(
+    AppActionTypes.loadFlightHistoryFailure,
     props<{error: any}>()
 );
 

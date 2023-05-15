@@ -10,8 +10,10 @@ export class InfoCardComponent {
   @Input() flight: Flight | undefined
   @Output() close = new EventEmitter<void>();
   @Output() toggleActiveTracking = new EventEmitter<boolean>();
+  @Output() toggleBarogram = new EventEmitter<boolean>();
   
   isTracking: boolean = false;
+  showBarogram: boolean = false;
 
   closeDialog(): void {
     this.close.emit();
@@ -28,5 +30,10 @@ export class InfoCardComponent {
   toggleTracking(): void {
     this.isTracking = !this.isTracking
     this.toggleActiveTracking.emit(this.isTracking);
+  }
+
+  toggleBarogramVisibility(): void {
+    this.showBarogram = !this.showBarogram
+    this.toggleBarogram.emit(this.showBarogram);
   }
 }

@@ -43,6 +43,21 @@ export class AppEffects {
     )
   );
 
+  loadFlightHistory$ = createEffect(() => this.actions$.pipe(
+    ofType(AppActions.loadFlightHistory),
+    exhaustMap((action) => this.apiService.getFlightHistory(action.flarmId)
+        .pipe(
+            map(flightHistory => {
+                return AppActions.loadFlightHistorySuccess({flightHistory})
+            }),
+            catchError(error => {
+                console.log(error);
+                return of(AppActions.loadFlightHistoryFailure({error}))
+            })
+      ))
+    )
+  );
+
   saveSettings$ = createEffect(() => this.actions$.pipe(
     ofType(AppActions.saveSettings),
     tap(action => {

@@ -1,12 +1,9 @@
-<div style="display: block;">
-    <canvas baseChart
-            [datasets]="lineChartData"
-            [legend]="false"
-            [options]="lineChartOptions"
-            [type]="lineChartType"
-            [labels]="lineChartLabels">
-    </canvas>
-</div>
-
-
-            <!-- [labels]="lineChartLabels" -->
+<canvas 
+    baseChart
+    type="line"
+    [legend]="false"
+    [datasets]="lineChartData"
+    [options]="lineChartOptions"
+    [labels]="lineChartLabels"
+    height="320">
+</canvas>

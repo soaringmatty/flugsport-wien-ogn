@@ -1,14 +1,9 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { BarogramComponent } from 'src/ogn/components/barogram/barogram.component';
-import { FlightListComponent } from 'src/ogn/components/flight-list/flight-list.component';
 import { MapComponent } from 'src/ogn/components/map/map.component';
 
 const routes: Routes = [
-  { 
-    path: 'list', 
-    component: FlightListComponent 
-  },
   { 
     path: 'map', 
     component: MapComponent 

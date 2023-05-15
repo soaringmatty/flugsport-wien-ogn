@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Flight } from 'src/ogn/models/flight.model';
 import { OSM, Vector as VectorSource } from 'ol/source';
 import { fromLonLat, toLonLat } from 'ol/proj';
@@ -9,7 +9,7 @@ import { Map, View, Feature } from 'ol';
 import { Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
-import { loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
+import { loadFlightHistory, loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
 import {
   createLabelledGliderMarker,
   flightPathStyle,
@@ -19,6 +19,8 @@ import {
 import { LineString } from 'ol/geom';
 import { Coordinate } from 'ol/coordinate';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { BarogramComponent } from '../barogram/barogram.component';
+import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 
 @Component({
   selector: 'app-map',
@@ -26,6 +28,8 @@ import { MapSettings } from 'src/ogn/models/map-settings.model';
   styleUrls: ['./map.component.scss'],
 })
 export class MapComponent implements OnInit, OnDestroy {
+  @ViewChild(BarogramComponent, { static: false }) barogram!: BarogramComponent;
+
   map!: Map;
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
@@ -34,6 +38,7 @@ export class MapComponent implements OnInit, OnDestroy {
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
   settings!: MapSettings
+  showBarogram: boolean = false;
   // Tracking related properties
   isTracking: boolean = false;
   trackingSubscription!: Subscription;
@@ -65,6 +70,14 @@ export class MapComponent implements OnInit, OnDestroy {
         if (this.selectedFlight && updatedSelectedFlight) {
           this.store.dispatch(loadFlightPath({flarmId: this.selectedFlight.flarmId}))
           this.selectedFlight = updatedSelectedFlight;
+          if (this.showBarogram) {
+            const newHistoryEntry: HistoryEntry = {
+              unixTimestamp: updatedSelectedFlight.timestamp,
+              altitude: updatedSelectedFlight.heightMSL,
+              groundHeight: updatedSelectedFlight.heightMSL - updatedSelectedFlight.heightAGL
+            }
+            this.barogram.addValue(newHistoryEntry)
+          }
         }
       });
     // Draw flight path on map when loaded
@@ -113,15 +126,23 @@ export class MapComponent implements OnInit, OnDestroy {
     this.isTracking = newIsTracking;
   }
 
+  toggleBarogram(newShowBarogram: boolean): void {
+    this.showBarogram = newShowBarogram;
+  }
+
   selectGlider(flarmId: string): void {
     const flight = this.flights.find((x) => x.flarmId === flarmId);
     if (flight) {
       this.selectedFlight = flight;
+      this.store.dispatch(loadFlightPath({ flarmId }));
+      this.store.dispatch(loadFlightHistory({ flarmId }));
     }
   }
 
   unselectGlider(): void {
     this.selectedFlight = undefined;
+    this.stopActiveTracking();
+    this.showBarogram = false;
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
   }
@@ -354,7 +375,6 @@ export class MapComponent implements OnInit, OnDestroy {
       const flarmId = feature.get('flarmId');
       if (flarmId) {
         this.selectGlider(flarmId);
-        this.store.dispatch(loadFlightPath({ flarmId }));
       }
     });
   }

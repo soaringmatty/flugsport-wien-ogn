@@ -1,2 +1,13 @@
 <div id="map" class="map"></div>
-<app-info-card [flight]="selectedFlight" (close)="unselectGlider()" (toggleActiveTracking)="toggleActiveTracking($event)"></app-info-card>
+<app-info-card 
+    [flight]="selectedFlight" 
+    (close)="unselectGlider()"
+    (toggleActiveTracking)="toggleActiveTracking($event)"
+    (toggleBarogram)="toggleBarogram($event)">
+</app-info-card>
+<mat-card *ngIf="showBarogram" class="barogram-card">
+    <div class="chart-container">
+        <app-barogram></app-barogram>
+    </div>
+</mat-card>
+
