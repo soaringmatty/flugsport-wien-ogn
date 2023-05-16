@@ -15,7 +15,8 @@ export enum AppActionTypes {
     loadFlightHistoryFailure = '[App] Load Flight History Failure',
     saveSettings = '[App] Save Settings',
     loadSettings = '[App] Load Settings',
-    loadSettingsSuccess = '[App] Load Settings Success'
+    loadSettingsSuccess = '[App] Load Settings Success',
+    selectFlight = '[App] Select Flight',
   }
 
 export const loadFlights = createAction(
@@ -74,4 +75,9 @@ export const loadSettings = createAction(
 export const loadSettingsSuccess = createAction(
     AppActionTypes.loadSettingsSuccess,
     props<{settings: MapSettings}>()
+);
+
+export const selectFlight = createAction(
+    AppActionTypes.selectFlight,
+    props<{flight: Flight | null}>()
 );

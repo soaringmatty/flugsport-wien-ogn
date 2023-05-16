@@ -9,7 +9,7 @@ import { Map, View, Feature } from 'ol';
 import { Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
-import { loadFlightHistory, loadFlightPath, loadFlights } from 'src/app/store/app/app.actions';
+import { loadFlightHistory, loadFlightPath, loadFlights, selectFlight } from 'src/app/store/app/app.actions';
 import {
   createLabelledGliderMarker,
   flightPathStyle,
@@ -63,22 +63,6 @@ export class MapComponent implements OnInit, OnDestroy {
       .subscribe((flights) => {
         this.flights = flights;
         this.updateGliderPositionsOnMap(flights);
-        // If a glider is selected, update flight info and flight path
-        const updatedSelectedFlight = this.flights.find(
-          (x) => x.flarmId === this.selectedFlight?.flarmId
-        );
-        if (this.selectedFlight && updatedSelectedFlight) {
-          this.store.dispatch(loadFlightPath({flarmId: this.selectedFlight.flarmId}))
-          this.selectedFlight = updatedSelectedFlight;
-          if (this.showBarogram) {
-            const newHistoryEntry: HistoryEntry = {
-              unixTimestamp: updatedSelectedFlight.timestamp,
-              altitude: updatedSelectedFlight.heightMSL,
-              groundHeight: updatedSelectedFlight.heightMSL - updatedSelectedFlight.heightAGL
-            }
-            this.barogram.addValue(newHistoryEntry)
-          }
-        }
       });
     // Draw flight path on map when loaded
     this.store
@@ -101,6 +85,27 @@ export class MapComponent implements OnInit, OnDestroy {
         return;
       }
       this.settings = settings
+    });
+
+    // Subscribe to selected flight in store and refresh data when flight data is updated
+    this.store
+    .select((x) => x.app.selectedFlight)
+    .pipe(takeUntil(this.onDestroy$))
+    .subscribe(selectedFlight => {
+      this.selectedFlight = selectedFlight ? selectedFlight : undefined
+      if (!this.selectedFlight) {
+        return;
+      }
+      // If a glider is selected, update flight info and flight path
+      this.store.dispatch(loadFlightPath({flarmId: this.selectedFlight.flarmId})) // TODO: Do not reload entire flight path
+      if (this.showBarogram) {
+        const newHistoryEntry: HistoryEntry = {
+          unixTimestamp: this.selectedFlight.timestamp,
+          altitude: this.selectedFlight.heightMSL,
+          groundHeight: this.selectedFlight.heightMSL - this.selectedFlight.heightAGL
+        }
+        this.barogram.addValue(newHistoryEntry)
+      }
     });
 
     // Load and draw glider positions on map
@@ -133,14 +138,14 @@ export class MapComponent implements OnInit, OnDestroy {
   selectGlider(flarmId: string): void {
     const flight = this.flights.find((x) => x.flarmId === flarmId);
     if (flight) {
-      this.selectedFlight = flight;
+      this.store.dispatch(selectFlight({flight}))
       this.store.dispatch(loadFlightPath({ flarmId }));
       this.store.dispatch(loadFlightHistory({ flarmId }));
     }
   }
 
   unselectGlider(): void {
-    this.selectedFlight = undefined;
+    this.store.dispatch(selectFlight({flight: null}))
     this.stopActiveTracking();
     this.showBarogram = false;
     this.flightPathStrokeVectorLayer.getSource()?.clear();
