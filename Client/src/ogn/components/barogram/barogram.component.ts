@@ -1,20 +1,21 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Chart, ChartDataset, ChartOptions, ChartType } from 'chart.js';
+import { Chart, ChartDataset, ChartOptions, ChartType, Color, Colors, Tooltip, TooltipPositionerFunction } from 'chart.js';
 import { flightPathDarkRed, groundHeightBackgroundBrown, groundHeightBrown } from 'src/ogn/services/marker-style.utils';
 import 'chartjs-adapter-date-fns';
+import 'chartjs-plugin-crosshair';
 import {de} from 'date-fns/locale';
 import { Subject, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { BaseChartDirective } from 'ng2-charts';
+import { CrosshairOptions } from 'chartjs-plugin-crosshair';
 
-interface FlightData {
-  timestamp: number;
-  altitude: number;
-  groundHeight: number;
-  x: number;
-}
+declare module 'chart.js' {
+  interface TooltipPositionerMap {
+    center: TooltipPositionerFunction<ChartType>;
+  }
+};
 
 @Component({
   selector: 'app-barogram',
@@ -36,10 +37,38 @@ export class BarogramComponent implements OnInit, OnDestroy {
         display: true,
         text: 'Höhendiagramm'
       },
-      
+      tooltip: {
+        displayColors: false, // Hide the color boxes next to the labels
+        position: 'average',
+        callbacks: {
+          label: (context) => {
+            const value = context.raw as number;
+            return `${context.dataset.label}: ${Math.round(value)} m`;
+          },
+          afterBody: (context) => {
+            const altitude = context[0].raw as number;
+            const groundHeight = context[1].raw as number;
+            const agl = altitude - groundHeight;
+
+            return `AGL: ${Math.round(agl)} m`;
+          },
+        }
+      },
+      // crosshair: {
+      //   line: {
+      //     color: '#000000',  // change this as needed
+      //     width: 1,
+      //     dashPattern: [5, 5]  // make the line dashed (optional)
+      //   },
+      //   sync: {
+      //     enabled: false  // do not trace the line at the same position for all charts
+      //   }
+      // },
     },
     interaction: {
       intersect: false,
+      mode: 'index',
+      axis: 'x'
     },
     scales: {
       x: {
@@ -75,10 +104,19 @@ export class BarogramComponent implements OnInit, OnDestroy {
       }
     },
   };
-  
+
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>) { 
+  constructor(private store: Store<State>) {
+    // Create custom tooltip position "center" -> currently not used
+    Tooltip.positioners.center = function(elements, eventPosition) {
+      return {
+        x: eventPosition.x,
+        y: this.chart.chartArea.height / 2,
+        xAlign: 'center',
+        yAlign: 'bottom',
+      };
+    };
   }
 
   ngOnInit() {
@@ -113,18 +151,18 @@ export class BarogramComponent implements OnInit, OnDestroy {
     }
     this.lineChartLabels = this.flightHistory.map(x => x.unixTimestamp)
     this.lineChartData = [
-      { 
-        data: this.flightHistory.map(x => x.altitude), 
-        label: 'Flughöhe', 
-        fill: false, 
+      {
+        data: this.flightHistory.map(x => x.altitude),
+        label: 'Flughöhe',
+        fill: false,
         borderColor: flightPathDarkRed,
         tension: 0.4,
         pointStyle: false
       },
-      { 
-        data: this.flightHistory.map(x => x.groundHeight), 
-        label: 'Boden', 
-        fill: true, 
+      {
+        data: this.flightHistory.map(x => x.groundHeight),
+        label: 'Boden',
+        fill: true,
         borderColor: groundHeightBrown,
         backgroundColor: groundHeightBackgroundBrown,
         tension: 0.4,
