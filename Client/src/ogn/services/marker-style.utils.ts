@@ -4,8 +4,8 @@ import { GliderType } from "../models/glider-type";
 export const flightPathDarkRed = '#8B0000';
 export const fligthPathDarkBlue = '#244485';
 export const flightPathStrokeWhite = '#FFFFFFA0';
-export const groundHeightBrown = '#A78D7C';
-export const groundHeightBackgroundBrown = '#A78D7C66';
+export const groundHeightBrown = '#947D6E';
+export const groundHeightBackgroundBrown = '#A78D7C';
 
 export const flightPathStrokeStyle = new Style({
   stroke: new Stroke({

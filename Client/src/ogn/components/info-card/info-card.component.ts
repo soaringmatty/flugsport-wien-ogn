@@ -16,6 +16,7 @@ export class InfoCardComponent {
   showBarogram: boolean = false;
 
   closeDialog(): void {
+    this.showBarogram = false;
     this.close.emit();
   }
 

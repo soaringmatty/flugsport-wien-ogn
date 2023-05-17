@@ -155,6 +155,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
         data: this.flightHistory.map(x => x.altitude),
         label: 'Flughöhe',
         fill: false,
+        borderWidth: 2,
         borderColor: flightPathDarkRed,
         tension: 0.4,
         pointStyle: false
@@ -163,7 +164,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
         data: this.flightHistory.map(x => x.groundHeight),
         label: 'Boden',
         fill: true,
-        borderColor: groundHeightBrown,
+        borderWidth: 0,
         backgroundColor: groundHeightBackgroundBrown,
         tension: 0.4,
         pointStyle: false
