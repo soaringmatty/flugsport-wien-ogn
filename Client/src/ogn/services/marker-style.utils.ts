@@ -57,7 +57,7 @@ export function createLabelledGliderMarker(label: string, isSelected: boolean = 
       context.drawImage(image, 0, 0);
   
       // Set the font properties
-      context.font = '28px Roboto';
+      context.font = 'bold 26px Roboto';
       context.fillStyle = 'white';
   
       // Calculate the position for the text

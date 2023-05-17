@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { GliderListComponent } from './glider-list.component';
+import GliderListComponent from './glider-list.component';
 
 describe('GliderListComponent', () => {
   let component: GliderListComponent;

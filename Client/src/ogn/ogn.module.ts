@@ -17,7 +17,8 @@ import { TimeAgoPipe } from './pipes/time-ago.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BarogramComponent } from './components/barogram/barogram.component';
 import { NgChartsModule } from 'ng2-charts';
-import { GliderListComponent } from './components/glider-list/glider-list.component';
+import GliderListComponent from './components/glider-list/glider-list.component';
+import { MatSortModule } from '@angular/material/sort';
 
 @NgModule({
   declarations: [
@@ -26,7 +27,7 @@ import { GliderListComponent } from './components/glider-list/glider-list.compon
     InfoCardComponent,
     TimeAgoPipe,
     BarogramComponent,
-    GliderListComponent
+    GliderListComponent,
   ],
   imports: [
     CommonModule,
@@ -41,7 +42,8 @@ import { GliderListComponent } from './components/glider-list/glider-list.compon
     MatFormFieldModule,
     MatIconModule,
     MatTooltipModule,
-    NgChartsModule
+    NgChartsModule,
+    MatSortModule
   ],
   exports: [
     SettingsDialogComponent
