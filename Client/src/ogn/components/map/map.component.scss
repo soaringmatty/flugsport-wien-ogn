@@ -5,20 +5,11 @@
 
 .barogram-card {
     position: absolute; 
-    bottom: 20px; 
-    left: 20px; 
-    width: calc(100% - 40px); 
-    height: 25%;
+    bottom: 1%; 
+    left: 1%; 
+    height: 25vh; 
+    width: 98%; 
 }
-
-// .chart-container {
-//     display: flex; // use flexbox to center the chart
-//     justify-content: stretch; // center horizontally
-//     align-items: stretch; // center vertically
-//     height: 100%; // take up the full height of the mat-card
-//     width: 100%; // take up the full width of the mat-card
-//     background-color: aquamarine;
-//   }
 
 .airplane-icon {
     background: none;

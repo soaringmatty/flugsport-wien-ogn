@@ -1,12 +1,17 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { BarogramComponent } from 'src/ogn/components/barogram/barogram.component';
+import { GliderListComponent } from 'src/ogn/components/glider-list/glider-list.component';
 import { MapComponent } from 'src/ogn/components/map/map.component';
 
 const routes: Routes = [
   { 
     path: 'map', 
     component: MapComponent 
+  },
+  { 
+    path: 'list', 
+    component: GliderListComponent 
   },
   { 
     path: 'barogram', 

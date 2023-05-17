@@ -9,7 +9,6 @@ import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { BaseChartDirective } from 'ng2-charts';
-import { CrosshairOptions } from 'chartjs-plugin-crosshair';
 
 declare module 'chart.js' {
   interface TooltipPositionerMap {

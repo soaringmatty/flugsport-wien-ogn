@@ -17,6 +17,7 @@ import { TimeAgoPipe } from './pipes/time-ago.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BarogramComponent } from './components/barogram/barogram.component';
 import { NgChartsModule } from 'ng2-charts';
+import { GliderListComponent } from './components/glider-list/glider-list.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import { NgChartsModule } from 'ng2-charts';
     SettingsDialogComponent,
     InfoCardComponent,
     TimeAgoPipe,
-    BarogramComponent
+    BarogramComponent,
+    GliderListComponent
   ],
   imports: [
     CommonModule,

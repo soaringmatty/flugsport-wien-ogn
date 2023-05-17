@@ -1,0 +1,13 @@
+// :host, .chart-container, canvas {
+//     height: 100%;
+// }
+
+.chart-container {
+    position: relative;
+    margin: auto;
+    margin-top: 1vh;
+    height: 23vh;//calc(100% - 64px);
+    //width: 95vw;
+    //height: 100%;
+    width: 99%;
+}
