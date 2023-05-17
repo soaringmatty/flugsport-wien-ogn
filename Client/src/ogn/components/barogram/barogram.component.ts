@@ -139,7 +139,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
       console.warn('Unable to insert value to barogram. Chart is not initialized')
       return;
     }
-    this.lineChartLabels.push(historyEntry.unixTimestamp);
+    this.lineChartLabels.push(historyEntry.timestamp);
     this.lineChartData[0].data.push(historyEntry.altitude);
     this.lineChartData[1].data.push(historyEntry.groundHeight);
     this.chart?.update();
@@ -149,7 +149,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
     if (!this.flightHistory) {
       return;
     }
-    this.lineChartLabels = this.flightHistory.map(x => x.unixTimestamp)
+    this.lineChartLabels = this.flightHistory.map(x => x.timestamp)
     this.lineChartData = [
       {
         data: this.flightHistory.map(x => x.altitude),

@@ -52,6 +52,22 @@ export const appReducer = createReducer(
       updatedSelectedFlight = filteredFlights.find(x => x.flarmId === state.selectedFlight?.flarmId);
       const hasChanges = !isEqual(updatedSelectedFlight?.timestamp, state.selectedFlight?.timestamp);
       if (updatedSelectedFlight && hasChanges) {
+        // If flight history is already loaded, add new history entry
+        if (state.flightHistory?.length > 0) {
+          const newHistoryEntry: HistoryEntry = {
+            timestamp: updatedSelectedFlight.timestamp,
+            altitude: updatedSelectedFlight.heightMSL,
+            latitude: updatedSelectedFlight.latitude,
+            longitude: updatedSelectedFlight.longitude,
+            groundHeight: updatedSelectedFlight.heightMSL - updatedSelectedFlight.heightAGL
+          }
+          return {
+            ...state,
+            flights: filteredFlights,
+            selectedFlight: updatedSelectedFlight,
+            flightHistory: [...state.flightHistory, newHistoryEntry]
+          }
+        }
         return {
           ...state,
           flights: filteredFlights,

@@ -34,7 +34,6 @@ export class MapComponent implements OnInit, OnDestroy {
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
-  showGliderPath = false;
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
   settings!: MapSettings
@@ -56,7 +55,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initializeMap();
-    // Redraw markers on map on every update
+    // Update markers on map every time the flights are loaded
     this.store
       .select((x) => x.app.flights)
       .pipe(takeUntil(this.onDestroy$))
@@ -64,49 +63,32 @@ export class MapComponent implements OnInit, OnDestroy {
         this.flights = flights;
         this.updateGliderPositionsOnMap(flights);
       });
-    // Draw flight path on map when loaded
+    // Draw flight path on map every time the flight history data in store is updated
     this.store
-      .select((x) => x.app.flightPath)
+      .select((x) => x.app.flightHistory)
       .pipe(takeUntil(this.onDestroy$))
-      .subscribe((encodedFlightPath) => {
+      .subscribe((history) => {
         if (this.selectedFlight) {
-          this.drawEncodedFlightPath(encodedFlightPath);
+          this.drawFlightPathFromHistory(history);
         }
       });
-
-    // Subscribe to settings in store and refresh data when settings change
+    // Refresh data when settings are updated
     this.store
-    .select((x) => x.app.settings)
-    .pipe(takeUntil(this.onDestroy$))
-    .subscribe(settings => {
-      if (this.settings) {
-        this.settings = settings
-        this.refreshData();
-        return;
-      }
-      this.settings = settings
-    });
-
-    // Subscribe to selected flight in store and refresh data when flight data is updated
-    this.store
-    .select((x) => x.app.selectedFlight)
-    .pipe(takeUntil(this.onDestroy$))
-    .subscribe(selectedFlight => {
-      this.selectedFlight = selectedFlight ? selectedFlight : undefined
-      if (!this.selectedFlight) {
-        return;
-      }
-      // If a glider is selected, update flight info and flight path
-      this.store.dispatch(loadFlightPath({flarmId: this.selectedFlight.flarmId})) // TODO: Do not reload entire flight path
-      if (this.showBarogram) {
-        const newHistoryEntry: HistoryEntry = {
-          unixTimestamp: this.selectedFlight.timestamp,
-          altitude: this.selectedFlight.heightMSL,
-          groundHeight: this.selectedFlight.heightMSL - this.selectedFlight.heightAGL
+      .select((x) => x.app.settings)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(settings => {
+        if (this.settings) {
+          this.settings = settings
+          this.refreshData();
+          return;
         }
-        this.barogram.addValue(newHistoryEntry)
-      }
-    });
+        this.settings = settings
+      });
+    // Subscribe to selected flight in store
+    this.store
+      .select((x) => x.app.selectedFlight)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(selectedFlight => this.selectedFlight = selectedFlight ? selectedFlight : undefined);
 
     // Load and draw glider positions on map
     if (this.updateGliderPositions) {
@@ -139,7 +121,6 @@ export class MapComponent implements OnInit, OnDestroy {
     const flight = this.flights.find((x) => x.flarmId === flarmId);
     if (flight) {
       this.store.dispatch(selectFlight({flight}))
-      this.store.dispatch(loadFlightPath({ flarmId }));
       this.store.dispatch(loadFlightHistory({ flarmId }));
     }
   }
@@ -156,7 +137,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private refreshData(): void {
     this.store.dispatch(loadFlights())
     if (this.selectedFlight) {
-      this.store.dispatch(loadFlightPath({flarmId: this.selectedFlight.flarmId}))
+      this.store.dispatch(loadFlightHistory({flarmId: this.selectedFlight.flarmId}))
     }
   }
 
@@ -251,14 +232,11 @@ export class MapComponent implements OnInit, OnDestroy {
       });
   }
 
-  private drawEncodedFlightPath(encodedPath: string): void {
-    const polylineFormat = new Polyline();
-    const decodedFeature = polylineFormat.readFeature(encodedPath, {
-      dataProjection: 'EPSG:4326',
-      featureProjection: 'EPSG:900913',
+  private drawFlightPathFromHistory(historyEntries: HistoryEntry[]): void {
+    const coordinates = historyEntries.map(entry => {
+        return fromLonLat([entry.longitude, entry.latitude]);
     });
-    let geometry = decodedFeature.getGeometry() as LineString;
-    const coordinates = geometry.getCoordinates();
+    let geometry = new LineString(coordinates);
     if (this.settings.useFlightPathSmoothing) {
       const smoothedCoords: Coordinate[] = this.chaikinsAlgorithm(coordinates);
       if (!smoothedCoords?.length) {
@@ -276,26 +254,24 @@ export class MapComponent implements OnInit, OnDestroy {
     this.flightPathStrokeVectorLayer.getSource()?.addFeature(outerLineFeature);
     this.flightPathVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.addFeature(innerLineFeature);
-  }
+}
 
   private setupTimerForGliderPositionUpdates() {
     interval(this.updatePositionTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
-        this.refreshData();
+        this.store.dispatch(loadFlights())
       });
   }
 
   private chaikinsAlgorithm(
     coords: Coordinate[],
     iterations: number = 3,
-    factor: number = 0.2
+    factor: number = 0.25
   ): Coordinate[] {
     let result = coords;
-
     for (let i = 0; i < iterations; i++) {
       let smoothedCoords: Coordinate[] = [];
-
       for (let i = 0; i < result.length - 1; i++) {
         const p0 = result[i];
         const p1 = result[i + 1];
@@ -308,7 +284,6 @@ export class MapComponent implements OnInit, OnDestroy {
           factor * p0[0] + (1 - factor) * p1[0],
           factor * p0[1] + (1 - factor) * p1[1],
         ];
-
         smoothedCoords.push(Q);
         smoothedCoords.push(R);
       }

@@ -25,7 +25,9 @@ export class ApiService {
     return this.http.get<number[][]>(url).pipe(
       map(response => response.map(rawEntry => {
         const historyEntry: HistoryEntry = {
-          unixTimestamp: rawEntry[0],
+          timestamp: rawEntry[0],
+          latitude: rawEntry[2],
+          longitude: rawEntry[3],
           altitude: rawEntry[4],
           groundHeight: rawEntry[5]
         }
