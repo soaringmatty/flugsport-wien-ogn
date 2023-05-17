@@ -44,7 +44,7 @@ export function createLabelledGliderMarker(label: string, isSelected: boolean = 
         image.src = 'assets/marker_white.png'
     }
     else {
-        image.src = 'assets/marker_yellow.png';
+        image.src = 'assets/marker_blue.png';
     }
     
   
@@ -57,8 +57,8 @@ export function createLabelledGliderMarker(label: string, isSelected: boolean = 
       context.drawImage(image, 0, 0);
   
       // Set the font properties
-      context.font = 'bold 28px Roboto';
-      context.fillStyle = 'black';
+      context.font = '28px Roboto';
+      context.fillStyle = 'white';
   
       // Calculate the position for the text
       const textWidth = context.measureText(label).width;
