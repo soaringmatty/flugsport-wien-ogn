@@ -1,5 +1,5 @@
 import { createReducer, on } from '@ngrx/store';
-import { loadFlightHistorySuccess, loadFlightPathSuccess, loadFlightsSuccess, loadSettingsSuccess, saveSettings, selectFlight } from './app.actions';
+import { loadFlightHistorySuccess, loadFlightPathSuccess, loadFlightsSuccess, loadGliderListSuccess, loadSettingsSuccess, saveSettings, selectFlight } from './app.actions';
 import { Flight } from 'src/ogn/models/flight.model';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
 import { GliderType } from 'src/ogn/models/glider-type';
@@ -7,6 +7,8 @@ import { clubGliders, privateGliders } from 'src/ogn/constants/known-gliders';
 import { defaultSettings } from 'src/ogn/services/settings.service';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { isEqual } from 'lodash';
+import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
+import { gl } from 'date-fns/locale';
 
 export interface AppState {
   flights: Flight[];
@@ -14,6 +16,7 @@ export interface AppState {
   flightPath: string;
   flightHistory: HistoryEntry[];
   settings: MapSettings
+  gliderList: GliderListItem[];
 }
 
 export const initialState: AppState = {
@@ -21,7 +24,8 @@ export const initialState: AppState = {
   selectedFlight: null,
   flightPath: '',
   flightHistory: [],
-  settings: defaultSettings
+  settings: defaultSettings,
+  gliderList: [],
 };
 
 export const appReducer = createReducer(
@@ -108,6 +112,12 @@ export const appReducer = createReducer(
     return {
       ...state,
       selectedFlight: flight
+    }
+  }),
+  on(loadGliderListSuccess, (state, {gliderList}) => {
+    return {
+      ...state,
+      gliderList: gliderList
     }
   }),
 );

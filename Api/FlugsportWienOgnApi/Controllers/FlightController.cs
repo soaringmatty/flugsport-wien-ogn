@@ -65,8 +65,8 @@ namespace FlugsportWienOgnApi.Controllers
                         Registration = glider.Registration,
                         RegistrationShort = glider.RegistrationShort,
                         Model = glider.Model,
-                        FlarmId = glider.FlarmId,
-                        Status = GliderStatus.NoSignal,
+                        TakeOffTimestamp = -1,
+                        Status = glider.Model.Contains("500") ? GliderStatus.Flying : GliderStatus.NoSignal,
                         Pilot = "Not implemented",
                         DistanceFromHome = -1,
                         Altitude = -1,
@@ -81,7 +81,7 @@ namespace FlugsportWienOgnApi.Controllers
                         Registration = glider.Registration,
                         RegistrationShort = glider.RegistrationShort,
                         Model = glider.Model,
-                        FlarmId = glider.FlarmId,
+                        TakeOffTimestamp = -1,
                         Status = gliderStatus,
                         Pilot = "Not implemented",
                         DistanceFromHome = -1,
@@ -89,7 +89,8 @@ namespace FlugsportWienOgnApi.Controllers
                     });
                 }
             }
-            return Ok(gliderList.OrderByDescending(x => x.Status));
+            gliderList.Sort();
+            return Ok(gliderList);
         }
 
         [HttpGet("{flarmId}/path")]

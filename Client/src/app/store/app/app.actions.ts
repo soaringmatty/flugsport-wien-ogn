@@ -1,5 +1,6 @@
 import { createAction, props } from '@ngrx/store';
 import { Flight } from 'src/ogn/models/flight.model';
+import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
 
@@ -17,7 +18,10 @@ export enum AppActionTypes {
     loadSettings = '[App] Load Settings',
     loadSettingsSuccess = '[App] Load Settings Success',
     selectFlight = '[App] Select Flight',
-  }
+    loadGliderList = '[App] Load Glider List',
+    loadGliderListSuccess = '[App] Load Glider List Success',
+    loadGliderListFailure = '[App] Load Glider List Failure',
+}
 
 export const loadFlights = createAction(
     AppActionTypes.loadFlights
@@ -80,4 +84,18 @@ export const loadSettingsSuccess = createAction(
 export const selectFlight = createAction(
     AppActionTypes.selectFlight,
     props<{flight: Flight | null}>()
+);
+
+export const loadGliderList = createAction(
+    AppActionTypes.loadGliderList
+);
+
+export const loadGliderListSuccess = createAction(
+    AppActionTypes.loadGliderListSuccess,
+    props<{gliderList: GliderListItem[]}>()
+);
+
+export const loadGliderListFailure = createAction(
+    AppActionTypes.loadGliderListFailure,
+    props<{error: any}>()
 );

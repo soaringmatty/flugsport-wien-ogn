@@ -4,6 +4,7 @@ import { map, Observable } from 'rxjs';
 import { Flight } from '../models/flight.model';
 import { api } from 'src/environments/api';
 import { HistoryEntry } from '../models/history-entry.model';
+import { GliderListItem } from '../models/glider-list-item.model';
 
 @Injectable({
   providedIn: 'root'
@@ -34,5 +35,9 @@ export class ApiService {
         return historyEntry;
       }))
     );
+  }
+
+  getGliderList(): Observable<GliderListItem[]> {
+    return this.http.get<GliderListItem[]>(api.getGliderList);
   }
 }

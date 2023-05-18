@@ -1,49 +1,34 @@
-<mat-table [dataSource]="flights" matSort>
-  <!-- Flarm ID Column -->
-  <ng-container matColumnDef="flarmId">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Flarm ID </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.flarmId}} </mat-cell>
-  </ng-container>
-
-  <!-- Display Name Column -->
+<table mat-table [dataSource]="gliderList" class="mat-elevation-z6">
   <ng-container matColumnDef="displayName">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Display Name </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.displayName}} </mat-cell>
+    <th mat-header-cell *matHeaderCellDef> Kennzeichen </th>
+    <td mat-cell *matCellDef="let element"> {{element.registration}} ({{element.registrationShort}}) </td>
   </ng-container>
 
-  <!-- Registration Column -->
-  <ng-container matColumnDef="registration">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Registration </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.registration}} </mat-cell>
-  </ng-container>
-
-  <!-- Type Column -->
-  <ng-container matColumnDef="type">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Type </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.type}} </mat-cell>
-  </ng-container>
-
-  <!-- Model Column -->
   <ng-container matColumnDef="model">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Model </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.model}} </mat-cell>
+    <th mat-header-cell *matHeaderCellDef> Modell </th>
+    <td mat-cell *matCellDef="let element"> {{element.model}} </td>
   </ng-container>
 
-  <!-- Latitude Column -->
-  <ng-container matColumnDef="latitude">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Latitude </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.latitude}} </mat-cell>
+  <ng-container matColumnDef="status">
+    <th mat-header-cell *matHeaderCellDef> Status </th>
+    <td mat-cell *matCellDef="let element"> {{element.status}} </td>
   </ng-container>
 
-  <!-- Longitude Column -->
-  <ng-container matColumnDef="longitude">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Longitude </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.longitude}} </mat-cell>
+  <ng-container matColumnDef="flightTime">
+    <th mat-header-cell *matHeaderCellDef> Flugzeit </th>
+    <td mat-cell *matCellDef="let element"> {{element.takeOffTimestamp}} </td>
   </ng-container>
 
-  <!-- Height MSL Column -->
-  <ng-container matColumnDef="heightMsl">
-    <mat-header-cell *matHeaderCellDef mat-sort-header> Height MSL </mat-header-cell>
-    <mat-cell *matCellDef="let element"> {{element.heightMsl}} </mat-cell>
+  <ng-container matColumnDef="distanceFromHome">
+    <th mat-header-cell *matHeaderCellDef> Entfernung von LOXN </th>
+    <td mat-cell *matCellDef="let element"> {{element.distanceFromHome}} </td>
   </ng-container>
-</mat-table>
+
+  <ng-container matColumnDef="altitude">
+    <th mat-header-cell *matHeaderCellDef> Flughöhe </th>
+    <td mat-cell *matCellDef="let element"> {{element.altitude}} </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+</table>

@@ -1,15 +1,40 @@
 ﻿namespace FlugsportWienOgnApi.Models.Core;
 
-public class GliderListItem
+public class GliderListItem : IComparable<GliderListItem>
 {
-    public string Owner { get; set; }
     public string Registration { get; set; }
     public string RegistrationShort { get; set; }
     public string Model { get; set; }
-    public string FlarmId { get; set; }
-    public GliderStatus Status { get; set; }
+    public string Owner { get; set; }
     public string Pilot { get; set; }
+    public GliderStatus Status { get; set; }
     public float DistanceFromHome { get; set; }
     public int Altitude { get; set; }
+    public int TakeOffTimestamp { get; set; }
+
+    public int CompareTo(GliderListItem other)
+    {
+        if (other == null)
+        {
+            return 1;
+        }
+
+        // Firstly, compare by Status.
+        int statusComparison = other.Status.CompareTo(this.Status);
+        if (statusComparison != 0)
+        {
+            return statusComparison;
+        }
+
+        // If Status is equal, compare by FlightTime.
+        int flightTimeComparison = this.TakeOffTimestamp.CompareTo(other.TakeOffTimestamp);
+        if (flightTimeComparison != 0)
+        {
+            return flightTimeComparison;
+        }
+
+        // If FlightTime is also equal, compare by Model.
+        return this.Model.CompareTo(other.Model);
+    }
 }
 

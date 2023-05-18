@@ -1,8 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, interval, takeUntil } from 'rxjs';
 import { State } from 'src/app/store';
+import { loadGliderList } from 'src/app/store/app/app.actions';
 import { Flight } from 'src/ogn/models/flight.model';
+import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 
 @Component({
   selector: 'app-glider-list',
@@ -10,7 +12,9 @@ import { Flight } from 'src/ogn/models/flight.model';
   styleUrls: ['./glider-list.component.scss']
 })
 export default class GliderListComponent implements OnInit, OnDestroy {
-  flights: Flight[] = [];
+  gliderList: GliderListItem[] = [];
+  displayedColumns: string[] = ['displayName', 'model', 'status', 'flightTime', 'distanceFromHome', 'altitude'];
+  private readonly updateListTimeout = 5000;
   private readonly onDestroy$ = new Subject<void>();
 
   constructor(private store: Store<State>) {
@@ -18,13 +22,13 @@ export default class GliderListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.store
-      .select((x) => x.app.flights)
+      .select((x) => x.app.gliderList)
       .pipe(takeUntil(this.onDestroy$))
-      .subscribe((flights) => {
-        this.flights = flights;
+      .subscribe((gliderList) => {
+        this.gliderList = gliderList;
       });
-
-      //Select flight path from store
+    this.store.dispatch(loadGliderList());
+    this.setupTimerForGliderPositionUpdates();
   }
 
   ngOnDestroy(): void {
@@ -32,10 +36,11 @@ export default class GliderListComponent implements OnInit, OnDestroy {
     this.onDestroy$.complete();
   }
 
-  // iterate through flights and add boolean property onGround that is true if plane is 10m above ground
-  mapFlightsToOnGround(flights: Flight[]): Flight[] {
-    return flights.map((flight) => {
-      const onGround = flight.altitude < 10;
-      return { ...flight, onGround };
-    });
+  private setupTimerForGliderPositionUpdates() {
+    interval(this.updateListTimeout)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(() => {
+        this.store.dispatch(loadGliderList())
+      });
   }
+}

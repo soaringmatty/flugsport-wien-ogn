@@ -12,7 +12,7 @@ export class AppEffects {
       private apiService: ApiService,
       private settingsService: SettingsService
     ) {}
- 
+
   loadFlights$ = createEffect(() => this.actions$.pipe(
     ofType(AppActions.loadFlights),
     exhaustMap(() => this.apiService.getFlights()
@@ -76,4 +76,19 @@ export class AppEffects {
       return of(AppActions.loadSettingsSuccess({ settings }));
     })
   ));
+
+  loadGliderList$ = createEffect(() => this.actions$.pipe(
+    ofType(AppActions.loadGliderList),
+    exhaustMap(() => this.apiService.getGliderList()
+      .pipe(
+        map(gliderList => {
+            return AppActions.loadGliderListSuccess({gliderList})
+        }),
+        catchError(error => {
+            console.log(error);
+            return of(AppActions.loadGliderListFailure({error}))
+        })
+    ))
+    )
+  );
 }
