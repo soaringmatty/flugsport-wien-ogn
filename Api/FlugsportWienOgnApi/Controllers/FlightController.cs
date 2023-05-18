@@ -6,6 +6,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using FlugsportWienOgnApi.Constants;
 
 namespace FlugsportWienOgnApi.Controllers
 {
@@ -41,6 +42,56 @@ namespace FlugsportWienOgnApi.Controllers
             return BadRequest();
         }
 
+        [HttpGet("gliders")]
+        public async Task<ActionResult<IEnumerable<GliderListItem>>> GetGliderList()
+        {
+            List<GliderListItem> gliderList = new List<GliderListItem>();
+
+            List<Flight> flights = new List<Flight>();
+            string url = "https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a=52&b=22&c=43&d=7";
+            var response = await _httpClient.GetFromJsonAsync<GetOgnFlightsResponse>(url);
+            if (response != null && response.Success)
+            {
+                flights = MapOgnFlightsResponseToFlights(response.Message).ToList();
+            }
+            foreach (var glider in KnownGliders.ClubGliders)
+            {
+                var flight = flights.FirstOrDefault(x => x.FlarmId == glider.FlarmId);
+                if (flight == null)
+                {
+                    gliderList.Add(new GliderListItem
+                    {
+                        Owner = glider.Owner,
+                        Registration = glider.Registration,
+                        RegistrationShort = glider.RegistrationShort,
+                        Model = glider.Model,
+                        FlarmId = glider.FlarmId,
+                        Status = GliderStatus.NoSignal,
+                        Pilot = "Not implemented",
+                        DistanceFromHome = -1,
+                        Altitude = -1,
+                    });
+                }
+                else
+                {
+                    var gliderStatus = (flight.Speed > 10 && flight.HeightAGL > 10) ? GliderStatus.Flying : GliderStatus.OnGround;
+                    gliderList.Add(new GliderListItem
+                    {
+                        Owner = glider.Owner,
+                        Registration = glider.Registration,
+                        RegistrationShort = glider.RegistrationShort,
+                        Model = glider.Model,
+                        FlarmId = glider.FlarmId,
+                        Status = gliderStatus,
+                        Pilot = "Not implemented",
+                        DistanceFromHome = -1,
+                        Altitude = (int)flight.HeightMSL,
+                    });
+                }
+            }
+            return Ok(gliderList.OrderByDescending(x => x.Status));
+        }
+
         [HttpGet("{flarmId}/path")]
         public async Task<ActionResult<string>> GetFlightPath(string flarmId)
         {
@@ -54,81 +105,6 @@ namespace FlugsportWienOgnApi.Controllers
         }
 
         [HttpGet("{flarmId}/history")]
-        public async Task<ActionResult<IEnumerable<FlightHistoryItem>>> GetFlightHistory(string flarmId)
-        {
-            string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetStringAsync(url);
-            if (string.IsNullOrEmpty(response))
-            {
-                return BadRequest();
-            }
-
-            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
-            var success = Convert.ToBoolean(data["success"]);
-
-            if (!success)
-            {
-                return BadRequest("External API request failed.");
-            }
-
-            var message = data["message"] as JArray;
-            if (message == null)
-            {
-                return BadRequest();
-            }
-
-            var flightHistoryList = new List<FlightHistoryItem>();
-            foreach (var historyItem in message)
-            {
-                var itemArray = historyItem as JArray;
-                if (itemArray == null || itemArray.Count < 6)
-                {
-                    continue;
-                }
-
-                var flightData = new FlightHistoryItem
-                {
-                    Timestamp = itemArray[0].Value<long>(),
-                    Unknown = itemArray[1].Value<double>(),
-                    Latitude = itemArray[2].Value<double>(),
-                    Longitude = itemArray[3].Value<double>(),
-                    Altitude = itemArray[4].Value<double>(),
-                    GroundHeight = itemArray[5].Value<double>(),
-                };
-
-                flightHistoryList.Add(flightData);
-            }
-
-            return flightHistoryList;
-        }
-
-        //[HttpGet("{flarmId}/history/raw")]
-        //public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
-        //{
-        //    string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
-        //    var client = _httpClientFactory.CreateClient();
-        //    var response = await client.GetAsync(url);
-
-        //    if (!response.IsSuccessStatusCode)
-        //    {
-        //        return BadRequest("External API request failed.");
-        //    }
-
-        //    var content = await response.Content.ReadAsStringAsync();
-        //    var data = JObject.Parse(content);
-        //    var success = data["success"].Value<bool>();
-
-        //    if (!success)
-        //    {
-        //        return BadRequest("External API response indicates failure.");
-        //    }
-
-        //    var message = data["message"].ToString();
-        //    return Ok(message);
-        //}
-
-        [HttpGet("{flarmId}/history/raw")]
         public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
         {
             string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
