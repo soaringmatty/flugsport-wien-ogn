@@ -4,13 +4,17 @@ import * as AppActions from './app.actions'
 import { catchError, exhaustMap, map, of, switchMap, tap } from "rxjs";
 import { ApiService } from "src/ogn/services/api.service";
 import { SettingsService } from "src/ogn/services/settings.service";
+import { NotificationService } from "src/ogn/services/notification.service";
+import { messages } from "src/ogn/constants/messages";
+import { NotificationType } from "src/ogn/models/notification-type";
 
 @Injectable()
 export class AppEffects {
     constructor(
       private actions$: Actions,
       private apiService: ApiService,
-      private settingsService: SettingsService
+      private settingsService: SettingsService,
+      private notificationService: NotificationService
     ) {}
 
   loadFlights$ = createEffect(() => this.actions$.pipe(
@@ -21,7 +25,10 @@ export class AppEffects {
                 return AppActions.loadFlightsSuccess({flights})
             }),
             catchError(error => {
-                console.log(error);
+                this.notificationService.notify({
+                  message: messages.defaultNetworkError,
+                  type: NotificationType.Error
+                });
                 return of(AppActions.loadFlightsFailure({error}))
             })
       ))
@@ -85,7 +92,10 @@ export class AppEffects {
             return AppActions.loadGliderListSuccess({gliderList})
         }),
         catchError(error => {
-            console.log(error);
+          this.notificationService.notify({
+            message: messages.defaultNetworkError,
+            type: NotificationType.Error
+          });
             return of(AppActions.loadGliderListFailure({error}))
         })
     ))

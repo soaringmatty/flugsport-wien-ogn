@@ -3,7 +3,32 @@
   //box-shadow: 0 3px 5px -1px #0003, 0 6px 10px #00000024, 0 1px 18px #0000001f;
 }
 
-.content {
+::ng-deep .mat-mdc-snack-bar-container {
+  &.snack-bar-info {
+    --mdc-snackbar-container-color: #3f51b5;
+    --mdc-snackbar-supporting-text-color: white;
+  }
+}
+
+::ng-deep .mat-mdc-snack-bar-container {
+  &.snack-bar-success {
+    --mdc-snackbar-container-color: #67ac5b;
+    --mdc-snackbar-supporting-text-color: white;
+  }
+}
+
+::ng-deep .mat-mdc-snack-bar-container {
+  &.snack-bar-warn {
+    --mdc-snackbar-container-color: #f19c38;
+    --mdc-snackbar-supporting-text-color: white;
+  }
+}
+
+::ng-deep .mat-mdc-snack-bar-container {
+  &.snack-bar-error {
+    --mdc-snackbar-container-color: rgb(212, 53, 53);
+    --mdc-snackbar-supporting-text-color: white;
+  }
 }
 
 .example-spacer {

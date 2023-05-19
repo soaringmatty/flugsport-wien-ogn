@@ -15,6 +15,7 @@ import { reducers, metaReducers } from './store';
 import { AppEffects } from './store/app/app.effects';
 import { MatDialogModule } from '@angular/material/dialog';
 import { NgChartsModule } from 'ng2-charts';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -33,7 +34,8 @@ import { NgChartsModule } from 'ng2-charts';
     StoreDevtoolsModule.instrument(),
     EffectsModule.forRoot([AppEffects]),
     MatDialogModule,
-    NgChartsModule
+    NgChartsModule,
+    MatSnackBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]
