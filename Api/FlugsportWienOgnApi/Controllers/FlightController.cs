@@ -6,7 +6,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using FlugsportWienOgnApi.Constants;
+using FlugsportWienOgnApi.Utils;
+using FlugsportWienOgnApi.Models.Flightbook;
+using System.Runtime.CompilerServices;
 
 namespace FlugsportWienOgnApi.Controllers
 {
@@ -49,11 +51,35 @@ namespace FlugsportWienOgnApi.Controllers
 
             List<Flight> flights = new List<Flight>();
             string url = "https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a=52&b=22&c=43&d=7";
-            var response = await _httpClient.GetFromJsonAsync<GetOgnFlightsResponse>(url);
-            if (response != null && response.Success)
+            var getFlightsResponse = await _httpClient.GetFromJsonAsync<GetOgnFlightsResponse>(url);
+            if (getFlightsResponse != null && getFlightsResponse.Success)
             {
-                flights = MapOgnFlightsResponseToFlights(response.Message).ToList();
+                flights = MapOgnFlightsResponseToFlights(getFlightsResponse.Message).ToList();
             }
+
+            var getFlightbookResponse = await _httpClient.GetFromJsonAsync<GetFlightbookResponse>(_flightBookUrl);
+            if (getFlightbookResponse == null)
+            {
+                return BadRequest();
+            }
+            var joinedFlightbook = getFlightbookResponse.flights.Join(
+                getFlightbookResponse.devices.Select((device, index) => new { Device = device, Index = index }),
+                flight => flight.device,
+                device => device.Index,
+                (flight, device) => new GetFlightbookJoinResult
+                {
+                    FlarmId = device.Device.address,
+                    TakeOffTimestamp = flight.start_tsp,
+                    LandingTimestamp = flight.stop_tsp
+                });
+            var knowGliderFlightbook = joinedFlightbook.Where(entry => KnownGliders.ClubGliders.Exists(glider => glider.FlarmId == entry.FlarmId));
+            var latestFlightsFlightbook = knowGliderFlightbook
+                .Where(jd => jd.TakeOffTimestamp.HasValue && jd.LandingTimestamp == null)
+                .GroupBy(jd => jd.FlarmId)
+                .Select(g => g.OrderByDescending(jd => jd.TakeOffTimestamp).FirstOrDefault());
+
+            var homeLatitude = 47.84028;
+            var homeLongitude = 16.22139;
             foreach (var glider in KnownGliders.ClubGliders)
             {
                 var flight = flights.FirstOrDefault(x => x.FlarmId == glider.FlarmId);
@@ -66,31 +92,44 @@ namespace FlugsportWienOgnApi.Controllers
                         RegistrationShort = glider.RegistrationShort,
                         Model = glider.Model,
                         TakeOffTimestamp = -1,
-                        Status = glider.Model.Contains("500") ? GliderStatus.Flying : GliderStatus.NoSignal,
+                        Status = GliderStatus.NoSignal,
                         Pilot = "Not implemented",
                         DistanceFromHome = -1,
                         Altitude = -1,
+                        FlarmId = glider.FlarmId,
+                        Timestamp = -1,
                     });
                 }
                 else
                 {
                     var gliderStatus = (flight.Speed > 10 && flight.HeightAGL > 10) ? GliderStatus.Flying : GliderStatus.OnGround;
+                    var distanceFromHome = (int)EarthDistanceCalculator.CalculateHaversineDistance(homeLatitude, homeLongitude, flight.Latitude, flight.Longitude);
+                    var flightbookEntry = latestFlightsFlightbook.FirstOrDefault(x => x.FlarmId == glider.FlarmId);
                     gliderList.Add(new GliderListItem
                     {
                         Owner = glider.Owner,
                         Registration = glider.Registration,
                         RegistrationShort = glider.RegistrationShort,
                         Model = glider.Model,
-                        TakeOffTimestamp = -1,
+                        TakeOffTimestamp = flightbookEntry == null ? -1 : (long)flightbookEntry.TakeOffTimestamp.Value * (long)1000,
                         Status = gliderStatus,
                         Pilot = "Not implemented",
-                        DistanceFromHome = -1,
+                        DistanceFromHome = distanceFromHome,
                         Altitude = (int)flight.HeightMSL,
-                    });
+                        FlarmId = glider.FlarmId,
+                        Timestamp = flight.Timestamp,
+                    });;
                 }
             }
             gliderList.Sort();
             return Ok(gliderList);
+        }
+
+        [HttpGet("flightbook/loxn")]
+        public async Task<ActionResult<GetFlightbookResponse>> GetLoxnFlightbook()
+        {
+            var response = await _httpClient.GetFromJsonAsync<GetFlightbookResponse>(_flightBookUrl);
+            return Ok(response);
         }
 
         [HttpGet("{flarmId}/path")]
@@ -99,7 +138,8 @@ namespace FlugsportWienOgnApi.Controllers
             string url = $"https://api.glideandseek.com/v2/track/{flarmId}";
             var response = await _httpClient.GetFromJsonAsync<GetOgnFlightPathResponse>(url);
             if (response != null && response.Success)
-            {;
+            {
+                ;
                 return Ok(response.Message);
             }
             return BadRequest();

@@ -19,6 +19,7 @@ import { BarogramComponent } from './components/barogram/barogram.component';
 import { NgChartsModule } from 'ng2-charts';
 import GliderListComponent from './components/glider-list/glider-list.component';
 import { MatSortModule } from '@angular/material/sort';
+import { MatChipsModule } from '@angular/material/chips';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { MatSortModule } from '@angular/material/sort';
     MatIconModule,
     MatTooltipModule,
     NgChartsModule,
-    MatSortModule
+    MatSortModule,
+    MatChipsModule,
   ],
   exports: [
     SettingsDialogComponent

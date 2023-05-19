@@ -1,6 +1,6 @@
 ﻿using FlugsportWienOgnApi.Models.Core;
 
-namespace FlugsportWienOgnApi.Constants;
+namespace FlugsportWienOgnApi.Utils;
 
 public static class KnownGliders
 {
@@ -14,7 +14,8 @@ public static class KnownGliders
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5446", RegistrationShort = "DX", Model = "ASK 21", FlarmId = "DD9537" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5491", RegistrationShort = "91", Model = "DG 300 Elan", FlarmId = "DD9663" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5603", RegistrationShort = "DS", Model = "Ventus 2b", FlarmId = "4404FD" },
-        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5711", RegistrationShort = "DI", Model = "DG 500 Orion", FlarmId = "DD9F86" }
+        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5711", RegistrationShort = "DI", Model = "DG 500 Orion", FlarmId = "DD9F86" },
+        new Glider { Owner = "Test", Registration = "OE-TEST", RegistrationShort = "TMP", Model = "Test", FlarmId = "DD0C0B" }
     };
 
     public static List<Glider> PrivateGliders = new List<Glider>()

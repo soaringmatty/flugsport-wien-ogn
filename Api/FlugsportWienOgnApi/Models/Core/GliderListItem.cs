@@ -8,9 +8,11 @@ public class GliderListItem : IComparable<GliderListItem>
     public string Owner { get; set; }
     public string Pilot { get; set; }
     public GliderStatus Status { get; set; }
-    public float DistanceFromHome { get; set; }
+    public int DistanceFromHome { get; set; }
     public int Altitude { get; set; }
-    public int TakeOffTimestamp { get; set; }
+    public long TakeOffTimestamp { get; set; }
+    public string FlarmId { get; set; }
+    public long Timestamp { get; set; }
 
     public int CompareTo(GliderListItem other)
     {
