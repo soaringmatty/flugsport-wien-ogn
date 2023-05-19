@@ -22,14 +22,14 @@ export const flightPathStyle = new Style({
   })
 });
 
-export function getGliderMarkerStyle(flight: Flight): Style {
+export function getGliderMarkerStyle(flight: Flight, isSelected: boolean = false): Style {
     return new Style({
         image: new Icon({
           anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: createLabelledGliderMarker(flight.displayName, false, GliderType.all, flight.timestamp),
+          img: createLabelledGliderMarker(flight.displayName, isSelected, GliderType.all, flight.timestamp),
           imgSize: [88, 88]
         }),
       });
@@ -46,12 +46,7 @@ export function createLabelledGliderMarker(
 
   // Load the icon image
   const image = new Image();
-  if (isSelected) {
-      image.src = 'assets/marker_white.png'
-  }
-  else {
-      image.src = 'assets/marker_blue.png';
-  }
+  image.src = isSelected ? 'assets/marker_white.png' : 'assets/marker_blue.png';
 
   // Calculate the opacity based on the lastUpdateTimestamp
   const minMinutes = 3;
@@ -79,7 +74,7 @@ export function createLabelledGliderMarker(
 
       // Set the font properties
       context.font = 'bold 26px Roboto';
-      context.fillStyle = 'white';
+      context.fillStyle = isSelected ? 'black' : 'white';
 
       // Calculate the position for the text
       const textWidth = context.measureText(label).width;

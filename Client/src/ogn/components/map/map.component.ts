@@ -122,13 +122,16 @@ export class MapComponent implements OnInit, OnDestroy {
     if (flight) {
       this.store.dispatch(selectFlight({flight}))
       this.store.dispatch(loadFlightHistory({ flarmId }));
+      //this.updateSelectedGliderMarker(flight);
     }
   }
 
   unselectGlider(): void {
+    const selectedFlight = this.selectedFlight;
     this.store.dispatch(selectFlight({flight: null}))
     this.stopActiveTracking();
     this.showBarogram = false;
+    //this.updateSelectedGliderMarker(selectedFlight as Flight);
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
   }
@@ -215,7 +218,8 @@ export class MapComponent implements OnInit, OnDestroy {
           flarmId: flight.flarmId,
         });
         gliderMarkersFeature.setId(flight.flarmId);
-        const iconStyle = getGliderMarkerStyle(flight);
+        const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
+        const iconStyle = getGliderMarkerStyle(flight, isSelected);
         gliderMarkersFeature.setStyle(iconStyle);
         this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
       }
@@ -230,6 +234,21 @@ export class MapComponent implements OnInit, OnDestroy {
           this.glidersVectorLayer.getSource()?.removeFeature(feature);
         }
       });
+  }
+
+  // Change marker color when glider is selected
+  private updateSelectedGliderMarker(flight: Flight) {
+    if (!flight.longitude || !flight.latitude) {
+      return;
+    }
+    const existingFeature = this.glidersVectorLayer
+      .getSource()
+      ?.getFeatureById(flight.flarmId);
+    const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
+    if (existingFeature) {
+      const iconStyle = getGliderMarkerStyle(flight, isSelected);
+      existingFeature.setStyle(iconStyle);
+    }
   }
 
   private drawFlightPathFromHistory(historyEntries: HistoryEntry[]): void {
