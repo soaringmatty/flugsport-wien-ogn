@@ -215,7 +215,7 @@ export class MapComponent implements OnInit, OnDestroy {
           flarmId: flight.flarmId,
         });
         gliderMarkersFeature.setId(flight.flarmId);
-        const iconStyle = getGliderMarkerStyle(flight.displayName);
+        const iconStyle = getGliderMarkerStyle(flight);
         gliderMarkersFeature.setStyle(iconStyle);
         this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
       }
