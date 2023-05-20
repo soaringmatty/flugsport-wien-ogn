@@ -41,7 +41,7 @@ export const clubGliders: Glider[] = [
         Registration: 'OE-5446',
         RegistrationShort: 'DX',
         Model: 'ASK 21',
-        FlarmId: '005446'
+        FlarmId: 'DD9537'
     },
     {
         Owner: 'ASKÖ Flugsport Wien',
@@ -80,6 +80,13 @@ export const privateGliders: Glider[] = [
         RegistrationShort: 'MI',
         Model: 'DG-600',
         FlarmId: 'D0114B'
+    },
+    {
+        Owner: 'Julia Götz',
+        Registration: 'D-2254',
+        RegistrationShort: 'HR',
+        Model: 'LS-1 f',
+        FlarmId: 'DDFE83'
     },
     {
         Owner: 'Ernst Schicker',
