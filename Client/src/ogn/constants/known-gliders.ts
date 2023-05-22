@@ -85,7 +85,7 @@ export const privateGliders: Glider[] = [
         Owner: 'Julia Götz',
         Registration: 'D-2254',
         RegistrationShort: 'HR',
-        Model: 'LS-1 f',
+        Model: 'LS1-f',
         FlarmId: 'DDFE83'
     },
     {

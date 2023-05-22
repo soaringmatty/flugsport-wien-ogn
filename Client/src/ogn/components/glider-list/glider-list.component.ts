@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Subject, interval, takeUntil } from 'rxjs';
 import { State } from 'src/app/store';
@@ -14,11 +15,11 @@ import { GliderStatus } from 'src/ogn/models/glider-status';
 })
 export default class GliderListComponent implements OnInit, OnDestroy {
   gliderList: GliderListItem[] = [];
-  displayedColumns: string[] = ['displayName', 'model', 'status', 'flightDuration', 'distanceFromHome', 'altitude'];
+  displayedColumns: string[] = ['displayName', 'model', 'status', 'flightDuration', 'distanceFromHome', 'altitude', 'action'];
   private readonly updateListTimeout = 5000;
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>) {
+  constructor(private store: Store<State>, private router: Router) {
   }
 
   ngOnInit(): void {
@@ -35,6 +36,11 @@ export default class GliderListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.onDestroy$.next();
     this.onDestroy$.complete();
+  }
+
+  navigateToMap(lat: number, lon: number): void {
+    //this.router.navigate(['/map', lat, lon]);
+    this.router.navigate(['/map']);
   }
 
   getDistanceFromHome(distance: number): string { 

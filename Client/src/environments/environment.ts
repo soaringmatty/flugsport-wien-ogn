@@ -1,3 +1,3 @@
 export const environment = {
-    api: 'http://localhost:5012/'
+    api: 'https://flugsport-wien-ogn-client.onrender.com/'
 };
