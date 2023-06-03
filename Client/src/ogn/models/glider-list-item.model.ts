@@ -10,4 +10,6 @@ export interface GliderListItem {
   distanceFromHome: number;
   altitude: number;
   takeOffTimestamp: number;
+  longitude: number;
+  latitude: number;
 }

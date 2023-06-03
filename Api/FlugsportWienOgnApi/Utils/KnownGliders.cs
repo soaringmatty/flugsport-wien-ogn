@@ -15,6 +15,7 @@ public static class KnownGliders
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5491", RegistrationShort = "91", Model = "DG 300 Elan", FlarmId = "DD9663" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5603", RegistrationShort = "DS", Model = "Ventus 2b", FlarmId = "4404FD" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5711", RegistrationShort = "DI", Model = "DG 500 Orion", FlarmId = "DD9F86" },
+        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-TEST", RegistrationShort = "TST", Model = "Test", FlarmId = "DDDDA5" },
     };
 
     public static List<Glider> PrivateGliders = new List<Glider>()

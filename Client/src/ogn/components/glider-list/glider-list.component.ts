@@ -40,10 +40,11 @@ export default class GliderListComponent implements OnInit, OnDestroy {
 
   navigateToMap(lat: number, lon: number): void {
     //this.router.navigate(['/map', lat, lon]);
-    this.router.navigate(['/map']);
+    this.router.navigate(['/map', { lat, lon }]);
+    //this.router.navigate(['/map']);
   }
 
-  getDistanceFromHome(distance: number): string { 
+  getDistanceFromHome(distance: number): string {
     if (distance < 0) {
       return '';
     }
@@ -53,14 +54,14 @@ export default class GliderListComponent implements OnInit, OnDestroy {
     return `${Math.round(distance / 1000)} km`;
   }
 
-  getAltitude(altitude: number, status: GliderStatus): string { 
+  getAltitude(altitude: number, status: GliderStatus): string {
     if (altitude < 0 || status != GliderStatus.Flying) {
       return '';
     }
     return `${altitude} m`;
   }
 
-  getFlightDuration(takeOffTimestamp: number, status: GliderStatus): string { 
+  getFlightDuration(takeOffTimestamp: number, status: GliderStatus): string {
     if (status != GliderStatus.Flying) {
       return '';
     }

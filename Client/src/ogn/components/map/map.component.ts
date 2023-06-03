@@ -21,6 +21,7 @@ import { Coordinate } from 'ol/coordinate';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
 import { BarogramComponent } from '../barogram/barogram.component';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 
 @Component({
   selector: 'app-map',
@@ -51,7 +52,10 @@ export class MapComponent implements OnInit, OnDestroy {
   private readonly defaultCoordinates = [16, 47.8]; // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>) {}
+  constructor(
+    private store: Store<State>,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
     this.initializeMap();
@@ -89,6 +93,19 @@ export class MapComponent implements OnInit, OnDestroy {
       .select((x) => x.app.selectedFlight)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(selectedFlight => this.selectedFlight = selectedFlight ? selectedFlight : undefined);
+
+    // Set map center and zoom level based on route params
+    this.route.paramMap.pipe(takeUntil(this.onDestroy$)).subscribe((params: ParamMap) => {
+      if (params) {
+        const lat = params.get('lat');
+        const lon = params.get('lon');
+        if (lat && lon) {
+          const coordinate = fromLonLat([parseFloat(lon), parseFloat(lat)]);
+          this.map.getView().setCenter(coordinate);
+          this.map.getView().setZoom(13);
+        }
+      }
+    });
 
     // Load and draw glider positions on map
     if (this.updateGliderPositions) {
@@ -294,7 +311,7 @@ export class MapComponent implements OnInit, OnDestroy {
       for (let i = 0; i < result.length - 1; i++) {
         const p0 = result[i];
         const p1 = result[i + 1];
-  
+
         const Q: Coordinate = [
           (1 - factor) * p0[0] + factor * p1[0],
           (1 - factor) * p0[1] + factor * p1[1],

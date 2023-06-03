@@ -123,6 +123,8 @@ namespace FlugsportWienOgnApi.Controllers
                         Altitude = (int)flight.HeightMSL,
                         FlarmId = glider.FlarmId,
                         Timestamp = flight.Timestamp,
+                        Longitude = flight.Longitude,
+                        Latitude = flight.Latitude,
                     });;
                 }
             }

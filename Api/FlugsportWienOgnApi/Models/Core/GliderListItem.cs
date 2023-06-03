@@ -13,6 +13,8 @@ public class GliderListItem : IComparable<GliderListItem>
     public long TakeOffTimestamp { get; set; }
     public string FlarmId { get; set; }
     public long Timestamp { get; set; }
+    public double? Longitude { get; set; }
+    public double? Latitude { get; set; }
 
     public int CompareTo(GliderListItem other)
     {
