@@ -1,64 +1,112 @@
-<table mat-table [dataSource]="gliderList" class="mat-elevation-z6">
-  <ng-container matColumnDef="displayName">
-    <th mat-header-cell *matHeaderCellDef>Kennzeichen</th>
-    <td mat-cell *matCellDef="let element">
-      {{ element.registration }} ({{ element.registrationShort }})
-    </td>
-  </ng-container>
+<!-- The original table view, displayed in landscape mode -->
+<div *ngIf="!isPortrait">
+  <table mat-table [dataSource]="gliderList" class="mat-elevation-z6">
+    <ng-container matColumnDef="displayName">
+      <th mat-header-cell *matHeaderCellDef>Kennzeichen</th>
+      <td mat-cell *matCellDef="let element">
+        {{ element.registration }} ({{ element.registrationShort }})
+      </td>
+    </ng-container>
 
-  <ng-container matColumnDef="model">
-    <th mat-header-cell *matHeaderCellDef>Modell</th>
-    <td mat-cell *matCellDef="let element">{{ element.model }}</td>
-  </ng-container>
+    <ng-container matColumnDef="model">
+      <th mat-header-cell *matHeaderCellDef>Modell</th>
+      <td mat-cell *matCellDef="let element">{{ element.model }}</td>
+    </ng-container>
 
-  <ng-container matColumnDef="status">
-    <th mat-header-cell *matHeaderCellDef>Status</th>
-    <td mat-cell *matCellDef="let element">
-      <div [ngSwitch]="element.status">
-        <div *ngSwitchCase="0" class="status-label status-blue">
-          Kein Signal
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let element">
+        <div [ngSwitch]="element.status">
+          <div *ngSwitchCase="0" class="status-label status-blue">Kein Signal</div>
+          <div *ngSwitchCase="1" class="status-label status-yellow">Am Boden</div>
+          <div *ngSwitchCase="2" class="status-label status-green">Im Flug</div>
         </div>
-        <div *ngSwitchCase="1" class="status-label status-yellow">Am Boden</div>
-        <div *ngSwitchCase="2" class="status-label status-green">Im Flug</div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="flightDuration">
+      <th mat-header-cell *matHeaderCellDef>Flugzeit</th>
+      <td mat-cell *matCellDef="let element">
+        {{ getFlightDuration(element.takeOffTimestamp, element.status) }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="distanceFromHome">
+      <th mat-header-cell *matHeaderCellDef>Entfernung von LOXN</th>
+      <td mat-cell *matCellDef="let element">
+        {{ getDistanceFromHome(element.distanceFromHome) }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="altitude">
+      <th mat-header-cell *matHeaderCellDef>Flughöhe</th>
+      <td mat-cell *matCellDef="let element">
+        {{ getAltitude(element.altitude, element.status) }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="action">
+      <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+      <td mat-cell *matCellDef="let element">
+        <button
+          *ngIf="element.status !== 0"
+          mat-icon-button
+          (click)="navigateToMap(element.latitude, element.longitude)"
+          matTooltip="Auf Karte anzeigen"
+        >
+          <mat-icon>location_searching</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+</div>
+
+<!-- The new list view, displayed in portrait mode -->
+<div *ngIf="isPortrait">
+  <div class="glider-list" *ngFor="let element of gliderList">
+    <mat-card class="glider-card">
+      <div class="glider-item">
+        <div class="glider-item-row">
+          <div class="glider-name">
+            <div class="glider-label">{{ element.registration }} ({{ element.registrationShort }})</div>
+            <div class="glider-value">{{ element.model }}</div>
+          </div>
+
+          <div class="glider-status">
+            <div [ngSwitch]="element.status">
+              <div *ngSwitchCase="0" class="status-label status-blue">Kein Signal</div>
+              <div *ngSwitchCase="1" class="status-label status-yellow">Am Boden</div>
+              <div *ngSwitchCase="2" class="status-label status-green">Im Flug</div>
+            </div>
+          </div>
+
+          <div class="glider-action">
+            <button *ngIf="element.status !== 0" mat-icon-button (click)="navigateToMap(element.latitude, element.longitude)" matTooltip="Auf Karte anzeigen">
+              <mat-icon>location_searching</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="glider-item-row" *ngIf="element.status === 2 || (element.status === 1 && element.distanceFromHome >= 2000)">
+          <div class="glider-info" *ngIf="element.status === 2">
+            <mat-icon class="glider-value-icon">access_time</mat-icon>
+            <div class="glider-label">{{ getFlightDuration(element.takeOffTimestamp, element.status) }}</div>
+          </div>
+
+          <div class="glider-info" *ngIf="element.status === 2">
+            <mat-icon class="glider-value-icon">height</mat-icon>
+            <div class="glider-value">{{ getAltitude(element.altitude, element.status) }}</div>
+          </div>
+
+          <div class="glider-info">
+            <mat-icon class="glider-value-icon">location_on</mat-icon>
+            <div class="glider-value">{{ getDistanceFromHome(element.distanceFromHome) }}</div>
+          </div>
+        </div>
       </div>
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="flightDuration">
-    <th mat-header-cell *matHeaderCellDef>Flugzeit</th>
-    <td mat-cell *matCellDef="let element">
-      {{ getFlightDuration(element.takeOffTimestamp, element.status) }}
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="distanceFromHome">
-    <th mat-header-cell *matHeaderCellDef>Entfernung von LOXN</th>
-    <td mat-cell *matCellDef="let element">
-      {{ getDistanceFromHome(element.distanceFromHome) }}
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="altitude">
-    <th mat-header-cell *matHeaderCellDef>Flughöhe</th>
-    <td mat-cell *matCellDef="let element">
-      {{ getAltitude(element.altitude, element.status) }}
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="action">
-    <th mat-header-cell *matHeaderCellDef>Aktionen</th>
-    <td mat-cell *matCellDef="let element">
-      <button
-        *ngIf="element.status !== 0"
-        mat-icon-button
-        (click)="navigateToMap(element.latitude, element.longitude)"
-        matTooltip="Auf Karte anzeigen"
-      >
-        <mat-icon>location_searching</mat-icon>
-      </button>
-    </td>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-</table>
+    </mat-card>
+  </div>
+</div>

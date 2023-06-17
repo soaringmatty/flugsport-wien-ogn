@@ -6,7 +6,7 @@ table {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 20px; 
+  border-radius: 20px;
   color: white;
   padding: 6px 6px;
   max-width: 100px;
@@ -22,9 +22,63 @@ table {
 }
 
 .status-green {
-  background-color: #67ac5b; 
+  background-color: #67ac5b;
 }
 
 .status-blue {
   background-color: #3f51b5;
+}
+
+.glider-list {
+  width: 100%;
+}
+
+.glider-card {
+  padding: 16px;
+  margin-bottom: 3px;
+}
+
+.glider-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 5px;
+}
+
+.glider-item-row:last-child {
+  margin-bottom: 0;
+}
+
+.glider-name {
+  flex: 1;
+}
+
+.glider-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.glider-label {
+  font-weight: bold;
+}
+
+.glider-value {
+  font-size: 14px;
+}
+
+.glider-value-icon {
+  margin-right: 5px;
+}
+
+.glider-status {
+  flex: 1;
+  text-align: center;
+}
+
+.glider-action {
+  flex: 1;
+  text-align: right;
 }

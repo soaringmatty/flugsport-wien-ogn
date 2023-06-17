@@ -1,3 +1,4 @@
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -16,13 +17,18 @@ import { GliderStatus } from 'src/ogn/models/glider-status';
 export default class GliderListComponent implements OnInit, OnDestroy {
   gliderList: GliderListItem[] = [];
   displayedColumns: string[] = ['displayName', 'model', 'status', 'flightDuration', 'distanceFromHome', 'altitude', 'action'];
+  isPortrait: boolean = false;
   private readonly updateListTimeout = 5000;
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>, private router: Router) {
-  }
+  constructor(private breakpointObserver: BreakpointObserver, private store: Store<State>, private router: Router) { }
 
   ngOnInit(): void {
+    this.breakpointObserver.observe([
+      Breakpoints.HandsetPortrait
+    ]).subscribe(result => {
+      this.isPortrait = result.matches;
+    });
     this.store
       .select((x) => x.app.gliderList)
       .pipe(takeUntil(this.onDestroy$))
