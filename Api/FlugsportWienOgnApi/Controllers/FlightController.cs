@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 namespace FlugsportWienOgnApi.Controllers
 {
     [ApiController]
-    [Route("flights")]
+    [Route("/")]
     public class FlightController : ControllerBase
     {
         private readonly ILogger<FlightController> _logger;
@@ -29,7 +29,7 @@ namespace FlugsportWienOgnApi.Controllers
             _httpClientFactory = httpClientFactory;
         }
 
-        [HttpGet]
+        [HttpGet("flights")]
         public async Task<ActionResult<IEnumerable<Flight>>> GetFlights(
             [FromQuery] double? minLat = 46.6, 
             [FromQuery] double? maxLat = 49, 
@@ -139,7 +139,7 @@ namespace FlugsportWienOgnApi.Controllers
             return Ok(response);
         }
 
-        [HttpGet("{flarmId}/path")]
+        [HttpGet("flights/{flarmId}/path")]
         public async Task<ActionResult<string>> GetFlightPath(string flarmId)
         {
             string url = $"https://api.glideandseek.com/v2/track/{flarmId}";
@@ -152,7 +152,7 @@ namespace FlugsportWienOgnApi.Controllers
             return BadRequest();
         }
 
-        [HttpGet("{flarmId}/history")]
+        [HttpGet("flights/{flarmId}/history")]
         public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
         {
             string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
