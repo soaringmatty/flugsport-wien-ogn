@@ -30,16 +30,11 @@ namespace FlugsportWienOgnApi.Controllers
         }
 
         [HttpGet("flights")]
-        public async Task<ActionResult<IEnumerable<Flight>>> GetFlights(
-            [FromQuery] double? minLat = 46.6, 
-            [FromQuery] double? maxLat = 49, 
-            [FromQuery] double? minLng = 9.4, 
-            [FromQuery] double? maxLng = 17.2, 
-            [FromQuery] bool showAllGliders = false, 
-            [FromQuery] bool showPrivateGliders = false)
+        public async Task<ActionResult<IEnumerable<Flight>>> GetFlights()
         {
             //string url = "https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a=52&b=22&c=43&d=7";
-            string url = $"https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a={maxLat}&b={maxLng}&c={minLat}&d={minLng}";
+            string url = $"https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a=49&b=17.2&c=46.6&d=9.4";
+            //string url = $"https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a={maxLat}&b={maxLng}&c={minLat}&d={minLng}";
             var response = await _httpClient.GetFromJsonAsync<GetOgnFlightsResponse>(url);
             if (response != null && response.Success)
             {
