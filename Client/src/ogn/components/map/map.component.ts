@@ -355,6 +355,7 @@ export class MapComponent implements OnInit, OnDestroy {
     const mapView = new View({
       center: fromLonLat(initialCenter),
       zoom: initialZoom,
+      enableRotation: false
     });
     // Always store current map center and zoom in session storage
     mapView.on('change', () => {
