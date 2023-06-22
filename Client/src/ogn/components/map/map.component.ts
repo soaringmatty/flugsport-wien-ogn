@@ -108,12 +108,25 @@ export class MapComponent implements OnInit, OnDestroy {
     });
 
     // Load and draw glider positions on map
-    if (this.updateGliderPositions) {
-      this.store.dispatch(loadFlights());
-      this.setupTimerForGliderPositionUpdates();
-    } else {
-      this.store.dispatch(loadFlights());
+    if ('fonts' in document) {
+      Promise.all([
+        document.fonts.load('bold 26px Roboto'),
+      ]).then(() => {
+        if (this.updateGliderPositions) {
+          this.store.dispatch(loadFlights());
+          this.setupTimerForGliderPositionUpdates();
+        } else {
+          this.store.dispatch(loadFlights());
+        }
+      });
     }
+
+    // if (this.updateGliderPositions) {
+    //   this.store.dispatch(loadFlights());
+    //   this.setupTimerForGliderPositionUpdates();
+    // } else {
+    //   this.store.dispatch(loadFlights());
+    // }
   }
 
   ngOnDestroy(): void {
