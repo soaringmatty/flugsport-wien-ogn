@@ -10,7 +10,7 @@
     "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "postbuild": "cp azure-static-web-apps.config.json dist/ogn-loxn/; cp azure-static-web-apps.config.json dist/ogn-loxn/routes.json"
+    "postbuild": "cp routes.json dist/ogn-loxn/"
   },
   "private": true,
   "dependencies": {
