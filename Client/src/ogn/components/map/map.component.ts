@@ -108,25 +108,12 @@ export class MapComponent implements OnInit, OnDestroy {
     });
 
     // Load and draw glider positions on map
-    if ('fonts' in document) {
-      Promise.all([
-        document.fonts.load('bold 26px Roboto'),
-      ]).then(() => {
-        if (this.updateGliderPositions) {
-          this.store.dispatch(loadFlights());
-          this.setupTimerForGliderPositionUpdates();
-        } else {
-          this.store.dispatch(loadFlights());
-        }
-      });
+    if (this.updateGliderPositions) {
+      this.store.dispatch(loadFlights());
+      this.setupTimerForGliderPositionUpdates();
+    } else {
+      this.store.dispatch(loadFlights());
     }
-
-    // if (this.updateGliderPositions) {
-    //   this.store.dispatch(loadFlights());
-    //   this.setupTimerForGliderPositionUpdates();
-    // } else {
-    //   this.store.dispatch(loadFlights());
-    // }
   }
 
   ngOnDestroy(): void {
@@ -399,8 +386,8 @@ export class MapComponent implements OnInit, OnDestroy {
       this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
     });
     // Show information card and load flight path when marker is clicked
-    this.map.on('singleclick', (e) => {
-      const features = this.map.getFeaturesAtPixel(e.pixel);
+    this.map.on('click', (e) => {
+      const features = this.map.getFeaturesAtPixel(e.pixel, {hitTolerance: 4});
       if (!features || features.length < 1) {
         return;
       }

@@ -1,14 +1,15 @@
 .map {
     width: 100%;
     height: calc(100% - 64px);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .barogram-card {
-    position: absolute; 
-    bottom: 1%; 
-    left: 1%; 
-    height: 25vh; 
-    width: 98%; 
+    position: absolute;
+    bottom: 1%;
+    left: 1%;
+    height: 25vh;
+    width: 98%;
 }
 
 .airplane-icon {
