@@ -9,6 +9,7 @@ import { NotificationService } from 'src/ogn/services/notification.service';
 import { th } from 'date-fns/locale';
 import { Notification } from 'src/ogn/models/notification.model';
 import { NotificationType } from 'src/ogn/models/notification-type';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-root',
@@ -17,13 +18,24 @@ import { NotificationType } from 'src/ogn/models/notification-type';
 })
 export class AppComponent implements OnInit {
   dialogRef!: MatDialogRef<SettingsDialogComponent, any>;
+  isMobilePortrait: boolean = false;
 
   constructor(
     public settingsDialog: MatDialog, 
     private store: Store<State>,
     private snackBar: MatSnackBar,
-    private notificationService: NotificationService) {
+    private notificationService: NotificationService,
+    private breakpointObserver: BreakpointObserver, ) {
       this.notificationService.notificationRequested.subscribe(notification => this.openSnackBar(notification));
+  }
+  
+  ngOnInit(): void {
+    this.store.dispatch(loadSettings())
+    this.breakpointObserver.observe([
+      Breakpoints.HandsetPortrait
+    ]).subscribe(result => {
+      this.isMobilePortrait = result.matches;
+    });
   }
 
   openSnackBar(notification: Notification) {
@@ -49,10 +61,6 @@ export class AppComponent implements OnInit {
       duration: 5000,
       panelClass: panelClass,
     });
-  }
-  
-  ngOnInit(): void {
-    this.store.dispatch(loadSettings())
   }
 
   openDialog(): void {

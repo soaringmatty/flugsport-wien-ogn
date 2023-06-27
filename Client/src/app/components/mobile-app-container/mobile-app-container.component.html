@@ -1,0 +1,32 @@
+<div class="parent-container">
+    <router-outlet></router-outlet>
+
+    <mat-tab-group color="primary" backgroundColor="primary" class="bottom-nav-bar" (selectedTabChange)="onTabChanged($event)">
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="menu-item">
+                    <mat-icon class="example-tab-icon">map</mat-icon>
+                    <div>Karte</div>
+                </div>
+            </ng-template>
+        </mat-tab>
+    
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="menu-item">
+                    <mat-icon class="example-tab-icon">list</mat-icon>
+                    <div>Liste</div>
+                </div>
+            </ng-template>
+        </mat-tab>
+    
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <div class="menu-item">
+                    <mat-icon class="example-tab-icon">settings</mat-icon>
+                    <div>Anpassen</div>
+                </div>
+            </ng-template>
+        </mat-tab>
+    </mat-tab-group>
+</div>

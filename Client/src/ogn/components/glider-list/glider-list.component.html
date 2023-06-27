@@ -1,5 +1,5 @@
 <!-- The original table view, displayed in landscape mode -->
-<div *ngIf="!isPortrait">
+<div *ngIf="!isMobilePortrait">
   <table mat-table [dataSource]="gliderList" class="mat-elevation-z6">
     <ng-container matColumnDef="displayName">
       <th mat-header-cell *matHeaderCellDef>Kennzeichen</th>
@@ -65,7 +65,7 @@
 </div>
 
 <!-- The new list view, displayed in portrait mode -->
-<div *ngIf="isPortrait">
+<div *ngIf="isMobilePortrait">
   <div class="glider-list" *ngFor="let element of gliderList">
     <mat-card class="glider-card">
       <div class="glider-item">

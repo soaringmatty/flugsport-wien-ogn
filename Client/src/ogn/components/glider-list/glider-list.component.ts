@@ -17,7 +17,7 @@ import { GliderStatus } from 'src/ogn/models/glider-status';
 export default class GliderListComponent implements OnInit, OnDestroy {
   gliderList: GliderListItem[] = [];
   displayedColumns: string[] = ['displayName', 'model', 'status', 'flightDuration', 'distanceFromHome', 'altitude', 'action'];
-  isPortrait: boolean = false;
+  isMobilePortrait: boolean = false;
   private readonly updateListTimeout = 5000;
   private readonly onDestroy$ = new Subject<void>();
 
@@ -27,7 +27,7 @@ export default class GliderListComponent implements OnInit, OnDestroy {
     this.breakpointObserver.observe([
       Breakpoints.HandsetPortrait
     ]).subscribe(result => {
-      this.isPortrait = result.matches;
+      this.isMobilePortrait = result.matches;
     });
     this.store
       .select((x) => x.app.gliderList)

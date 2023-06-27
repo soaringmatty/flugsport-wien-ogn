@@ -16,10 +16,13 @@ import { AppEffects } from './store/app/app.effects';
 import { MatDialogModule } from '@angular/material/dialog';
 import { NgChartsModule } from 'ng2-charts';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MobileAppContainerComponent } from './components/mobile-app-container/mobile-app-container.component';
+import { MatTabsModule } from '@angular/material/tabs'
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    MobileAppContainerComponent
   ],
   imports: [
     BrowserModule,
@@ -35,7 +38,8 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     EffectsModule.forRoot([AppEffects]),
     MatDialogModule,
     NgChartsModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatTabsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

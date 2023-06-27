@@ -13,3 +13,19 @@
 .yellow {
     color: orange;
 }
+
+.info-card {
+    position: absolute; 
+    top: 74px; 
+    right: 10px; 
+    width: 250px;
+    padding: 0px;
+}
+
+.mat-mdc-card-content {
+    padding: 0 12px;
+}
+
+.mat-mdc-card-header {
+    padding: 12px 12px 0;
+}
