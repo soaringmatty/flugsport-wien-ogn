@@ -20,6 +20,7 @@ import { NgChartsModule } from 'ng2-charts';
 import GliderListComponent from './components/glider-list/glider-list.component';
 import { MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
+import { SettingsComponent } from './components/settings/settings.component';
 
 @NgModule({
   declarations: [
@@ -29,6 +30,7 @@ import { MatChipsModule } from '@angular/material/chips';
     TimeAgoPipe,
     BarogramComponent,
     GliderListComponent,
+    SettingsComponent,
   ],
   imports: [
     CommonModule,

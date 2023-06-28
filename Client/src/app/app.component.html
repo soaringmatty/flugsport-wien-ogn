@@ -1,21 +1,18 @@
-<!-- <div> -->
-  <mat-toolbar color="primary" class="toolbar">
-    <img src="assets/logo_flugsportwien_weiß.png" alt="Logo" style="height: 40px; margin-right: 20px;" />
-    <!-- <span>Flugsport Wien OGN Viewer</span> -->
-    <span class="example-spacer"></span>
-    <button mat-icon-button [routerLink]="'map'">
-      <mat-icon>map</mat-icon>
-    </button>
-    <button mat-icon-button [routerLink]="'list'">
-      <mat-icon>list</mat-icon>
-    </button>
-    <button mat-icon-button (click)="openDialog()">
-      <mat-icon>settings</mat-icon>
-    </button>
-  </mat-toolbar>
-  
-  <router-outlet></router-outlet>
-<!-- </div> -->
-<!-- <div *ngIf="isMobilePortrait">
-  <app-mobile-app-container></app-mobile-app-container>
-</div> -->
+<mat-toolbar *ngIf="!isMobilePortrait" color="primary" class="toolbar">
+  <img src="assets/logo_flugsportwien_weiß.png" alt="Logo" style="height: 40px; margin-right: 20px;" />
+  <!-- <span>Flugsport Wien OGN Viewer</span> -->
+  <span class="example-spacer"></span>
+  <button mat-icon-button [routerLink]="'map'">
+    <mat-icon>public</mat-icon>
+  </button>
+  <button mat-icon-button [routerLink]="'list'">
+    <mat-icon>flight</mat-icon>
+  </button>
+  <button mat-icon-button (click)="openDialog()">
+    <mat-icon>settings</mat-icon>
+  </button>
+</mat-toolbar>
+
+<router-outlet></router-outlet>
+
+<app-bottom-navigation *ngIf="isMobilePortrait"></app-bottom-navigation>

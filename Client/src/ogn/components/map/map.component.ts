@@ -22,6 +22,8 @@ import { MapSettings } from 'src/ogn/models/map-settings.model';
 import { BarogramComponent } from '../barogram/barogram.component';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { ActivatedRoute, ParamMap } from '@angular/router';
+import { coordinates } from 'src/ogn/constants/coordinates';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-map',
@@ -39,26 +41,31 @@ export class MapComponent implements OnInit, OnDestroy {
   selectedFlight: Flight | undefined;
   settings!: MapSettings
   showBarogram: boolean = false;
+  isMobilePortrait: boolean = false;
   // Tracking related properties
   isTracking: boolean = false;
   trackingSubscription!: Subscription;
   mapZoomBeforeActiveTracking: number | undefined;
   mapCenterBeforeActiveTracking: Coordinate | undefined;
-
   // Configs
   updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
   updatePositionTimeout = 5000; // Defines the timeout between glider position updates in ms
 
-  private readonly defaultCoordinates = [16, 47.8]; // [Long, Lat]
   private readonly onDestroy$ = new Subject<void>();
 
   constructor(
     private store: Store<State>,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private breakpointObserver: BreakpointObserver
   ) {}
 
   ngOnInit(): void {
     this.initializeMap();
+    this.breakpointObserver.observe([
+      Breakpoints.HandsetPortrait
+    ]).subscribe(result => {
+      this.isMobilePortrait = result.matches;
+    });
     // Update markers on map every time the flights are loaded
     this.store
       .select((x) => x.app.flights)
@@ -176,7 +183,7 @@ export class MapComponent implements OnInit, OnDestroy {
     if (flight && flight.longitude && flight.latitude) {
       const coordinate = fromLonLat([flight.longitude, flight.latitude]);
       this.map.getView().setCenter(coordinate);
-      this.map.getView().setZoom(15);
+      this.map.getView().setZoom(this.isMobilePortrait ? 13 : 15);
 
       // Subscribe to position updates
       this.trackingSubscription = this.store
@@ -331,14 +338,26 @@ export class MapComponent implements OnInit, OnDestroy {
     return result;
   }
 
+  private markerClicked(e: any) {
+    const features = this.map.getFeaturesAtPixel(e.pixel, {hitTolerance: 4});
+      if (!features || features.length < 1) {
+        return;
+      }
+      const feature = features[0];
+      const flarmId = feature.get('flarmId');
+      if (flarmId) {
+        this.selectGlider(flarmId);
+      }
+  }
+
   private initializeMap() {
     // Load the stored map state or use the default values
     const storedCenter = sessionStorage.getItem('mapCenter');
     const storedZoom = sessionStorage.getItem('mapZoom');
     const initialCenter = storedCenter
       ? JSON.parse(storedCenter)
-      : this.defaultCoordinates;
-    const initialZoom = storedZoom ? +storedZoom : 11;
+      : coordinates.loxn;
+    const initialZoom = storedZoom ? +storedZoom : 12;
 
     const osmTileLayer = new TileLayer({
       source: new OSM(),

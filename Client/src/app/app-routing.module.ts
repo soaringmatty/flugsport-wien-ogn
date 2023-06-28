@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { BarogramComponent } from 'src/ogn/components/barogram/barogram.component';
 import GliderListComponent from 'src/ogn/components/glider-list/glider-list.component';
 import { MapComponent } from 'src/ogn/components/map/map.component';
+import { SettingsComponent } from 'src/ogn/components/settings/settings.component';
 
 const routes: Routes = [
   { 
@@ -16,6 +17,10 @@ const routes: Routes = [
   { 
     path: 'barogram', 
     component: BarogramComponent 
+  },
+  { 
+    path: 'settings', 
+    component: SettingsComponent 
   },
   {
     path: '**',

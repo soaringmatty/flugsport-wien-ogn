@@ -3,11 +3,11 @@ import { MatTabChangeEvent } from '@angular/material/tabs';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-mobile-app-container',
-  templateUrl: './mobile-app-container.component.html',
-  styleUrls: ['./mobile-app-container.component.scss']
+  selector: 'app-bottom-navigation',
+  templateUrl: './bottom-navigation.component.html',
+  styleUrls: ['./bottom-navigation.component.scss']
 })
-export class MobileAppContainerComponent {
+export class BottomNavigationComponent {
   constructor(private router: Router) { }
 
   onTabChanged(event: MatTabChangeEvent) {

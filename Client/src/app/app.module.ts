@@ -16,13 +16,14 @@ import { AppEffects } from './store/app/app.effects';
 import { MatDialogModule } from '@angular/material/dialog';
 import { NgChartsModule } from 'ng2-charts';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MobileAppContainerComponent } from './components/mobile-app-container/mobile-app-container.component';
-import { MatTabsModule } from '@angular/material/tabs'
+import { MatTabsModule } from '@angular/material/tabs';
+import { BottomNavigationComponent } from './components/bottom-navigation/bottom-navigation.component'
+import { MatCardModule } from '@angular/material/card';
 
 @NgModule({
   declarations: [
     AppComponent,
-    MobileAppContainerComponent
+    BottomNavigationComponent
   ],
   imports: [
     BrowserModule,
@@ -39,7 +40,8 @@ import { MatTabsModule } from '@angular/material/tabs'
     MatDialogModule,
     NgChartsModule,
     MatSnackBarModule,
-    MatTabsModule
+    MatTabsModule,
+    MatCardModule
   ],
   providers: [],
   bootstrap: [AppComponent]

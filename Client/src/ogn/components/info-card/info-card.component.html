@@ -1,11 +1,11 @@
-<mat-card *ngIf="flight" class="info-card">
+<mat-card *ngIf="flight" [ngClass]="isMobilePortrait ? 'info-card-mobile' : 'info-card-desktop'">
     <mat-card-header>
-        <div style="display: flex; justify-content: space-between; align-items: left; width: 100%;">
+        <div class="info-card-header">
             <div>
               <mat-card-title>{{ flight.registration }} ({{ flight.displayName }})</mat-card-title>
               <mat-card-subtitle>Flarm ID: {{ flight.flarmId }}</mat-card-subtitle>
             </div>
-            <button mat-icon-button (click)="closeDialog()" style="margin-right: -10px; margin-top: -10px;">
+            <button mat-icon-button class="close-button" (click)="closeDialog()">
               <mat-icon>close</mat-icon>
             </button>
         </div>
@@ -20,6 +20,10 @@
             <span>{{ flight.timestamp | timeAgo }}</span>
         </div>
         <div>
+            <span class="label">Geschwindigkeit: </span>
+            <span>{{ roundNumber(flight.speed) }} km/h</span>
+        </div>
+        <div>
             <span class="label">Höhe (MSL): </span>
             <span>{{ roundNumber(flight.heightMSL) }} m</span>
         </div>
@@ -28,10 +32,6 @@
             <span [ngClass]="flight.heightAGL < 50 ? 'red' : (flight.heightAGL < 200 ? 'yellow' : '')">
                 {{ roundNumber(flight.heightAGL) }} m
             </span>
-        </div>
-        <div>
-            <span class="label">Geschwindigkeit: </span>
-            <span>{{ roundNumber(flight.speed) }} km/h</span>
         </div>
         <div>
             <span class="label">Vario: </span>
@@ -46,11 +46,12 @@
             </span>
         </div>
 
-        <div style="display: flex; justify-content: left; align-items: center; width: 100%;">
-            <button mat-icon-button (click)="toggleTracking()" style="margin-left: -5px; margin-bottom: -10px;" [matTooltip]="isTracking ? 'Verfolgung beenden' : 'Flugzeug verfolgen'">
+        <div [ngClass]="isMobilePortrait ? 'action-button-container-mobile' : 'action-button-container-desktop'">
+            <button mat-icon-button (click)="toggleTracking()" [matTooltip]="isTracking ? 'Verfolgung beenden' : 'Flugzeug verfolgen'">
               <mat-icon>{{isTracking ? 'location_disabled' : 'location_searching'}}</mat-icon>
             </button>
-            <button mat-icon-button (click)="toggleBarogramVisibility()" style="margin-bottom: -10px;" [matTooltip]="showBarogram ? 'Barogramm ausblenden' : 'Barogramm anzeigen'">
+            <button mat-icon-button [ngClass]="isMobilePortrait ? 'second-action-button-mobile' : ''" (click)="toggleBarogramVisibility()"
+             [matTooltip]="showBarogram ? 'Barogramm ausblenden' : 'Barogramm anzeigen'">
               <mat-icon>area_chart</mat-icon>
             </button>
         </div>

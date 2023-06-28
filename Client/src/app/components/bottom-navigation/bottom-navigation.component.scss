@@ -1,0 +1,58 @@
+.navbar {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 56px;//calc(3.8rem + env(safe-area-inset-bottom));
+    background-color: #3f51b5;
+    border-radius: 0;
+    color: white;
+    z-index: 800;
+    // background-color: var(--color-white-navigation);
+    // -webkit-backdrop-filter: blur(18px);
+    // backdrop-filter: blur(18px);
+    // box-shadow: 0 0 1.2rem var(--color-black-transparent-5);
+    // align-items: flex-start;
+    // border-top: 1px solid var(--color-border-1);
+    // user-select: none;
+}
+
+.nav-item {
+    text-decoration: none;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: .2s color ease;
+    cursor: pointer;
+    color: var(--color-black-1);
+    position: relative;
+}
+
+.icon {
+    margin-bottom: 1px;
+    transform: scale(0.9);
+}
+
+span {
+    font-size: 11px;
+}
+
+.bottom-nav-bar-tabs {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    z-index: 10;
+}
+
+.menu-item-tabs {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column; // Change the direction to column to stack icon and text vertically
+    justify-content: center;
+    align-items: center;
+    margin-top: 5px;
+}

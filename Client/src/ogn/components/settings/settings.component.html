@@ -1,0 +1,14 @@
+<h1 mat-dialog-title>Einstellungen</h1>
+<mat-dialog-content class="display-flex">
+    <mat-radio-group class="display-flex" [(ngModel)]="settings.gliderFilter">
+        <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
+        <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
+        <mat-radio-button [value]="2">Alle Segelflugzeuge</mat-radio-button>
+    </mat-radio-group>
+    <mat-checkbox class="mt-2" [(ngModel)]="settings.hideGlidersOnGround">Flugzeuge am Boden ausblenden</mat-checkbox>
+    <mat-checkbox class="mt-1" [(ngModel)]="settings.useFlightPathSmoothing">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-raised-button mat-dialog-close>Abbrechen</button>
+    <button mat-raised-button color="primary" (click)="save()" cdkFocusInitial>Speichern</button>
+</mat-dialog-actions>

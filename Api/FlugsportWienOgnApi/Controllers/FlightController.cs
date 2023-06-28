@@ -1,14 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Models.Core;
-using System;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Globalization;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using FlugsportWienOgnApi.Utils;
 using FlugsportWienOgnApi.Models.Flightbook;
-using System.Runtime.CompilerServices;
 
 namespace FlugsportWienOgnApi.Controllers
 {

@@ -9,6 +9,7 @@ import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { BaseChartDirective } from 'ng2-charts';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 declare module 'chart.js' {
   interface TooltipPositionerMap {
@@ -103,10 +104,14 @@ export class BarogramComponent implements OnInit, OnDestroy {
       }
     },
   };
+  isMobilePortrait: boolean = false;
 
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>) {
+  constructor(
+    private store: Store<State>,
+    private breakpointObserver: BreakpointObserver
+  ) {
     // Create custom tooltip position "center" -> currently not used
     Tooltip.positioners.center = function(elements, eventPosition) {
       return {
@@ -119,6 +124,11 @@ export class BarogramComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.breakpointObserver.observe([
+      Breakpoints.HandsetPortrait
+    ]).subscribe(result => {
+      this.isMobilePortrait = result.matches;
+    });
     this.store
       .select((x) => x.app.flightHistory)
       .pipe(takeUntil(this.onDestroy$))

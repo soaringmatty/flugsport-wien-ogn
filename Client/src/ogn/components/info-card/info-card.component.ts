@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Flight } from 'src/ogn/models/flight.model';
 
 @Component({
@@ -6,14 +7,26 @@ import { Flight } from 'src/ogn/models/flight.model';
   templateUrl: './info-card.component.html',
   styleUrls: ['./info-card.component.scss']
 })
-export class InfoCardComponent {
+export class InfoCardComponent implements OnInit {
   @Input() flight: Flight | undefined
   @Output() close = new EventEmitter<void>();
   @Output() toggleActiveTracking = new EventEmitter<boolean>();
   @Output() toggleBarogram = new EventEmitter<boolean>();
-  
+ 
+  isMobilePortrait: boolean = false;
   isTracking: boolean = false;
   showBarogram: boolean = false;
+
+  constructor(private breakpointObserver: BreakpointObserver) {
+  }
+
+  ngOnInit(): void {
+    this.breakpointObserver.observe([
+      Breakpoints.HandsetPortrait
+    ]).subscribe(result => {
+      this.isMobilePortrait = result.matches;
+    });
+  }
 
   closeDialog(): void {
     this.showBarogram = false;

@@ -98,11 +98,13 @@
 
           <div class="glider-info" *ngIf="element.status === 2">
             <mat-icon class="glider-value-icon">height</mat-icon>
+            <!-- north / straight -->
             <div class="glider-value">{{ getAltitude(element.altitude, element.status) }}</div>
           </div>
 
           <div class="glider-info">
-            <mat-icon class="glider-value-icon">location_on</mat-icon>
+            <mat-icon class="glider-value-icon">home</mat-icon> 
+            <!-- home_pin -->
             <div class="glider-value">{{ getDistanceFromHome(element.distanceFromHome) }}</div>
           </div>
         </div>
