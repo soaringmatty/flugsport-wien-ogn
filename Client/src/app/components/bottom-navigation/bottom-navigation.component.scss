@@ -13,7 +13,6 @@
     // background-color: var(--color-white-navigation);
     // -webkit-backdrop-filter: blur(18px);
     // backdrop-filter: blur(18px);
-    // box-shadow: 0 0 1.2rem var(--color-black-transparent-5);
     // align-items: flex-start;
     // border-top: 1px solid var(--color-border-1);
     // user-select: none;
@@ -28,8 +27,12 @@
     justify-content: center;
     transition: .2s color ease;
     cursor: pointer;
-    color: var(--color-black-1);
+    color: rgb(192, 192, 192); // inactive state
     position: relative;
+    
+    &.active {
+        color: white; // active state
+    }
 }
 
 .icon {

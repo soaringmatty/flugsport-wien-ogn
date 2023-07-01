@@ -9,7 +9,8 @@
     "start": "ng serve",
     "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "postbuild": "cp src/404.html dist/ogn-loxn/"
   },
   "private": true,
   "dependencies": {
