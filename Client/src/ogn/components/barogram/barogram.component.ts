@@ -25,86 +25,11 @@ declare module 'chart.js' {
 export class BarogramComponent implements OnInit, OnDestroy {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
+  isMobilePortrait: boolean = false;
   flightHistory: HistoryEntry[] = [];
   lineChartData: ChartDataset[] = [];
   lineChartLabels: number[] = [];
-  lineChartOptions: ChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    plugins: {
-      title: {
-        display: true,
-        text: 'Höhendiagramm'
-      },
-      tooltip: {
-        displayColors: false, // Hide the color boxes next to the labels
-        position: 'average',
-        callbacks: {
-          label: (context) => {
-            const value = context.raw as number;
-            return `${context.dataset.label}: ${Math.round(value)} m`;
-          },
-          afterBody: (context) => {
-            const altitude = context[0].raw as number;
-            const groundHeight = context[1].raw as number;
-            const agl = altitude - groundHeight;
-
-            return `AGL: ${Math.round(agl)} m`;
-          },
-        }
-      },
-      // crosshair: {
-      //   line: {
-      //     color: '#000000',  // change this as needed
-      //     width: 1,
-      //     dashPattern: [5, 5]  // make the line dashed (optional)
-      //   },
-      //   sync: {
-      //     enabled: false  // do not trace the line at the same position for all charts
-      //   }
-      // },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index',
-      axis: 'x'
-    },
-    scales: {
-      x: {
-        display: true,
-        title: {
-          display: true,
-          text: 'Zeit'
-        },
-        type: 'time',
-        time: {
-          unit: 'minute',
-          displayFormats: {
-            minute: 'HH:mm'
-          },
-          tooltipFormat: 'HH:mm',
-        },
-        ticks: {
-          source: 'auto',
-        },
-        adapters: {
-          date: {
-            locale: de
-          }
-        }
-      },
-      y: {
-        display: true,
-        title: {
-          display: true,
-          text: 'Höhe (MSL)'
-        },
-        beginAtZero: true,
-      }
-    },
-  };
-  isMobilePortrait: boolean = false;
+  lineChartOptions: ChartOptions = this.setChartOptions();
 
   private readonly onDestroy$ = new Subject<void>();
 
@@ -128,6 +53,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
       Breakpoints.HandsetPortrait
     ]).subscribe(result => {
       this.isMobilePortrait = result.matches;
+      this.lineChartOptions = this.setChartOptions();
     });
     this.store
       .select((x) => x.app.flightHistory)
@@ -152,6 +78,85 @@ export class BarogramComponent implements OnInit, OnDestroy {
     this.lineChartData[0].data.push(historyEntry.altitude);
     this.lineChartData[1].data.push(historyEntry.groundHeight);
     this.chart?.update();
+  }
+
+  private setChartOptions(): ChartOptions {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        title: {
+          display: !this.isMobilePortrait,
+          text: 'Höhendiagramm'
+        },
+        tooltip: {
+          displayColors: false, // Hide the color boxes next to the labels
+          position: 'average',
+          callbacks: {
+            label: (context) => {
+              const value = context.raw as number;
+              return `${context.dataset.label}: ${Math.round(value)} m`;
+            },
+            afterBody: (context) => {
+              const altitude = context[0].raw as number;
+              const groundHeight = context[1].raw as number;
+              const agl = altitude - groundHeight;
+  
+              return `AGL: ${Math.round(agl)} m`;
+            },
+          }
+        },
+        // crosshair: {
+        //   line: {
+        //     color: '#000000',  // change this as needed
+        //     width: 1,
+        //     dashPattern: [5, 5]  // make the line dashed (optional)
+        //   },
+        //   sync: {
+        //     enabled: false  // do not trace the line at the same position for all charts
+        //   }
+        // },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
+        axis: 'x'
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: !this.isMobilePortrait,
+            text: 'Zeit'
+          },
+          type: 'time',
+          time: {
+            unit: 'minute',
+            displayFormats: {
+              minute: 'HH:mm'
+            },
+            tooltipFormat: 'HH:mm',
+          },
+          ticks: {
+            source: 'auto',
+          },
+          adapters: {
+            date: {
+              locale: de
+            }
+          }
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Höhe (MSL)'
+          },
+          beginAtZero: true,
+        }
+      },
+    };
   }
 
   private initalizeChart(): void {
