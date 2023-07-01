@@ -7,7 +7,7 @@ import { SettingsComponent } from 'src/ogn/components/settings/settings.componen
 
 const routes: Routes = [
   { 
-    path: 'map', 
+    path: '', 
     component: MapComponent 
   },
   { 
@@ -23,13 +23,12 @@ const routes: Routes = [
     component: SettingsComponent 
   },
   {
-    path: '**',
-    redirectTo: 'map'
+    path: 'map',
+    redirectTo: ''
   },
   {
-    path: '',
-    redirectTo: 'map',
-    pathMatch: 'full'
+    path: '**',
+    redirectTo: ''
   }
 ];
 
