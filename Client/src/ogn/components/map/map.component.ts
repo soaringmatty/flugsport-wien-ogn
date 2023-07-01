@@ -114,13 +114,15 @@ export class MapComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Load and draw glider positions on map
-    if (this.updateGliderPositions) {
-      this.store.dispatch(loadFlights());
-      this.setupTimerForGliderPositionUpdates();
-    } else {
-      this.store.dispatch(loadFlights());
-    }
+    document.fonts.load('bold 26px Roboto').then(() => {
+      //Load and draw glider positions on map
+      if (this.updateGliderPositions) {
+        this.store.dispatch(loadFlights());
+        this.setupTimerForGliderPositionUpdates();
+      } else {
+        this.store.dispatch(loadFlights());
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -222,6 +224,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
   // Draw glider markers on map (update marker position if marker already exists)
   private updateGliderPositionsOnMap(flights: Flight[]) {
+    console.log("Glider markers", flights);
     flights.forEach((flight) => {
       if (!flight.longitude || !flight.latitude) {
         return;
