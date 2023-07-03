@@ -1,14 +1,31 @@
-<h1 mat-dialog-title>Einstellungen</h1>
-<mat-dialog-content class="display-flex">
-    <mat-radio-group class="display-flex" [(ngModel)]="settings.gliderFilter">
-        <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
-        <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
-        <mat-radio-button [value]="2">Alle Segelflugzeuge</mat-radio-button>
-    </mat-radio-group>
-    <mat-checkbox class="mt-2" [(ngModel)]="settings.hideGlidersOnGround">Flugzeuge am Boden ausblenden</mat-checkbox>
-    <mat-checkbox class="mt-1" [(ngModel)]="settings.useFlightPathSmoothing">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-    <button mat-raised-button mat-dialog-close>Abbrechen</button>
-    <button mat-raised-button color="primary" (click)="save()" cdkFocusInitial>Speichern</button>
-</mat-dialog-actions>
+<mat-card class="card">
+    <mat-card-content>
+        <div class="section">
+            <p class="title">Karte: Flugzeuge filtern</p>
+            <mat-radio-group class="group" [(ngModel)]="settings.gliderFilter" (change)="save()">
+                <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
+                <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
+                <mat-radio-button [value]="2">Alle Segelflugzeuge</mat-radio-button>
+            </mat-radio-group>
+            <mat-checkbox [(ngModel)]="settings.hideGlidersOnGround" (change)="save()">Flugzeuge am Boden ausblenden</mat-checkbox>
+        </div>
+        <div class="section">
+            <p class="title">Karte (available soon)</p>
+            <mat-radio-group [disabled]="true" class="group" [value]="0" (change)="save()">
+                <mat-radio-button [value]="0">Open Street Map</mat-radio-button>
+                <mat-radio-button [value]="1">Stamen (Gelände)</mat-radio-button>
+            </mat-radio-group>
+        </div>
+        <div class="section">
+            <p class="title">Flugweg</p>
+            <mat-checkbox [(ngModel)]="settings.useFlightPathSmoothing" (change)="save()">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
+        </div>
+        <div class="section">
+            <p class="title">Flugzeuge & Startliste (available soon)</p>
+            <mat-radio-group [disabled]="true" class="group" [value]="0" (change)="save()">
+                <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
+                <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
+            </mat-radio-group>
+        </div>
+    </mat-card-content>
+</mat-card>
