@@ -1,12 +1,15 @@
 <mat-toolbar *ngIf="!isMobilePortrait" color="primary" class="toolbar">
   <img src="assets/logo_flugsportwien_weiß.png" alt="Logo" style="height: 40px; margin-right: 20px;" />
-  <!-- <span>Flugsport Wien OGN Viewer</span> -->
+  <span>Flugsport Wien OGN Viewer</span>
   <span class="example-spacer"></span>
   <button mat-icon-button [routerLink]="'map'">
     <mat-icon>public</mat-icon>
   </button>
   <button mat-icon-button [routerLink]="'list'">
     <mat-icon>flight</mat-icon>
+  </button>
+  <button mat-icon-button [routerLink]="'history'">
+    <mat-icon>manage_search</mat-icon>
   </button>
   <button mat-icon-button (click)="openDialog()">
     <mat-icon>settings</mat-icon>

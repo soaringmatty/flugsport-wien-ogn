@@ -21,6 +21,7 @@ import GliderListComponent from './components/glider-list/glider-list.component'
 import { MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
 import { SettingsComponent } from './components/settings/settings.component';
+import { DepartureListComponent } from './components/departure-list/departure-list.component';
 
 @NgModule({
   declarations: [
@@ -31,6 +32,7 @@ import { SettingsComponent } from './components/settings/settings.component';
     BarogramComponent,
     GliderListComponent,
     SettingsComponent,
+    DepartureListComponent,
   ],
   imports: [
     CommonModule,

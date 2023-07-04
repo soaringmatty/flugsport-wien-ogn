@@ -1,0 +1,36 @@
+<div *ngIf="departureList.length === 0" class="no-departures-text">
+  Heute noch keine Starts erkannt
+</div>
+<div *ngIf="isMobilePortrait">
+  <div class="glider-list" *ngFor="let element of departureList">
+    <mat-card class="glider-card">
+      <div class="glider-item">
+        <div class="glider-item-row">
+          <div class="glider-name">
+            <div class="glider-label">{{ element.registration }} ({{ element.registrationShort }})</div>
+            <div class="glider-value">{{ element.model }}</div>
+          </div>
+
+          <div class="glider-info">
+            <mat-icon class="glider-value-icon">flight_takeoff</mat-icon>
+            <div class="glider-value">{{ getReadableTimetamp(element.takeOffTimestamp) }}</div>
+          </div>
+
+          <div class="glider-info">
+            <div class="glider-info" *ngIf="element.landingTimestamp">
+              <mat-icon class="glider-value-icon">flight_land</mat-icon>
+              <div class="glider-value">{{ getReadableTimetamp(element.landingTimestamp) }}</div>
+            </div>
+          </div>
+
+          <div class="glider-info" [ngClass]="element.landingTimestamp ? '': 'flight-time-while-airborne'">
+            <mat-icon class="glider-value-icon">access_time</mat-icon>
+            <div class="glider-label">
+              {{ getFlightDuration(element.takeOffTimestamp, element.landingTimestamp) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+</div>

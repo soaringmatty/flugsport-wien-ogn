@@ -56,6 +56,47 @@ public class FlightbookController : ControllerBase
             };
         departureList = departureList.OrderByDescending(item => item.TakeOffTimestamp);
 
+        //DEMO
+        //departureList = new List<DepartureListItem>() {
+        //    new DepartureListItem
+        //    {
+        //        FlarmId = "TEST01",
+        //        Registration = "D-TST1",
+        //        RegistrationShort = "T1",
+        //        Model = "Test",
+        //        TakeOffTimestamp = 1688467278,
+        //        LandingTimestamp = 1688469980
+        //    },
+        //    new DepartureListItem
+        //    {
+        //        FlarmId = "TEST02",
+        //        Registration = "D-TST2",
+        //        RegistrationShort = "T2",
+        //        Model = "Test",
+        //        TakeOffTimestamp = 1688462280,
+        //        LandingTimestamp = null
+        //    },
+        //    new DepartureListItem
+        //    {
+        //        FlarmId = "TEST03",
+        //        Registration = "D-TST3",
+        //        RegistrationShort = "T3",
+        //        Model = "Test",
+        //        TakeOffTimestamp = 1688461244,
+        //        LandingTimestamp = 1688466937
+        //    },
+        //    new DepartureListItem { FlarmId = "TEST04", Registration = "D-TST4", RegistrationShort = "T4", Model = "Test", TakeOffTimestamp = 1688462400, LandingTimestamp = null },
+        //    new DepartureListItem { FlarmId = "TEST05", Registration = "D-TST5", RegistrationShort = "T5", Model = "Test", TakeOffTimestamp = 1688462500, LandingTimestamp = 1688464000 },
+        //    new DepartureListItem { FlarmId = "TEST06", Registration = "D-TST6", RegistrationShort = "T6", Model = "Test", TakeOffTimestamp = 1688462600, LandingTimestamp = null },
+        //    new DepartureListItem { FlarmId = "TEST07", Registration = "D-TST7", RegistrationShort = "T7", Model = "Test", TakeOffTimestamp = 1688462700, LandingTimestamp = 1688464300 },
+        //    new DepartureListItem { FlarmId = "TEST08", Registration = "D-TST8", RegistrationShort = "T8", Model = "Test", TakeOffTimestamp = 1688462800, LandingTimestamp = null },
+        //    new DepartureListItem { FlarmId = "TEST09", Registration = "D-TST9", RegistrationShort = "T9", Model = "Test", TakeOffTimestamp = 1688462900, LandingTimestamp = 1688464500 },
+        //    new DepartureListItem { FlarmId = "TEST10", Registration = "D-TS10", RegistrationShort = "T10", Model = "Test", TakeOffTimestamp = 1688463000, LandingTimestamp = null },
+        //    new DepartureListItem { FlarmId = "TEST11", Registration = "D-TS11", RegistrationShort = "T11", Model = "Test", TakeOffTimestamp = 1688463100, LandingTimestamp = 1688464600 },
+        //    new DepartureListItem { FlarmId = "TEST12", Registration = "D-TS12", RegistrationShort = "T12", Model = "Test", TakeOffTimestamp = 1688463200, LandingTimestamp = null },
+        //    new DepartureListItem { FlarmId = "TEST13", Registration = "D-TS13", RegistrationShort = "T13", Model = "Test", TakeOffTimestamp = 1688463300, LandingTimestamp = 1688464800 }
+        //};
+
         return Ok(departureList);
     }
 }

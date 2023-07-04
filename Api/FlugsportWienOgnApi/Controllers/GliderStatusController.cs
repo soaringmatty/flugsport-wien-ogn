@@ -8,7 +8,7 @@ using System.Net.Http;
 
 namespace FlugsportWienOgnApi.Controllers;
 
-[Route("/gliderstatus")]
+[Route("gliders")]
 [ApiController]
 public class GliderStatusController : ControllerBase
 {

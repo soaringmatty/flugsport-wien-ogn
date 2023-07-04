@@ -101,4 +101,22 @@ export class AppEffects {
     ))
     )
   );
+
+  loadDepartureList$ = createEffect(() => this.actions$.pipe(
+    ofType(AppActions.loadDepartureList),
+    exhaustMap(() => this.apiService.getDepartureList()
+      .pipe(
+        map(departureList => {
+            return AppActions.loadDepartureListSuccess({departureList})
+        }),
+        catchError(error => {
+          this.notificationService.notify({
+            message: messages.defaultNetworkError,
+            type: NotificationType.Error
+          });
+            return of(AppActions.loadDepartureListFailure({error}))
+        })
+    ))
+    )
+  );
 }

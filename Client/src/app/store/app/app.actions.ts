@@ -1,4 +1,5 @@
 import { createAction, props } from '@ngrx/store';
+import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
 import { Flight } from 'src/ogn/models/flight.model';
 import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
@@ -21,6 +22,9 @@ export enum AppActionTypes {
     loadGliderList = '[App] Load Glider List',
     loadGliderListSuccess = '[App] Load Glider List Success',
     loadGliderListFailure = '[App] Load Glider List Failure',
+    loadDepartureList = '[App] Load Departure List',
+    loadDepartureListSuccess = '[App] Load Departure List Success',
+    loadDepartureListFailure = '[App] Load Departure List Failure',
 }
 
 export const loadFlights = createAction(
@@ -97,5 +101,19 @@ export const loadGliderListSuccess = createAction(
 
 export const loadGliderListFailure = createAction(
     AppActionTypes.loadGliderListFailure,
+    props<{error: any}>()
+);
+
+export const loadDepartureList = createAction(
+    AppActionTypes.loadDepartureList
+);
+
+export const loadDepartureListSuccess = createAction(
+    AppActionTypes.loadDepartureListSuccess,
+    props<{departureList: DepartureListItem[]}>()
+);
+
+export const loadDepartureListFailure = createAction(
+    AppActionTypes.loadDepartureListFailure,
     props<{error: any}>()
 );
