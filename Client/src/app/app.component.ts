@@ -21,14 +21,14 @@ export class AppComponent implements OnInit {
   isMobilePortrait: boolean = false;
 
   constructor(
-    public settingsDialog: MatDialog, 
+    public settingsDialog: MatDialog,
     private store: Store<State>,
     private snackBar: MatSnackBar,
     private notificationService: NotificationService,
     private breakpointObserver: BreakpointObserver, ) {
       this.notificationService.notificationRequested.subscribe(notification => this.openSnackBar(notification));
   }
-  
+
   ngOnInit(): void {
     this.store.dispatch(loadSettings())
     this.breakpointObserver.observe([
@@ -58,7 +58,7 @@ export class AppComponent implements OnInit {
         panelClass = '';
     }
     this.snackBar.open(notification.message, undefined, {
-      duration: 5000,
+      duration: 3500,
       panelClass: panelClass,
     });
   }

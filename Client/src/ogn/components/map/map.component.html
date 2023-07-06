@@ -1,6 +1,6 @@
-<div id="map" [ngClass]="isMobilePortrait ? 'map map-height-mobile' : 'map map-height-desktop'"></div>
-<app-info-card 
-    [flight]="selectedFlight" 
+<div id="map" class="map"></div>
+<app-info-card
+    [flight]="selectedFlight"
     (close)="unselectGlider()"
     (toggleActiveTracking)="toggleActiveTracking($event)"
     (toggleBarogram)="toggleBarogram($event)">

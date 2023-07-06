@@ -9,13 +9,9 @@
     background-color: #3f51b5;
     border-radius: 0;
     color: white;
-    z-index: 800;
-    // background-color: var(--color-white-navigation);
-    // -webkit-backdrop-filter: blur(18px);
-    // backdrop-filter: blur(18px);
-    // align-items: flex-start;
-    // border-top: 1px solid var(--color-border-1);
-    // user-select: none;
+    -webkit-box-shadow: 0px 8px 8px 10px rgba(0,0,0,0.5);
+    -moz-box-shadow: 0px 8px 8px 10px rgba(0,0,0,0.5);
+    box-shadow: 0px 8px 8px 10px rgba(0,0,0,0.5);
 }
 
 .nav-item {
@@ -29,7 +25,7 @@
     cursor: pointer;
     color: rgb(192, 192, 192); // inactive state
     position: relative;
-    
+
     &.active {
         color: white; // active state
     }

@@ -16,6 +16,9 @@
   </button>
 </mat-toolbar>
 
-<router-outlet></router-outlet>
+<div [ngClass]="isMobilePortrait ? 'content-mobile' : 'content-desktop'">
+  <router-outlet></router-outlet>
+</div>
+
 
 <app-bottom-navigation *ngIf="isMobilePortrait"></app-bottom-navigation>
