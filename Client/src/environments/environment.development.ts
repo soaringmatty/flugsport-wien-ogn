@@ -1,3 +1,3 @@
 export const environment = {
-    api: 'http://localhost:5012/'//'https://flugsportwienognapi.azurewebsites.net/'
+    api: 'https://flugsport.amarsch.at/'//'http://localhost:5012/'
 };
