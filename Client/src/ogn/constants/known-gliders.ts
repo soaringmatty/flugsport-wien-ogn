@@ -48,7 +48,7 @@ export const clubGliders: Glider[] = [
         Registration: 'OE-5491',
         RegistrationShort: '91',
         Model: 'DG 300 Elan',
-        FlarmId: 'DD9663'
+        FlarmId: 'DDAF0B'
     },
     {
         Owner: 'ASKÖ Flugsport Wien',
