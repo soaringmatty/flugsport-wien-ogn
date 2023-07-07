@@ -1,7 +1,10 @@
 import { GliderType } from "./glider-type";
+import { MapType } from "./map-type";
 
 export interface MapSettings {
-    gliderFilter: GliderType;
+    gliderFilterOnMap: GliderType;
     hideGlidersOnGround: boolean;
+    mapType: MapType
     useFlightPathSmoothing: boolean;
+    gliderFilterInLists: GliderType;
 }

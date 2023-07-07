@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 import { MapSettings } from '../models/map-settings.model';
 import { GliderType } from '../models/glider-type';
+import { MapType } from '../models/map-type';
 
 export const defaultSettings: MapSettings = {
-  gliderFilter: GliderType.all,
+  gliderFilterOnMap: GliderType.all,
   hideGlidersOnGround: false,
-  useFlightPathSmoothing: true
+  mapType: MapType.osm,
+  useFlightPathSmoothing: true,
+  gliderFilterInLists: GliderType.club,
 }
 
 @Injectable({

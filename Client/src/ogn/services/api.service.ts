@@ -38,11 +38,13 @@ export class ApiService {
     );
   }
 
-  getGliderList(): Observable<GliderListItem[]> {
-    return this.http.get<GliderListItem[]>(api.getGliderList);
+  getGliderList(includePrivateGliders: boolean = true): Observable<GliderListItem[]> {
+    const url = api.getGliderList.replace('{pg}', includePrivateGliders.toString())
+    return this.http.get<GliderListItem[]>(url);
   }
 
-  getDepartureList(): Observable<DepartureListItem[]> {
-    return this.http.get<DepartureListItem[]>(api.getDepartureList);
+  getDepartureList(includePrivateGliders: boolean = true): Observable<DepartureListItem[]> {
+    const url = api.getDepartureList.replace('{pg}', includePrivateGliders.toString())
+    return this.http.get<DepartureListItem[]>(url);
   }
 }

@@ -2,7 +2,7 @@
     <mat-card-content>
         <div class="section">
             <p class="title">Karte: Flugzeuge filtern</p>
-            <mat-radio-group class="group" [(ngModel)]="settings.gliderFilter" (change)="save()">
+            <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterOnMap" (change)="save()">
                 <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
                 <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
                 <mat-radio-button [value]="2">Alle Segelflugzeuge</mat-radio-button>
@@ -11,7 +11,7 @@
         </div>
         <div class="section">
             <p class="title">Karte (available soon)</p>
-            <mat-radio-group [disabled]="true" class="group" [value]="0" (change)="save()">
+            <mat-radio-group [disabled]="true" class="group" [(ngModel)]="settings.mapType" (change)="save()">
                 <mat-radio-button [value]="0">Open Street Map</mat-radio-button>
                 <mat-radio-button [value]="1">Stamen (Gelände)</mat-radio-button>
             </mat-radio-group>
@@ -21,8 +21,8 @@
             <mat-checkbox [(ngModel)]="settings.useFlightPathSmoothing" (change)="save()">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
         </div>
         <div class="section">
-            <p class="title">Flugzeuge & Startliste (available soon)</p>
-            <mat-radio-group [disabled]="true" class="group" [value]="0" (change)="save()">
+            <p class="title">Flugzeuge & Startliste</p>
+            <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterInLists" (change)="save()">
                 <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
                 <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
             </mat-radio-group>

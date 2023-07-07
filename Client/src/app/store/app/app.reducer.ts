@@ -36,7 +36,7 @@ export const appReducer = createReducer(
   on(loadFlightsSuccess, (state, {flights}) => {
     let filteredFlights = flights;
     // Filter list of flights depending on settings (club / private / all)
-    switch (state.settings.gliderFilter) {
+    switch (state.settings.gliderFilterOnMap) {
       case GliderType.club:
         filteredFlights = flights.filter(flight => clubGliders.find(glider => flight.flarmId && flight.flarmId === glider.FlarmId));
         break;

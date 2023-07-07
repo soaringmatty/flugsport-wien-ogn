@@ -4,6 +4,6 @@ export const api = {
     getFlights: environment.api + 'flights',
     getFlightPath: environment.api + 'flights/{id}/path',
     getFlightHistory: environment.api + 'flights/{id}/history',
-    getGliderList: environment.api + 'gliderstatus',
-    getDepartureList: environment.api + 'flightbook/loxn',
+    getGliderList: environment.api + 'gliders?includePrivateGliders={pg}',
+    getDepartureList: environment.api + 'flightbook/loxn?includePrivateGliders={pg}',
 }

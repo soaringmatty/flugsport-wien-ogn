@@ -25,7 +25,7 @@ public class GliderStatusController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GliderListItem>>> GetGliderStatusList()
+    public async Task<ActionResult<IEnumerable<GliderListItem>>> GetGliderStatusList([FromQuery] bool includePrivateGliders)
     {
         List<GliderListItem> gliderStatusList = new List<GliderListItem>();
         List<Flight> flights = new List<Flight>();
@@ -60,11 +60,17 @@ public class GliderStatusController : ControllerBase
 
         var homeLatitude = 47.84028;
         var homeLongitude = 16.22139;
-        foreach (var glider in KnownGliders.ClubGliders)
+        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders() : KnownGliders.ClubGliders;
+        foreach (var glider in knownGliders)
         {
             var flight = flights.FirstOrDefault(x => x.FlarmId == glider.FlarmId);
             if (flight == null)
             {
+                // Keep private gliders without a signal out of the result
+                if (includePrivateGliders && KnownGliders.PrivateGliders.Any(x => x.FlarmId == glider.FlarmId))
+                {
+                    continue;
+                }
                 gliderStatusList.Add(new GliderListItem
                 {
                     Owner = glider.Owner,

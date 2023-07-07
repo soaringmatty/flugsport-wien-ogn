@@ -8,6 +8,8 @@ import { loadGliderList } from 'src/app/store/app/app.actions';
 import { Flight } from 'src/ogn/models/flight.model';
 import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { GliderStatus } from 'src/ogn/models/glider-status';
+import { GliderType } from 'src/ogn/models/glider-type';
+import { MapSettings } from 'src/ogn/models/map-settings.model';
 
 @Component({
   selector: 'app-glider-list',
@@ -18,6 +20,7 @@ export default class GliderListComponent implements OnInit, OnDestroy {
   gliderList: GliderListItem[] = [];
   displayedColumns: string[] = ['displayName', 'model', 'status', 'flightDuration', 'distanceFromHome', 'altitude', 'action'];
   isMobilePortrait: boolean = false;
+  settings!: MapSettings
   private readonly updateListTimeout = 5000;
   private readonly onDestroy$ = new Subject<void>();
 
@@ -35,7 +38,13 @@ export default class GliderListComponent implements OnInit, OnDestroy {
       .subscribe((gliderList) => {
         this.gliderList = gliderList;
       });
-    this.store.dispatch(loadGliderList());
+    this.store
+      .select((x) => x.app.settings)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(settings => {
+        this.settings = settings
+      });
+    this.store.dispatch(loadGliderList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}));
     this.setupTimerForGliderPositionUpdates();
   }
 
@@ -98,7 +107,7 @@ export default class GliderListComponent implements OnInit, OnDestroy {
     interval(this.updateListTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
-        this.store.dispatch(loadGliderList())
+        this.store.dispatch(loadGliderList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}))
       });
   }
 }

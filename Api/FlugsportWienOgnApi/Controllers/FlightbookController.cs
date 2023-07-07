@@ -22,7 +22,7 @@ public class FlightbookController : ControllerBase
     }
 
     [HttpGet("loxn")]
-    public async Task<ActionResult<IEnumerable<DepartureListItem>>> GetLoxnFlightbook()
+    public async Task<ActionResult<IEnumerable<DepartureListItem>>> GetLoxnFlightbook([FromQuery] bool includePrivateGliders)
     {
         var client = _httpClientFactory.CreateClient();
         var getFlightbookResponse = await client.GetFromJsonAsync<GetFlightbookResponse>(_flightBookUrl);
@@ -42,9 +42,11 @@ public class FlightbookController : ControllerBase
                 LandingTimestamp = flight.stop_tsp
             });
 
+        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders() : KnownGliders.ClubGliders;
+
         var departureList =
             from flightBook in joinedFlightbook
-            join glider in KnownGliders.ClubGliders on flightBook.FlarmId equals glider.FlarmId
+            join glider in knownGliders on flightBook.FlarmId equals glider.FlarmId
             select new DepartureListItem
             {
                 FlarmId = flightBook.FlarmId,

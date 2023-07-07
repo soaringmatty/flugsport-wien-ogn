@@ -91,7 +91,8 @@ export const selectFlight = createAction(
 );
 
 export const loadGliderList = createAction(
-    AppActionTypes.loadGliderList
+    AppActionTypes.loadGliderList,
+    props<{includePrivateGliders: boolean}>()
 );
 
 export const loadGliderListSuccess = createAction(
@@ -105,7 +106,8 @@ export const loadGliderListFailure = createAction(
 );
 
 export const loadDepartureList = createAction(
-    AppActionTypes.loadDepartureList
+    AppActionTypes.loadDepartureList,
+    props<{includePrivateGliders: boolean}>()
 );
 
 export const loadDepartureListSuccess = createAction(

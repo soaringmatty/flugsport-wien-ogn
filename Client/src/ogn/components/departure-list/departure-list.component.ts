@@ -6,6 +6,8 @@ import { interval, Subject, takeUntil, timestamp } from 'rxjs';
 import { State } from 'src/app/store';
 import { loadDepartureList } from 'src/app/store/app/app.actions';
 import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
+import { GliderType } from 'src/ogn/models/glider-type';
+import { MapSettings } from 'src/ogn/models/map-settings.model';
 
 @Component({
   selector: 'app-departure-list',
@@ -15,6 +17,7 @@ import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
 export class DepartureListComponent implements OnInit, OnDestroy {
   departureList: DepartureListItem[] = [];
   isMobilePortrait: boolean = false;
+  settings!: MapSettings
   private readonly updateListTimeout = 10000;
   private readonly onDestroy$ = new Subject<void>();
 
@@ -32,7 +35,13 @@ export class DepartureListComponent implements OnInit, OnDestroy {
       .subscribe((departureList) => {
         this.departureList = departureList;
       });
-    this.store.dispatch(loadDepartureList());
+      this.store
+      .select((x) => x.app.settings)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(settings => {
+        this.settings = settings
+      });
+    this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}));
     this.setupTimerForGliderPositionUpdates();
   }
 
@@ -50,8 +59,8 @@ export class DepartureListComponent implements OnInit, OnDestroy {
       return ''
     }
     var date = new Date(timestamp * 1000);
-    var hours = date.getUTCHours();
-    var minutes = date.getUTCMinutes();
+    var hours = date.getHours();
+    var minutes = date.getMinutes();
 
     // Add leading zero if necessary
     const hoursString = hours < 10 ? '0' + hours : hours;
@@ -82,7 +91,7 @@ export class DepartureListComponent implements OnInit, OnDestroy {
     interval(this.updateListTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
-        this.store.dispatch(loadDepartureList())
+        this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}))
       });
   }
 }

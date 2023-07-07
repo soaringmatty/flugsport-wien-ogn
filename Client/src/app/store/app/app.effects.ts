@@ -86,7 +86,7 @@ export class AppEffects {
 
   loadGliderList$ = createEffect(() => this.actions$.pipe(
     ofType(AppActions.loadGliderList),
-    exhaustMap(() => this.apiService.getGliderList()
+    exhaustMap(action => this.apiService.getGliderList(action.includePrivateGliders)
       .pipe(
         map(gliderList => {
             return AppActions.loadGliderListSuccess({gliderList})
@@ -104,7 +104,7 @@ export class AppEffects {
 
   loadDepartureList$ = createEffect(() => this.actions$.pipe(
     ofType(AppActions.loadDepartureList),
-    exhaustMap(() => this.apiService.getDepartureList()
+    exhaustMap(action => this.apiService.getDepartureList(action.includePrivateGliders)
       .pipe(
         map(departureList => {
             return AppActions.loadDepartureListSuccess({departureList})
