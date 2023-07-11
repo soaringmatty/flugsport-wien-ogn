@@ -8,7 +8,7 @@ export const defaultSettings: MapSettings = {
   version: config.version,
   gliderFilterOnMap: GliderType.club,
   hideGlidersOnGround: false,
-  mapType: MapType.osm,
+  mapType: MapType.stamen,
   useFlightPathSmoothing: true,
   gliderFilterInLists: GliderType.club,
   showChangelogForNewVersion: true,
