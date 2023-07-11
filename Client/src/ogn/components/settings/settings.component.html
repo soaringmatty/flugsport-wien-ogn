@@ -3,10 +3,10 @@
       <div class="version-number">v{{versionNumber}}</div>
       <p class="title">Karte</p>
       <span class="subtitle">Gelände</span>
-      <mat-radio-group disabled class="group" [(ngModel)]="settings.mapType" (change)="save()">
-          <mat-radio-button [value]="0">Open Street Map</mat-radio-button>
-          <mat-radio-button class="reduce-margin-top" [value]="1">Gelände (Stamen)</mat-radio-button>
-          <mat-radio-button class="reduce-margin-top" [value]="2">Satellit</mat-radio-button>
+      <mat-radio-group class="group" [(ngModel)]="settings.mapType" (change)="save()">
+          <mat-radio-button [value]="0">Gelände (Stamen)</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top" [value]="1">Open Street Map</mat-radio-button>
+          <mat-radio-button disabled class="reduce-margin-top" [value]="2">Satellit</mat-radio-button>
       </mat-radio-group>
 
       <span class="subtitle">Filter</span>

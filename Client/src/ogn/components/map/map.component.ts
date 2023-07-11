@@ -1,6 +1,11 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Flight } from 'src/ogn/models/flight.model';
-import { OSM, Vector as VectorSource } from 'ol/source';
+import { 
+  OSM, 
+  Vector as VectorSource,
+  Tile as TileSource,
+  Stamen
+} from 'ol/source';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Point } from 'ol/geom';
 import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
@@ -24,6 +29,7 @@ import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { coordinates } from 'src/ogn/constants/coordinates';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { MapType } from 'src/ogn/models/map-type';
 
 @Component({
   selector: 'app-map',
@@ -37,6 +43,7 @@ export class MapComponent implements OnInit, OnDestroy {
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
+  backgroundTileLayer!: TileLayer<TileSource>
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
   settings!: MapSettings
@@ -88,12 +95,15 @@ export class MapComponent implements OnInit, OnDestroy {
       .select((x) => x.app.settings)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(settings => {
+        console.log('Loaded settings in map', settings);
         if (this.settings) {
           this.settings = settings
+          this.setMapTilesAccordingToSettings();
           this.refreshData();
           return;
         }
         this.settings = settings
+        this.setMapTilesAccordingToSettings();
       });
     // Subscribe to selected flight in store
     this.store
@@ -168,6 +178,19 @@ export class MapComponent implements OnInit, OnDestroy {
     if (this.selectedFlight) {
       this.store.dispatch(loadFlightHistory({flarmId: this.selectedFlight.flarmId}))
     }
+  }
+
+  private setMapTilesAccordingToSettings(): void {
+    let source = new Stamen({layer: 'terrain'});
+    switch (this.settings.mapType) {
+      case MapType.osm:
+        source = new OSM()
+        break;
+      case MapType.satellite:
+      default:
+        break;
+    }
+    this.backgroundTileLayer.setSource(source);
   }
 
   // Start to live track the selected gliders position (always keep map centered on glider)
@@ -362,7 +385,7 @@ export class MapComponent implements OnInit, OnDestroy {
       : coordinates.loxn;
     const initialZoom = storedZoom ? +storedZoom : 12;
 
-    const osmTileLayer = new TileLayer({
+    this.backgroundTileLayer = new TileLayer({
       source: new OSM(),
     });
     this.glidersVectorLayer = new VectorLayer({
@@ -394,7 +417,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.map = new Map({
       target: 'map',
       layers: [
-        osmTileLayer,
+        this.backgroundTileLayer,
         this.flightPathStrokeVectorLayer,
         this.flightPathVectorLayer,
         this.glidersVectorLayer,

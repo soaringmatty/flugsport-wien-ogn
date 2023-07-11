@@ -1,5 +1,5 @@
 export enum MapType {
-  osm = 0,
-  stamen = 1,
+  stamen = 0,
+  osm = 1,
   satellite = 2,
 }
