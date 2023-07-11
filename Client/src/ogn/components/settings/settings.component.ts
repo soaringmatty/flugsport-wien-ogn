@@ -5,6 +5,7 @@ import { State } from 'src/app/store';
 import { Subject, takeUntil } from 'rxjs';
 import { saveSettings } from 'src/app/store/app/app.actions';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
+import config from '../../../../package.json'
 
 @Component({
   selector: 'app-settings',
@@ -12,11 +13,11 @@ import { MapSettings } from 'src/ogn/models/map-settings.model';
   styleUrls: ['./settings.component.scss']
 })
 export class SettingsComponent {
-  settings!: MapSettings
+  settings!: MapSettings;
+  versionNumber = config.version;
   private readonly onDestroy$ = new Subject<void>();
 
   constructor(private store: Store<State>) {
-
   }
 
   ngOnInit(): void {

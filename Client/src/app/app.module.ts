@@ -19,11 +19,13 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { BottomNavigationComponent } from './components/bottom-navigation/bottom-navigation.component'
 import { MatCardModule } from '@angular/material/card';
+import { ChangelogComponent } from './components/changelog/changelog.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    BottomNavigationComponent
+    BottomNavigationComponent,
+    ChangelogComponent
   ],
   imports: [
     BrowserModule,
