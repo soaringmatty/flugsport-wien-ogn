@@ -108,5 +108,19 @@ export const privateGliders: Glider[] = [
         RegistrationShort: 'SI',
         Model: 'ASW 28',
         FlarmId: '?D-6928?' // TODO
+    },
+    {
+        Owner: 'Sören Rossow',
+        Registration: 'Unknown', // TODO
+        RegistrationShort: 'CZ',
+        Model: 'Unknown', // TODO
+        FlarmId: '?CZ?' // TODO
+    },
+    {
+        Owner: 'Thomas Dvorak',
+        Registration: 'D-1648',
+        RegistrationShort: 'DE',
+        Model: 'Unknown', // TODO
+        FlarmId: '?D-1648?' // TODO
     }
 ];

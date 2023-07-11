@@ -1,31 +1,40 @@
-<mat-card class="card">
-    <mat-card-content>
-        <div class="section">
-            <p class="title">Karte: Flugzeuge filtern</p>
-            <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterOnMap" (change)="save()">
-                <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
-                <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
-                <mat-radio-button [value]="2">Alle Segelflugzeuge</mat-radio-button>
-            </mat-radio-group>
-            <mat-checkbox [(ngModel)]="settings.hideGlidersOnGround" (change)="save()">Flugzeuge am Boden ausblenden</mat-checkbox>
-        </div>
-        <div class="section">
-            <p class="title">Karte (available soon)</p>
-            <mat-radio-group [disabled]="true" class="group" [(ngModel)]="settings.mapType" (change)="save()">
-                <mat-radio-button [value]="0">Open Street Map</mat-radio-button>
-                <mat-radio-button [value]="1">Stamen (Gelände)</mat-radio-button>
-            </mat-radio-group>
-        </div>
-        <div class="section">
-            <p class="title">Flugweg</p>
-            <mat-checkbox [(ngModel)]="settings.useFlightPathSmoothing" (change)="save()">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
-        </div>
-        <div class="section">
-            <p class="title">Flugzeuge & Startliste</p>
-            <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterInLists" (change)="save()">
-                <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
-                <mat-radio-button [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
-            </mat-radio-group>
-        </div>
-    </mat-card-content>
-</mat-card>
+<div class="container">
+  <div class="section">
+      <div class="version-number">v{{versionNumber}}</div>
+      <p class="title">Karte</p>
+      <span class="subtitle">Gelände</span>
+      <mat-radio-group class="group" [(ngModel)]="settings.mapType" (change)="save()">
+          <mat-radio-button [value]="0">Gelände (Stamen)</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top" [value]="1">Open Street Map</mat-radio-button>
+          <mat-radio-button disabled class="reduce-margin-top" [value]="2">Satellit</mat-radio-button>
+      </mat-radio-group>
+
+      <span class="subtitle">Filter</span>
+      <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterOnMap" (change)="save()">
+          <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top-slightly" [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top-slightly" [value]="2">Alle Segelflugzeuge</mat-radio-button>
+      </mat-radio-group>
+      <mat-checkbox [(ngModel)]="settings.hideGlidersOnGround" (change)="save()">Flugzeuge am Boden ausblenden</mat-checkbox>
+
+      <div class="group" style="margin-top: 4px;">
+        <span class="subtitle">Flugweg</span>
+        <mat-checkbox [(ngModel)]="settings.useFlightPathSmoothing" (change)="save()">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
+      </div>
+  </div>
+    <div class="section">
+        <p class="title">Flugzeuge & Startliste</p>
+        <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterInLists" (change)="save()">
+            <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
+            <mat-radio-button class="reduce-margin-top-slightly" [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
+        </mat-radio-group>
+    </div>
+    <div class="section">
+      <div class="group">
+        <p class="title">Sonstiges</p>
+        <mat-checkbox [(ngModel)]="settings.showChangelogForNewVersion" (change)="save()">Änderungen bei neuer Version anzeigen</mat-checkbox>
+        <mat-checkbox disabled [(ngModel)]="settings.useLowDataTransfer" class="reduce-margin-top" (change)="save()">Datensparmodus aktivieren</mat-checkbox>
+        <mat-checkbox disabled [(ngModel)]="settings.useExperimentalFeatures" class="reduce-margin-top" (change)="save()">Experimentelle Features aktivieren</mat-checkbox>
+      </div>
+    </div>
+</div>
