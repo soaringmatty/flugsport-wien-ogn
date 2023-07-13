@@ -124,3 +124,7 @@ export const privateGliders: Glider[] = [
         FlarmId: '?D-1648?' // TODO
     }
 ];
+
+export function getClubAndPrivateGliders(): Glider[] {
+  return clubGliders.concat(privateGliders);
+}
