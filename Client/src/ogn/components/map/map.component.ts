@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Flight } from 'src/ogn/models/flight.model';
-import { 
-  OSM, 
+import {
+  OSM,
   Vector as VectorSource,
   Tile as TileSource,
   Stamen
@@ -15,12 +15,6 @@ import { Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { loadFlightHistory, loadFlightPath, loadFlights, selectFlight } from 'src/app/store/app/app.actions';
-import {
-  createLabelledGliderMarker,
-  flightPathStyle,
-  flightPathStrokeStyle,
-  getGliderMarkerStyle,
-} from 'src/ogn/services/marker-style.utils';
 import { LineString } from 'ol/geom';
 import { Coordinate } from 'ol/coordinate';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
@@ -30,6 +24,8 @@ import { ActivatedRoute, ParamMap } from '@angular/router';
 import { coordinates } from 'src/ogn/constants/coordinates';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MapType } from 'src/ogn/models/map-type';
+import { clubGliders, getClubAndPrivateGliders } from 'src/ogn/constants/known-gliders';
+import { GliderMarkerService } from 'src/ogn/services/glider-marker.service';
 
 @Component({
   selector: 'app-map',
@@ -54,16 +50,14 @@ export class MapComponent implements OnInit, OnDestroy {
   trackingSubscription!: Subscription;
   mapZoomBeforeActiveTracking: number | undefined;
   mapCenterBeforeActiveTracking: Coordinate | undefined;
-  // Configs
-  updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
-  updatePositionTimeout = 5000; // Defines the timeout between glider position updates in ms
 
   private readonly onDestroy$ = new Subject<void>();
 
   constructor(
     private store: Store<State>,
     private route: ActivatedRoute,
-    private breakpointObserver: BreakpointObserver
+    private breakpointObserver: BreakpointObserver,
+    private gliderMarkerService: GliderMarkerService
   ) {}
 
   ngOnInit(): void {
@@ -97,7 +91,7 @@ export class MapComponent implements OnInit, OnDestroy {
       .subscribe(settings => {
         console.log('Loaded settings in map', settings);
         if (this.settings) {
-          this.settings = settings
+          this.settings = settings;
           this.setMapTilesAccordingToSettings();
           this.refreshData();
           return;
@@ -126,12 +120,8 @@ export class MapComponent implements OnInit, OnDestroy {
 
     document.fonts.load('bold 26px Roboto').then(() => {
       //Load and draw glider positions on map
-      if (this.updateGliderPositions) {
-        this.store.dispatch(loadFlights());
-        this.setupTimerForGliderPositionUpdates();
-      } else {
-        this.store.dispatch(loadFlights());
-      }
+      this.store.dispatch(loadFlights());
+      this.setupTimerForGliderPositionUpdates();
     });
   }
 
@@ -248,7 +238,32 @@ export class MapComponent implements OnInit, OnDestroy {
   // Draw glider markers on map (update marker position if marker already exists)
   private updateGliderPositionsOnMap(flights: Flight[]) {
     console.log("Glider markers", flights);
-    flights.forEach((flight) => {
+    const knownGliderFlights: Flight[] = []
+    flights.forEach(flight => {
+      const clubAndPrivateGliders = getClubAndPrivateGliders();
+      if (clubAndPrivateGliders.some(x => x.FlarmId === flight.flarmId)) {
+        knownGliderFlights.push(flight);
+      }
+      else {
+        this.updateSingleMarkerOnMap(flight, false)
+      }
+    });
+    knownGliderFlights.forEach(flight => {
+      this.updateSingleMarkerOnMap(flight, true);
+    });
+    // Remove features that no longer exist in flights
+    this.glidersVectorLayer
+      .getSource()
+      ?.getFeatures()
+      .forEach((feature) => {
+        const flarmId = feature.getId();
+        if (!flights.find((flight) => flight.flarmId === flarmId)) {
+          this.glidersVectorLayer.getSource()?.removeFeature(feature);
+        }
+      });
+  }
+
+  private updateSingleMarkerOnMap(flight: Flight, isKnownGlider: boolean) {
       if (!flight.longitude || !flight.latitude) {
         return;
       }
@@ -269,21 +284,10 @@ export class MapComponent implements OnInit, OnDestroy {
         });
         gliderMarkersFeature.setId(flight.flarmId);
         const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-        const iconStyle = getGliderMarkerStyle(flight, isSelected);
+        const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected, isKnownGlider);
         gliderMarkersFeature.setStyle(iconStyle);
         this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
       }
-    });
-    // Remove features that no longer exist in flights
-    this.glidersVectorLayer
-      .getSource()
-      ?.getFeatures()
-      .forEach((feature) => {
-        const flarmId = feature.getId();
-        if (!flights.find((flight) => flight.flarmId === flarmId)) {
-          this.glidersVectorLayer.getSource()?.removeFeature(feature);
-        }
-      });
   }
 
   // Change marker color when glider is selected
@@ -296,7 +300,7 @@ export class MapComponent implements OnInit, OnDestroy {
       ?.getFeatureById(flight.flarmId);
     const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
     if (existingFeature) {
-      const iconStyle = getGliderMarkerStyle(flight, isSelected);
+      const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
       existingFeature.setStyle(iconStyle);
     }
   }
@@ -316,8 +320,8 @@ export class MapComponent implements OnInit, OnDestroy {
 
     const outerLineFeature = new Feature(geometry);
     const innerLineFeature = new Feature(geometry);
-    outerLineFeature.setStyle(flightPathStrokeStyle);
-    innerLineFeature.setStyle(flightPathStyle);
+    outerLineFeature.setStyle(this.gliderMarkerService.flightPathStrokeStyle);
+    innerLineFeature.setStyle(this.gliderMarkerService.flightPathStyle);
 
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathStrokeVectorLayer.getSource()?.addFeature(outerLineFeature);
@@ -326,7 +330,7 @@ export class MapComponent implements OnInit, OnDestroy {
 }
 
   private setupTimerForGliderPositionUpdates() {
-    interval(this.updatePositionTimeout)
+    interval(this.settings.updateTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
         this.store.dispatch(loadFlights())

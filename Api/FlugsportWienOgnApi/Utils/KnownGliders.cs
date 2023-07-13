@@ -25,6 +25,8 @@ public static class KnownGliders
         new Glider { Owner = "Ernst Schicker", Registration = "D-7007", RegistrationShort = "SE", Model = "Mini Nimbus", FlarmId = "3EFBF6" },
         new Glider { Owner = "Stephan Haupt", Registration = "D-KEVA", RegistrationShort = "O2", Model = "DG-800", FlarmId = "D0019F" },
         new Glider { Owner = "Kathrin Havemann / Mario Neumann", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", FlarmId = "?D-6928?" }, // TODO
+        new Glider { Owner = "Sören Rossow", Registration = "D-3060", RegistrationShort = "CZ", Model = "HPH 304CZ-17", FlarmId = "3EEC8B" }, // TODO (DF0F03)
+        new Glider { Owner = "Thomas Dvorak", Registration = "D-1648", RegistrationShort = "DE", Model = "ASW-20", FlarmId = "3EE707" }, // TODO (DF2082)
     };
 
     public static IEnumerable<Glider> ClubAndPrivateGliders()

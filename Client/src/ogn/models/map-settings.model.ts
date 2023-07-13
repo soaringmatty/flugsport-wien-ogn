@@ -1,5 +1,6 @@
 import { GliderType } from "./glider-type";
 import { MapType } from "./map-type";
+import { MarkerColorScheme } from "./marker-color-scheme";
 
 export interface MapSettings {
     version: string;
@@ -8,7 +9,7 @@ export interface MapSettings {
     mapType: MapType
     useFlightPathSmoothing: boolean;
     gliderFilterInLists: GliderType;
-    useExperimentalFeatures: boolean;
-    useLowDataTransfer: boolean;
     showChangelogForNewVersion: boolean;
+    markerColorScheme: MarkerColorScheme;
+    updateTimeout: number;
 }

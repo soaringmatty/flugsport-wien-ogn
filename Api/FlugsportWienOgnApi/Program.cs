@@ -1,3 +1,7 @@
+using FlugsportWienOgnApi.Hubs;
+using Newtonsoft.Json.Converters;
+using System.ComponentModel;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,6 +11,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
+builder.Services.AddSignalR();
+//services.AddSignalR().AddJsonProtocol(options =>
+//{
+//    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+//});
 builder.Services.AddCors();
 
 var app = builder.Build();
@@ -26,4 +35,9 @@ app.UseCors(x => x
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials()); // allow credentials
 app.MapControllers();
+app.MapHub<LiveGliderHub>("hubs/liveglider");
+//app.UseEndpoints(endpoints =>
+//{
+//    endpoints.MapHub<NotificationReaderHub>("/hubs/notificationReader");
+//});
 app.Run();

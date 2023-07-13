@@ -1,6 +1,5 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Chart, ChartDataset, ChartOptions, ChartType, Color, Colors, Tooltip, TooltipPositionerFunction } from 'chart.js';
-import { flightPathDarkRed, groundHeightBackgroundBrown, groundHeightBrown } from 'src/ogn/services/marker-style.utils';
 import 'chartjs-adapter-date-fns';
 import 'chartjs-plugin-crosshair';
 import {de} from 'date-fns/locale';
@@ -10,6 +9,7 @@ import { State } from 'src/app/store';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { BaseChartDirective } from 'ng2-charts';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { flightPathDarkRed, groundHeightBackgroundBrown } from 'src/ogn/services/glider-marker.service';
 
 declare module 'chart.js' {
   interface TooltipPositionerMap {
@@ -35,7 +35,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
 
   constructor(
     private store: Store<State>,
-    private breakpointObserver: BreakpointObserver
+    private breakpointObserver: BreakpointObserver,
   ) {
     // Create custom tooltip position "center" -> currently not used
     Tooltip.positioners.center = function(elements, eventPosition) {
@@ -102,7 +102,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
               const altitude = context[0].raw as number;
               const groundHeight = context[1].raw as number;
               const agl = altitude - groundHeight;
-  
+
               return `AGL: ${Math.round(agl)} m`;
             },
           }

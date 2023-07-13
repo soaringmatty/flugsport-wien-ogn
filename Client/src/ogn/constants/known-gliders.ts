@@ -111,16 +111,20 @@ export const privateGliders: Glider[] = [
     },
     {
         Owner: 'Sören Rossow',
-        Registration: 'Unknown', // TODO
+        Registration: 'D-3060',
         RegistrationShort: 'CZ',
-        Model: 'Unknown', // TODO
-        FlarmId: '?CZ?' // TODO
+        Model: 'HPH 304CZ-17',
+        FlarmId: '3EEC8B' // TODO (DF0F03)
     },
     {
         Owner: 'Thomas Dvorak',
         Registration: 'D-1648',
         RegistrationShort: 'DE',
-        Model: 'Unknown', // TODO
-        FlarmId: '?D-1648?' // TODO
+        Model: 'ASW-20',
+        FlarmId: '3EE707' // TODO (DF2082)
     }
 ];
+
+export function getClubAndPrivateGliders(): Glider[] {
+  return clubGliders.concat(privateGliders);
+}
