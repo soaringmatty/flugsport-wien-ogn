@@ -40,10 +40,18 @@
     </div>
     <div class="section">
       <div class="group">
+        <p class="title">Update der Daten</p>
+        <mat-radio-group class="group" [(ngModel)]="settings.updateTimeout" (change)="save()">
+          <mat-radio-button [value]="3000">Schnell (Alle 3 Sekunden)</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top" [value]="5000">Normal (Alle 5 Sekunden)</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top" [value]="10000">Daten sparen (Alle 10 Sekunden)</mat-radio-button>
+      </mat-radio-group>
+      </div>
+    </div>
+    <div class="section">
+      <div class="group">
         <p class="title">Sonstiges</p>
         <mat-checkbox [(ngModel)]="settings.showChangelogForNewVersion" (change)="save()">Änderungen bei neuer Version anzeigen</mat-checkbox>
-        <mat-checkbox disabled [(ngModel)]="settings.useLowDataTransfer" class="reduce-margin-top" (change)="save()">Datensparmodus aktivieren</mat-checkbox>
-        <mat-checkbox disabled [(ngModel)]="settings.useExperimentalFeatures" class="reduce-margin-top" (change)="save()">Experimentelle Features aktivieren</mat-checkbox>
       </div>
     </div>
 </div>

@@ -9,8 +9,7 @@ export interface MapSettings {
     mapType: MapType
     useFlightPathSmoothing: boolean;
     gliderFilterInLists: GliderType;
-    useExperimentalFeatures: boolean;
-    useLowDataTransfer: boolean;
     showChangelogForNewVersion: boolean;
     markerColorScheme: MarkerColorScheme;
+    updateTimeout: number;
 }

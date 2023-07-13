@@ -64,7 +64,7 @@ export class GliderMarkerService {
       imageSource = 'assets/marker_white.png';
       textColor = 'black'
     }
-    else if (settings.gliderFilterOnMap === GliderType.all && !isKnownGlider && settings.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
+    else if (settings?.gliderFilterOnMap === GliderType.all && !isKnownGlider && settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
       imageSource = 'assets/marker_yellow.png';
       textColor = 'black'
     }

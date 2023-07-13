@@ -13,9 +13,8 @@ export const defaultSettings: MapSettings = {
   useFlightPathSmoothing: true,
   gliderFilterInLists: GliderType.club,
   showChangelogForNewVersion: true,
-  useExperimentalFeatures: false,
-  useLowDataTransfer: false,
-  markerColorScheme: MarkerColorScheme.highlightKnownGliders
+  markerColorScheme: MarkerColorScheme.highlightKnownGliders,
+  updateTimeout: 5000
 }
 
 @Injectable({

@@ -50,9 +50,6 @@ export class MapComponent implements OnInit, OnDestroy {
   trackingSubscription!: Subscription;
   mapZoomBeforeActiveTracking: number | undefined;
   mapCenterBeforeActiveTracking: Coordinate | undefined;
-  // Configs
-  updateGliderPositions = true; // Defines whether glider positions should be updated every few seconds
-  updatePositionTimeout = 5000; // Defines the timeout between glider position updates in ms
 
   private readonly onDestroy$ = new Subject<void>();
 
@@ -123,12 +120,8 @@ export class MapComponent implements OnInit, OnDestroy {
 
     document.fonts.load('bold 26px Roboto').then(() => {
       //Load and draw glider positions on map
-      if (this.updateGliderPositions) {
-        this.store.dispatch(loadFlights());
-        this.setupTimerForGliderPositionUpdates();
-      } else {
-        this.store.dispatch(loadFlights());
-      }
+      this.store.dispatch(loadFlights());
+      this.setupTimerForGliderPositionUpdates();
     });
   }
 
@@ -337,7 +330,7 @@ export class MapComponent implements OnInit, OnDestroy {
 }
 
   private setupTimerForGliderPositionUpdates() {
-    interval(this.updatePositionTimeout)
+    interval(this.settings.updateTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
         this.store.dispatch(loadFlights())
