@@ -73,7 +73,10 @@ export class MapComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.onDestroy$))
       .subscribe((flights) => {
         this.flights = flights;
-        this.updateGliderPositionsOnMap(flights);
+        console.log('settings are', this.settings);
+        if (this.settings) {
+          this.updateGliderPositionsOnMap(flights);
+        }
       });
     // Draw flight path on map every time the flight history data in store is updated
     this.store
@@ -118,11 +121,7 @@ export class MapComponent implements OnInit, OnDestroy {
       }
     });
 
-    document.fonts.load('bold 26px Roboto').then(() => {
-      //Load and draw glider positions on map
-      this.store.dispatch(loadFlights());
-      this.setupTimerForGliderPositionUpdates();
-    });
+    this.initiallyLoadData();
   }
 
   ngOnDestroy(): void {
@@ -160,6 +159,14 @@ export class MapComponent implements OnInit, OnDestroy {
     //this.updateSelectedGliderMarker(selectedFlight as Flight);
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
+  }
+
+ // Initially load and draw glider positions on map
+  private initiallyLoadData(): void {
+    document.fonts.load('bold 26px Roboto').then(() => {
+      this.refreshData();
+      this.setupTimerForGliderPositionUpdates();
+    });
   }
 
   // Refresh plane positions, flight data and flight path (if a glider is selected)
@@ -236,7 +243,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   // Draw glider markers on map (update marker position if marker already exists)
-  private updateGliderPositionsOnMap(flights: Flight[]) {
+  private updateGliderPositionsOnMap (flights: Flight[]) {
     console.log("Glider markers", flights);
     const knownGliderFlights: Flight[] = []
     flights.forEach(flight => {
@@ -263,7 +270,7 @@ export class MapComponent implements OnInit, OnDestroy {
       });
   }
 
-  private updateSingleMarkerOnMap(flight: Flight, isKnownGlider: boolean) {
+  private updateSingleMarkerOnMap (flight: Flight, isKnownGlider: boolean) {
       if (!flight.longitude || !flight.latitude) {
         return;
       }
