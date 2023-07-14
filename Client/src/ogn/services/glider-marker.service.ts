@@ -65,8 +65,8 @@ export class GliderMarkerService {
       textColor = 'black'
     }
     else if (settings?.gliderFilterOnMap === GliderType.all && !isKnownGlider && settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
-      imageSource = 'assets/marker_yellow.png';
-      textColor = 'black'
+      imageSource = 'assets/marker_grey.png';
+      textColor = 'white'
     }
 
     // Load the icon image
