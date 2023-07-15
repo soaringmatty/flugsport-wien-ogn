@@ -1,4 +1,5 @@
 using FlugsportWienOgnApi.Hubs;
+using FlugsportWienOgnApi.Services;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 
@@ -16,6 +17,9 @@ builder.Services.AddSignalR();
 //{
 //    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
 //});
+
+builder.Services.AddSingleton<FlightService>();
+
 builder.Services.AddCors();
 
 var app = builder.Build();
