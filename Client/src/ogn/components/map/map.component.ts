@@ -26,6 +26,7 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MapType } from 'src/ogn/models/map-type';
 import { clubGliders, getClubAndPrivateGliders } from 'src/ogn/constants/known-gliders';
 import { GliderMarkerService } from 'src/ogn/services/glider-marker.service';
+import { FlightAnalysationService } from 'src/ogn/services/flight-analysation.service';
 
 @Component({
   selector: 'app-map',
@@ -57,7 +58,8 @@ export class MapComponent implements OnInit, OnDestroy {
     private store: Store<State>,
     private route: ActivatedRoute,
     private breakpointObserver: BreakpointObserver,
-    private gliderMarkerService: GliderMarkerService
+    private gliderMarkerService: GliderMarkerService,
+    private flightAnalysationService: FlightAnalysationService
   ) {}
 
   ngOnInit(): void {
@@ -73,7 +75,6 @@ export class MapComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.onDestroy$))
       .subscribe((flights) => {
         this.flights = flights;
-        console.log('settings are', this.settings);
         if (this.settings) {
           this.updateGliderPositionsOnMap(flights);
         }
@@ -85,6 +86,8 @@ export class MapComponent implements OnInit, OnDestroy {
       .subscribe((history) => {
         if (this.selectedFlight) {
           this.drawFlightPathFromHistory(history);
+          const result = this.flightAnalysationService.analyzeFlightData(history);
+          console.log('analysed flight data', result);
         }
       });
     // Refresh data when settings are updated
@@ -244,7 +247,6 @@ export class MapComponent implements OnInit, OnDestroy {
 
   // Draw glider markers on map (update marker position if marker already exists)
   private updateGliderPositionsOnMap (flights: Flight[]) {
-    console.log("Glider markers", flights);
     const knownGliderFlights: Flight[] = []
     flights.forEach(flight => {
       const clubAndPrivateGliders = getClubAndPrivateGliders();
