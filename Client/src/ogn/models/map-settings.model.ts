@@ -8,6 +8,7 @@ export interface MapSettings {
     hideGlidersOnGround: boolean;
     mapType: MapType
     useFlightPathSmoothing: boolean;
+    onlyShowLastFlight: boolean;
     gliderFilterInLists: GliderType;
     showChangelogForNewVersion: boolean;
     markerColorScheme: MarkerColorScheme;

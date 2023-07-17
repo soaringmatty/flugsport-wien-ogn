@@ -15,6 +15,7 @@ import { SettingsService } from 'src/ogn/services/settings.service';
 import { Subject, takeUntil } from 'rxjs';
 import { Actions, ofType } from '@ngrx/effects';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 
 @Component({
   selector: 'app-root',
@@ -54,9 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       })
     this.store.dispatch(loadSettings())
-    this.breakpointObserver.observe([
-      Breakpoints.HandsetPortrait
-    ]).subscribe(result => {
+    this.breakpointObserver.observe(mobileLayoutBreakpoints).subscribe(result => {
       this.isMobilePortrait = result.matches;
     });
   }
@@ -67,26 +66,29 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openSnackBar(notification: Notification) {
-    let panelClass;
+    let panelClass: string[] = [];
     console.log(notification);
     switch(notification.type) {
       case NotificationType.Info:
-        panelClass = 'snack-bar-info';
+        panelClass = ['snack-bar-info'];
         break;
       case NotificationType.Success:
-        panelClass = 'snack-bar-success';
+        panelClass = ['snack-bar-success'];
         break;
       case NotificationType.Warning:
-        panelClass = 'snack-bar-warn';
+        panelClass = ['snack-bar-warn'];
         break;
       case NotificationType.Error:
         panelClass = ['snack-bar-error'];
         break;
       default:
-        panelClass = '';
+        break;
+    }
+    if (this.isMobilePortrait) {
+      panelClass.push('snackbar-mobile')
     }
     this.snackBar.open(notification.message, undefined, {
-      duration: 1600,
+      duration: 2000,
       panelClass: panelClass,
     });
   }

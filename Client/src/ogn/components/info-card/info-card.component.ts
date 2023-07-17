@@ -1,5 +1,6 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { Flight } from 'src/ogn/models/flight.model';
 
 @Component({
@@ -12,7 +13,7 @@ export class InfoCardComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
   @Output() toggleActiveTracking = new EventEmitter<boolean>();
   @Output() toggleBarogram = new EventEmitter<boolean>();
- 
+
   isMobilePortrait: boolean = false;
   isTracking: boolean = false;
   showBarogram: boolean = false;
@@ -21,9 +22,7 @@ export class InfoCardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.breakpointObserver.observe([
-      Breakpoints.HandsetPortrait
-    ]).subscribe(result => {
+    this.breakpointObserver.observe(mobileLayoutBreakpoints).subscribe(result => {
       this.isMobilePortrait = result.matches;
     });
   }

@@ -3,21 +3,38 @@ import { HistoryEntry } from '../models/history-entry.model';
 
 export interface FlightEvent {
   timestamp: number;
-  event: 'Departure' | 'Landing';
+  event: FlightEventType;
+}
+
+export enum FlightEventType {
+  departure = 0,
+  landing = 1
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class FlightAnalysationService {
+  getHistorySinceLastTakeoff(history: HistoryEntry[]) {
+    const analyzedFlight = this.analyzeFlightData(history);
+    const lastTakeoffTimestamp = this.getLastTakeoffTimestamp(analyzedFlight);
+    //console.log('analysed flight', analyzedFlight);
+    //console.log('last takeoff timestamp', lastTakeoffTimestamp);
+    if (lastTakeoffTimestamp) {
+      const filteredHistory = history.filter(entry => entry.timestamp >= lastTakeoffTimestamp);
+      return filteredHistory;
+    }
+    return history;
+  }
+
   analyzeFlightData(history: HistoryEntry[]): FlightEvent[] {
     const flightEvents: FlightEvent[] = [];
     let isAirborne = false;
 
     const altitudeTolerance = 25;
     const minimumSpeed = 5; // meters per second
-    const minimumGroundTime = 1 * 60 * 1000; // 5 minutes
-    const minimumAirTime = 1 * 60 * 1000; // 5 minutes
+    const minimumGroundTime = 0.5 * 60 * 1000; // 30 seconds
+    const minimumAirTime = 1 * 60 * 1000; // 1 minute
 
     for (let i = 1; i < history.length; i++) {
       const prevEntry = history[i - 1];
@@ -35,7 +52,7 @@ export class FlightAnalysationService {
         // check if it's been on the ground for at least minimumGroundTime
         const groundTime = currentEntry.timestamp - flightEvents[flightEvents.length - 1].timestamp;
         if (groundTime >= minimumGroundTime) {
-          flightEvents.push({ timestamp: currentEntry.timestamp, event: 'Landing' });
+          flightEvents.push({ timestamp: currentEntry.timestamp, event: FlightEventType.landing });
           isAirborne = false;
         }
       } else {
@@ -44,7 +61,7 @@ export class FlightAnalysationService {
         // check if it's been airborne for at least minimumAirTime
         const airTime = currentEntry.timestamp - (flightEvents.length > 0 ? flightEvents[flightEvents.length - 1].timestamp : history[0].timestamp);
         if (airTime >= minimumAirTime) {
-          flightEvents.push({ timestamp: currentEntry.timestamp, event: 'Departure' });
+          flightEvents.push({ timestamp: currentEntry.timestamp, event: FlightEventType.departure });
           isAirborne = true;
         }
       }
@@ -53,7 +70,19 @@ export class FlightAnalysationService {
     return flightEvents;
   }
 
-  getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  getLastTakeoffTimestamp(flightEvents: FlightEvent[]): number | null {
+    // Find the last 'Departure' event
+    for (let i = flightEvents.length - 1; i >= 0; i--) {
+      if (flightEvents[i].event === FlightEventType.departure) {
+        return flightEvents[i].timestamp;
+      }
+    }
+
+    // If no 'Departure' event is found, return null
+    return null;
+  }
+
+  private getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     // approximate radius of earth in meters
     const R = 6371e3;
 

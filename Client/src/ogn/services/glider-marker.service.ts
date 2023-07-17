@@ -34,14 +34,14 @@ export class GliderMarkerService {
     })
   });
 
-  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false, isKnownGlider: boolean = false): Style {
+  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false, gliderType: GliderType = GliderType.all): Style {
     return new Style({
         image: new Icon({
           anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, isKnownGlider, flight.timestamp),
+          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, gliderType, flight.timestamp),
           imgSize: [88, 88]
         }),
     });
@@ -51,7 +51,7 @@ export class GliderMarkerService {
     label: string,
     settings: MapSettings,
     isSelected: boolean,
-    isKnownGlider: boolean,
+    gliderType: GliderType,
     lastUpdateTimestamp?: number
   ): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
@@ -60,13 +60,23 @@ export class GliderMarkerService {
     let imageSource = 'assets/marker_blue.png';
     let textColor = 'white';
 
-    if (isSelected) {
-      imageSource = 'assets/marker_white.png';
-      textColor = 'black'
-    }
-    else if (settings?.gliderFilterOnMap === GliderType.all && !isKnownGlider && settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
-      imageSource = 'assets/marker_grey.png';
-      textColor = 'white'
+    // if (isSelected) {
+    //   imageSource = 'assets/marker_white.png';
+    //   textColor = 'black'
+    // }
+    if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
+      switch (gliderType) {
+        case GliderType.all:
+          imageSource = 'assets/marker_grey.png';
+          textColor = 'white';
+          break;
+        case GliderType.private:
+          imageSource = 'assets/marker_beige.png';
+          textColor = 'black';
+          break;
+        default:
+          break;
+      }
     }
 
     // Load the icon image

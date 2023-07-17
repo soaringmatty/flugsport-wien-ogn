@@ -1,6 +1,6 @@
 <div class="container">
   <div class="section">
-      <div class="version-number">v{{versionNumber}}</div>
+      <div class="version-number" (click)="showChangelog()">v{{versionNumber}}</div>
       <p class="title">Karte</p>
       <span class="subtitle">Gelände</span>
       <mat-radio-group class="group" [(ngModel)]="settings.mapType" (change)="save()">
@@ -17,11 +17,11 @@
       </mat-radio-group>
       <mat-checkbox [(ngModel)]="settings.hideGlidersOnGround" (change)="save()">Flugzeuge am Boden ausblenden</mat-checkbox>
 
-      <div class="group" style="margin-top: 4px;">
+      <div class="group increase-margin-top">
         <span class="subtitle">Marker Farbschema</span>
         <mat-radio-group class="group" [(ngModel)]="settings.markerColorScheme" (change)="save()">
             <mat-radio-button [value]="0">Vereinsflugzeuge hervorheben</mat-radio-button>
-            <mat-radio-button disabled class="reduce-margin-top" [value]="1">Je nach Flughöhe</mat-radio-button>
+            <mat-radio-button hidden class="reduce-margin-top" [value]="1">Je nach Flughöhe</mat-radio-button>
             <mat-radio-button class="reduce-margin-top" [value]="2">Nur Blau (ursprünglich)</mat-radio-button>
         </mat-radio-group>
       </div>
@@ -29,6 +29,7 @@
       <div class="group" style="margin-top: 4px;">
         <span class="subtitle">Flugweg</span>
         <mat-checkbox [(ngModel)]="settings.useFlightPathSmoothing" (change)="save()">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
+        <mat-checkbox [(ngModel)]="settings.onlyShowLastFlight" class="reduce-margin-top" (change)="save()">Nur aktuellen / letzten Flug anzeigen</mat-checkbox>
       </div>
   </div>
     <div class="section">

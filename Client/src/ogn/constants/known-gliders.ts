@@ -63,7 +63,14 @@ export const clubGliders: Glider[] = [
         RegistrationShort: 'DI',
         Model: 'DG 500 Orion',
         FlarmId: 'DD9F86'
-    }
+    },
+    // {
+    //   Owner: 'Test',
+    //   Registration: 'D-TEST',
+    //   RegistrationShort: 'TS2',
+    //   Model: 'Club',
+    //   FlarmId: '3EE265'
+    // },
 ];
 
 export const privateGliders: Glider[] = [
@@ -103,11 +110,25 @@ export const privateGliders: Glider[] = [
         FlarmId: 'D0019F'
     },
     {
-        Owner: 'Kathrin Havemann / Mario Neumann',
-        Registration: 'D-6928',
-        RegistrationShort: 'SI',
-        Model: 'ASW 28',
-        FlarmId: '?D-6928?' // TODO
+        Owner: 'Thomas Dvorak',
+        Registration: 'D-1648',
+        RegistrationShort: 'DE',
+        Model: 'ASW-20',
+        FlarmId: '3EE707'
+    },
+    {
+        Owner: 'Christoph Urach',
+        Registration: 'D-1890',
+        RegistrationShort: 'KA8',
+        Model: 'Ka-8',
+        FlarmId: 'F64550'
+    },
+    {
+        Owner: 'Irmgard Paul',
+        Registration: 'D-KXPP',
+        RegistrationShort: 'PP',
+        Model: 'ASH-26 E',
+        FlarmId: 'DDB289'
     },
     {
         Owner: 'Sören Rossow',
@@ -116,13 +137,20 @@ export const privateGliders: Glider[] = [
         Model: 'HPH 304CZ-17',
         FlarmId: '3EEC8B' // TODO (DF0F03)
     },
-    {
-        Owner: 'Thomas Dvorak',
-        Registration: 'D-1648',
-        RegistrationShort: 'DE',
-        Model: 'ASW-20',
-        FlarmId: '3EE707' // TODO (DF2082)
-    }
+    // {
+    //     Owner: 'Kathrin Havemann / Mario Neumann',
+    //     Registration: 'D-6928',
+    //     RegistrationShort: 'SI',
+    //     Model: 'ASW 28',
+    //     FlarmId: '?D-6928?' // TODO
+    // },
+    // {
+    //   Owner: 'Test',
+    //   Registration: 'D-TEST',
+    //   RegistrationShort: 'TS2',
+    //   Model: 'Private',
+    //   FlarmId: 'DDAEF0'
+    // },
 ];
 
 export function getClubAndPrivateGliders(): Glider[] {

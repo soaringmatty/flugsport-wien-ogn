@@ -10,6 +10,9 @@ import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { BaseChartDirective } from 'ng2-charts';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { flightPathDarkRed, groundHeightBackgroundBrown } from 'src/ogn/services/glider-marker.service';
+import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
+import { FlightAnalysationService } from 'src/ogn/services/flight-analysation.service';
+import { MapSettings } from 'src/ogn/models/map-settings.model';
 
 declare module 'chart.js' {
   interface TooltipPositionerMap {
@@ -25,6 +28,7 @@ declare module 'chart.js' {
 export class BarogramComponent implements OnInit, OnDestroy {
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
 
+  settings!: MapSettings;
   isMobilePortrait: boolean = false;
   flightHistory: HistoryEntry[] = [];
   lineChartData: ChartDataset[] = [];
@@ -36,6 +40,7 @@ export class BarogramComponent implements OnInit, OnDestroy {
   constructor(
     private store: Store<State>,
     private breakpointObserver: BreakpointObserver,
+    private flightAnalysationService: FlightAnalysationService
   ) {
     // Create custom tooltip position "center" -> currently not used
     Tooltip.positioners.center = function(elements, eventPosition) {
@@ -49,17 +54,27 @@ export class BarogramComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.breakpointObserver.observe([
-      Breakpoints.HandsetPortrait
-    ]).subscribe(result => {
+    this.breakpointObserver.observe(mobileLayoutBreakpoints).subscribe(result => {
       this.isMobilePortrait = result.matches;
       this.lineChartOptions = this.setChartOptions();
     });
     this.store
+      .select((x) => x.app.settings)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(settings => {
+        this.settings = settings;
+      });
+    this.store
       .select((x) => x.app.flightHistory)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(flightHistory => {
-        this.flightHistory = flightHistory;
+        if (this.settings.onlyShowLastFlight) {
+          const filteredHistoryEntries = this.flightAnalysationService.getHistorySinceLastTakeoff(flightHistory);
+          this.flightHistory = filteredHistoryEntries;
+        }
+        else {
+          this.flightHistory = flightHistory;
+        }
         this.initalizeChart();
       });
   }
@@ -67,17 +82,6 @@ export class BarogramComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.onDestroy$.next();
     this.onDestroy$.complete();
-  }
-
-  addValue(historyEntry: HistoryEntry): void {
-    if (this.lineChartData?.length < 2) {
-      console.warn('Unable to insert value to barogram. Chart is not initialized')
-      return;
-    }
-    this.lineChartLabels.push(historyEntry.timestamp);
-    this.lineChartData[0].data.push(historyEntry.altitude);
-    this.lineChartData[1].data.push(historyEntry.groundHeight);
-    this.chart?.update();
   }
 
   private setChartOptions(): ChartOptions {

@@ -11,6 +11,7 @@ export const defaultSettings: MapSettings = {
   hideGlidersOnGround: false,
   mapType: MapType.stamen,
   useFlightPathSmoothing: true,
+  onlyShowLastFlight: false,
   gliderFilterInLists: GliderType.club,
   showChangelogForNewVersion: true,
   markerColorScheme: MarkerColorScheme.highlightKnownGliders,

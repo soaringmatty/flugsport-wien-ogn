@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { interval, Subject, takeUntil, timestamp } from 'rxjs';
 import { State } from 'src/app/store';
 import { loadDepartureList } from 'src/app/store/app/app.actions';
+import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
 import { GliderType } from 'src/ogn/models/glider-type';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
@@ -24,9 +25,7 @@ export class DepartureListComponent implements OnInit, OnDestroy {
   constructor(private breakpointObserver: BreakpointObserver, private store: Store<State>, private router: Router) { }
 
   ngOnInit(): void {
-    this.breakpointObserver.observe([
-      Breakpoints.HandsetPortrait
-    ]).subscribe(result => {
+    this.breakpointObserver.observe(mobileLayoutBreakpoints).subscribe(result => {
       this.isMobilePortrait = result.matches;
     });
     this.store
