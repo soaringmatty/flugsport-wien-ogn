@@ -20,12 +20,14 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { BottomNavigationComponent } from './components/bottom-navigation/bottom-navigation.component'
 import { MatCardModule } from '@angular/material/card';
 import { ChangelogComponent } from './components/changelog/changelog.component';
+import { OrientationNotSupportedComponent } from './components/orientation-not-supported/orientation-not-supported.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     BottomNavigationComponent,
-    ChangelogComponent
+    ChangelogComponent,
+    OrientationNotSupportedComponent
   ],
   imports: [
     BrowserModule,

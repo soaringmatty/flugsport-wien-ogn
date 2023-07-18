@@ -28,8 +28,10 @@ import { clubGliders, getClubAndPrivateGliders, privateGliders } from 'src/ogn/c
 import { GliderMarkerService } from 'src/ogn/services/glider-marker.service';
 import { FlightAnalysationService } from 'src/ogn/services/flight-analysation.service';
 import { GliderType } from 'src/ogn/models/glider-type';
-import { tr } from 'date-fns/locale';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
+import { MapBarogramSyncService, MarkerLocationUpdate } from 'src/ogn/services/map-barogram-sync.service';
+import Style from 'ol/style/Style';
+import Icon from 'ol/style/Icon';
 
 @Component({
   selector: 'app-map',
@@ -43,6 +45,7 @@ export class MapComponent implements OnInit, OnDestroy {
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
+  flightPathMarkerVectorLayer!: VectorLayer<VectorSource>;
   backgroundTileLayer!: TileLayer<TileSource>
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
@@ -62,7 +65,8 @@ export class MapComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private breakpointObserver: BreakpointObserver,
     private gliderMarkerService: GliderMarkerService,
-    private flightAnalysationService: FlightAnalysationService
+    private flightAnalysationService: FlightAnalysationService,
+    private mapBarogramSyncService: MapBarogramSyncService
   ) {}
 
   ngOnInit(): void {
@@ -108,6 +112,11 @@ export class MapComponent implements OnInit, OnDestroy {
       .select((x) => x.app.selectedFlight)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(selectedFlight => this.selectedFlight = selectedFlight ? selectedFlight : undefined);
+    this.mapBarogramSyncService.markerLocationUpdateRequested
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe((markerLocationUpdate) => {
+        this.drawMarkerOnFlightPath(markerLocationUpdate);
+      })
 
     // Set map center and zoom level based on route params
     this.route.paramMap.pipe(takeUntil(this.onDestroy$)).subscribe((params: ParamMap) => {
@@ -141,6 +150,10 @@ export class MapComponent implements OnInit, OnDestroy {
 
   toggleBarogram(newShowBarogram: boolean): void {
     this.showBarogram = newShowBarogram;
+    if (!newShowBarogram) {
+      // Clear location marker on map
+      this.mapBarogramSyncService.updateLocationMarkerOnMap();
+    }
   }
 
   selectGlider(flarmId: string): void {
@@ -153,13 +166,13 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   unselectGlider(): void {
-    const selectedFlight = this.selectedFlight;
     this.store.dispatch(selectFlight({flight: null}))
     this.stopActiveTracking();
     this.showBarogram = false;
     //this.updateSelectedGliderMarker(selectedFlight as Flight);
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
+    this.flightPathMarkerVectorLayer.getSource()?.clear();
   }
 
  // Initially load and draw glider positions on map
@@ -349,7 +362,37 @@ export class MapComponent implements OnInit, OnDestroy {
     this.flightPathStrokeVectorLayer.getSource()?.addFeature(outerLineFeature);
     this.flightPathVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.addFeature(innerLineFeature);
-}
+  }
+
+  private drawMarkerOnFlightPath(markerLocationUpdate: MarkerLocationUpdate) {
+    // Clear previous markers
+    this.flightPathMarkerVectorLayer.getSource()?.clear();
+
+    // If no lonLat is provided, just clear the markers and return
+    if (!markerLocationUpdate) {
+      return;
+    }
+
+    const marker = new Feature({
+      geometry: new Point(fromLonLat([markerLocationUpdate.longitude, markerLocationUpdate.latitude]))
+    });
+
+    const rotationRadians = markerLocationUpdate.rotation * (Math.PI / 180);
+
+    marker.setStyle(
+      new Style({
+        image: new Icon({
+          anchor: [0.5, 0.5],
+          src: 'assets/glider.png',
+          rotateWithView: false,
+          rotation: rotationRadians,
+          scale: 0.15
+        }),
+      }),
+    );
+
+    this.flightPathMarkerVectorLayer.getSource()?.addFeature(marker);
+  }
 
   private setupTimerForGliderPositionUpdates() {
     interval(this.settings.updateTimeout)
@@ -438,9 +481,13 @@ export class MapComponent implements OnInit, OnDestroy {
     this.flightPathVectorLayer = new VectorLayer({
       source: new VectorSource(),
     });
+    this.flightPathMarkerVectorLayer = new VectorLayer({
+      source: new VectorSource(),
+    });
     const mapView = new View({
       center: fromLonLat(initialCenter),
       zoom: initialZoom,
+      minZoom: 6,
       enableRotation: false
     });
     // Always store current map center and zoom in session storage
@@ -475,6 +522,7 @@ export class MapComponent implements OnInit, OnDestroy {
         this.backgroundTileLayer,
         this.flightPathStrokeVectorLayer,
         this.flightPathVectorLayer,
+        this.flightPathMarkerVectorLayer,
         this.glidersVectorLayer,
       ],
       view: mapView,

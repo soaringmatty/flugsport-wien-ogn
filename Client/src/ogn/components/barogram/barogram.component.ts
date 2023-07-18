@@ -13,6 +13,7 @@ import { flightPathDarkRed, groundHeightBackgroundBrown } from 'src/ogn/services
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { FlightAnalysationService } from 'src/ogn/services/flight-analysation.service';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapBarogramSyncService } from 'src/ogn/services/map-barogram-sync.service';
 
 declare module 'chart.js' {
   interface TooltipPositionerMap {
@@ -40,7 +41,8 @@ export class BarogramComponent implements OnInit, OnDestroy {
   constructor(
     private store: Store<State>,
     private breakpointObserver: BreakpointObserver,
-    private flightAnalysationService: FlightAnalysationService
+    private flightAnalysationService: FlightAnalysationService,
+    private mapBarogramSyncService: MapBarogramSyncService
   ) {
     // Create custom tooltip position "center" -> currently not used
     Tooltip.positioners.center = function(elements, eventPosition) {
@@ -84,6 +86,59 @@ export class BarogramComponent implements OnInit, OnDestroy {
     this.onDestroy$.complete();
   }
 
+  private updateLocationMarkerOnMap(timestamp: number) {
+    const historyEntryIndex = this.flightHistory.findIndex(x => x.timestamp === timestamp);
+    const historyEntry = this.flightHistory[historyEntryIndex]
+
+    let direction = 0;
+    if (this.flightHistory.length > 1 && historyEntryIndex > 0) {
+        const previousHistoryEntry = this.flightHistory[historyEntryIndex - 1]
+        direction = this.getDirection(
+            [previousHistoryEntry.longitude, previousHistoryEntry.latitude],
+            [historyEntry.longitude, historyEntry.latitude]
+        );
+    }
+    else if (this.flightHistory.length > 1 && historyEntryIndex === 0) {
+      const nextHistoryEntry = this.flightHistory[historyEntryIndex + 1]
+        direction = this.getDirection(
+            [historyEntry.longitude, historyEntry.latitude],
+            [nextHistoryEntry.longitude, nextHistoryEntry.latitude]
+        );
+    }
+    this.mapBarogramSyncService.updateLocationMarkerOnMap({
+      longitude: historyEntry?.longitude,
+      latitude: historyEntry?.latitude,
+      rotation: direction
+    })
+  }
+
+  private getDirection(coord1: [number, number], coord2: [number, number]): number {
+    const lon1 = this.toRadians(coord1[0]);
+    const lat1 = this.toRadians(coord1[1]);
+    const lon2 = this.toRadians(coord2[0]);
+    const lat2 = this.toRadians(coord2[1]);
+
+    const dLon = lon2 - lon1;
+
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+    let brng = this.toDegrees(Math.atan2(y, x));
+
+    // Since atan2 returns values from -π to +π, we need to normalize the result by converting it to a compass bearing as measured in degrees clockwise from North.
+    brng = (brng + 360) % 360;
+
+    return brng;
+  }
+
+  private toRadians(degrees: number): number {
+      return degrees * Math.PI / 180;
+  }
+
+  private toDegrees(radians: number): number {
+      return radians * 180 / Math.PI;
+  }
+
   private setChartOptions(): ChartOptions {
     return {
       responsive: true,
@@ -101,6 +156,10 @@ export class BarogramComponent implements OnInit, OnDestroy {
             label: (context) => {
               const value = context.raw as number;
               return `${context.dataset.label}: ${Math.round(value)} m`;
+            },
+            afterFooter: (context) => {
+              const timestamp: number = context[0].parsed.x;
+              this.updateLocationMarkerOnMap(timestamp);
             },
             afterBody: (context) => {
               const altitude = context[0].raw as number;
@@ -144,6 +203,10 @@ export class BarogramComponent implements OnInit, OnDestroy {
           },
           ticks: {
             source: 'auto',
+            maxRotation: 0,
+            minRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 7
           },
           adapters: {
             date: {

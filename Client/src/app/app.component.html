@@ -1,19 +1,43 @@
-<mat-toolbar *ngIf="!isMobilePortrait" color="primary" class="toolbar">
-  <img src="assets/logo_flugsportwien_weiß.png" alt="Logo" style="height: 40px; margin-right: 20px;" />
-  <span>Flugsport Wien OGN Viewer</span>
+<app-orientation-not-supported *ngIf="isMobileLandscape"></app-orientation-not-supported>
+
+<mat-toolbar *ngIf="!isMobilePortrait" color="primary">
+  <img src="assets/app-logo-viki.png" alt="Logo" class="logo" />
+  <span>Flugsport Wien OGN</span>
   <span class="example-spacer"></span>
-  <button mat-icon-button [routerLink]="'map'">
-    <mat-icon>public</mat-icon>
-  </button>
-  <button mat-icon-button [routerLink]="'list'">
-    <mat-icon>flight</mat-icon>
-  </button>
-  <button mat-icon-button [routerLink]="'history'">
-    <mat-icon>manage_search</mat-icon>
-  </button>
-  <button mat-icon-button (click)="openSettingsDialog()">
-    <mat-icon>settings</mat-icon>
-  </button>
+
+  <div *ngIf="isTabletLandscape">
+    <button mat-icon-button [routerLink]="'map'">
+      <mat-icon>public</mat-icon>
+    </button>
+    <button mat-icon-button [routerLink]="'list'">
+      <mat-icon>flight</mat-icon>
+    </button>
+    <button mat-icon-button [routerLink]="'history'">
+      <mat-icon>manage_search</mat-icon>
+    </button>
+    <button mat-icon-button (click)="openSettingsDialog()">
+      <mat-icon>settings</mat-icon>
+    </button>
+  </div>
+
+  <div *ngIf="!isTabletLandscape">
+    <button mat-button [routerLink]="'map'" class="toolbar-button">
+      <mat-icon class="larger-icon">public</mat-icon>
+      <span>Karte</span>
+    </button>
+    <button mat-button [routerLink]="'list'" class="toolbar-button">
+      <mat-icon class="larger-icon">flight</mat-icon>
+      <span>Flugzeuge</span>
+    </button>
+    <button mat-button [routerLink]="'history'" class="toolbar-button">
+      <mat-icon class="larger-icon">manage_search</mat-icon>
+      <span>Startliste</span>
+    </button>
+    <button mat-button (click)="openSettingsDialog()" class="toolbar-button">
+      <mat-icon class="larger-icon">settings</mat-icon>
+      <span>Einstellungen</span>
+    </button>
+  </div>
 </mat-toolbar>
 
 <div [ngClass]="isMobilePortrait ? 'content-mobile' : 'content-desktop'">
