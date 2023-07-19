@@ -41,27 +41,17 @@ export class GliderMarkerService {
     })
   });
 
-  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false, gliderType: GliderType = GliderType.all): Style {
+  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false): Style {
     return new Style({
         image: new Icon({
           anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, gliderType, flight.timestamp),
+          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.timestamp),
           imgSize: [88, 88]
         }),
     });
-  }
-
-  getGliderType(flarmId?: string): GliderType {
-    if (clubGliders.some(x => x.FlarmId === flarmId)) {
-      return GliderType.club;
-    }
-    if (privateGliders.some(x => x.FlarmId === flarmId)) {
-      return GliderType.private;
-    }
-    return GliderType.all;
   }
 
   private createLabelledGliderMarker(
@@ -83,7 +73,7 @@ export class GliderMarkerService {
     }
     else if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
       switch (gliderType) {
-        case GliderType.all:
+        case GliderType.foreign:
           imageSource = 'assets/marker_grey.png';
           textColor = 'white';
           break;

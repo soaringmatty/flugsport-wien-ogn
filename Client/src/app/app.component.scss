@@ -5,12 +5,12 @@
 
 .content-mobile {
   height: calc(100% - 56px);
-  overflow: scroll;
+  overflow-y: auto;
 }
 
 .content-desktop {
   height: calc(100% - 64px);
-  //overflow: scroll;
+  overflow-y: auto;
 }
 
 .toolbar-button {

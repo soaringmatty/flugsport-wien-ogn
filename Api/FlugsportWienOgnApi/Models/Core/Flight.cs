@@ -5,7 +5,7 @@ public class Flight
     public string FlarmId { get; set; }
     public string DisplayName { get; set; }
     public string Registration { get; set; }
-    public int Type { get; set; }
+    public GliderType Type { get; set; }
     public string Model { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
@@ -15,6 +15,4 @@ public class Flight
     public float Speed { get; set; }
     public float Vario { get; set; }
     public float VarioAverage { get; set; }
-    public string? Receiver { get; set; }
-    public dynamic ReceiverPosition { get; set; }
 }

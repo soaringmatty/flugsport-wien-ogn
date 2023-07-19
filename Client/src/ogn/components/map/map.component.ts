@@ -167,8 +167,7 @@ export class MapComponent implements OnInit, OnDestroy {
     const flight = this.flights.find((x) => x.flarmId === flarmId);
     if (flight) {
       this.store.dispatch(selectFlight({flight}))
-      const gliderType = this.gliderMarkerService.getGliderType(flarmId);
-      this.updateSingleMarkerOnMap(flight, gliderType)
+      this.updateSingleMarkerOnMap(flight)
       this.store.dispatch(loadFlightHistory({ flarmId }));
     }
   }
@@ -178,8 +177,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.store.dispatch(selectFlight({flight: null}))
     this.stopActiveTracking();
     this.showBarogram = false;
-    const gliderType = this.gliderMarkerService.getGliderType(this.previousSelectedFlight?.flarmId);
-    this.updateSingleMarkerOnMap(this.previousSelectedFlight as Flight, gliderType)
+    this.updateSingleMarkerOnMap(this.previousSelectedFlight as Flight)
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
     this.flightPathMarkerVectorLayer.getSource()?.clear();
@@ -269,8 +267,7 @@ export class MapComponent implements OnInit, OnDestroy {
   // Draw glider markers on map (update marker position if marker already exists)
   private updateGliderPositionsOnMap (flights: Flight[]) {
     flights.forEach(flight => {
-      const gliderType = this.gliderMarkerService.getGliderType(flight.flarmId);
-      this.updateSingleMarkerOnMap(flight, gliderType)
+      this.updateSingleMarkerOnMap(flight)
     });
 
     // Remove features that no longer exist in flights
@@ -286,7 +283,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
   }
 
-  private updateSingleMarkerOnMap (flight: Flight, gliderType: GliderType) {
+  private updateSingleMarkerOnMap (flight: Flight) {
       if (!flight.longitude || !flight.latitude) {
         return;
       }
@@ -300,7 +297,7 @@ export class MapComponent implements OnInit, OnDestroy {
         const shouldUpdateStyle = this.doesMarkerNeedStyleUpdate(flight.flarmId);
         if (shouldUpdateStyle) {
           const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-          const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected, gliderType);
+          const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
           existingFeature.setGeometry(
             new Point(fromLonLat([flight.longitude, flight.latitude]))
           );
@@ -315,7 +312,7 @@ export class MapComponent implements OnInit, OnDestroy {
         });
         gliderMarkerFeature.setId(flight.flarmId);
         const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-        const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected, gliderType);
+        const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
         gliderMarkerFeature.setStyle(iconStyle);
         this.glidersVectorLayer.getSource()?.addFeature(gliderMarkerFeature);
       }

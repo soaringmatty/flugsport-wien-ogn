@@ -36,4 +36,17 @@ public static class KnownGliders
     {
         return ClubGliders.Concat(PrivateGliders);
     }
+
+    public static GliderType GetGliderTypeByFlarmId(string flarmId)
+    {
+        if (ClubGliders.Any(x => x.FlarmId == flarmId))
+        {
+            return GliderType.Club;
+        }
+        if (PrivateGliders.Any(x => x.FlarmId == flarmId))
+        {
+            return GliderType.Private;
+        }
+        return GliderType.Foreign;
+    }
 }
