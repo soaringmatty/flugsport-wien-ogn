@@ -24,7 +24,7 @@ public class GliderStatusController : ControllerBase
         _httpClientFactory = httpClientFactory;
     }
 
-    [HttpGet]
+    [HttpGet("status")]
     public async Task<ActionResult<IEnumerable<GliderListItem>>> GetGliderStatusList([FromQuery] bool includePrivateGliders)
     {
         List<GliderListItem> gliderStatusList = new List<GliderListItem>();

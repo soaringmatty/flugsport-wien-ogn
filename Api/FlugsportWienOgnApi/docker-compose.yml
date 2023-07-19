@@ -1,0 +1,5 @@
+services:
+  web:
+    image: "flugsport-wien-ogn-image"
+    ports:
+      - "8000:80"

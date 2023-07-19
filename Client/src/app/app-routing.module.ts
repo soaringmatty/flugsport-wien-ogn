@@ -12,11 +12,11 @@ const routes: Routes = [
     component: MapComponent
   },
   {
-    path: 'list',
+    path: 'status',
     component: GliderListComponent
   },
   {
-    path: 'history',
+    path: 'departures',
     component: DepartureListComponent
   },
   {
