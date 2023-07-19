@@ -74,7 +74,6 @@ export class AppComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(result => {
         this.isMobileLandscape = result.matches;
-        console.log(this.isMobileLandscape)
     });
   }
 
@@ -85,7 +84,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   openSnackBar(notification: Notification) {
     let panelClass: string[] = [];
-    console.log(notification);
     switch(notification.type) {
       case NotificationType.Info:
         panelClass = ['snack-bar-info'];

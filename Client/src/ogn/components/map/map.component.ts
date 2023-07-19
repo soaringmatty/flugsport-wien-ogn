@@ -10,7 +10,7 @@ import { fromLonLat, toLonLat, transformExtent } from 'ol/proj';
 import { Point } from 'ol/geom';
 import { Vector as VectorLayer, Tile as TileLayer } from 'ol/layer';
 import Polyline from 'ol/format/Polyline';
-import { Map, View, Feature } from 'ol';
+import { Map as OlMap, View, Feature } from 'ol';
 import { Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
@@ -25,7 +25,7 @@ import { coordinates } from 'src/ogn/constants/coordinates';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { MapType } from 'src/ogn/models/map-type';
 import { clubGliders, getClubAndPrivateGliders, privateGliders } from 'src/ogn/constants/known-gliders';
-import { GliderMarkerService } from 'src/ogn/services/glider-marker.service';
+import { GliderMarkerProperties, GliderMarkerService } from 'src/ogn/services/glider-marker.service';
 import { FlightAnalysationService } from 'src/ogn/services/flight-analysation.service';
 import { GliderType } from 'src/ogn/models/glider-type';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
@@ -41,7 +41,7 @@ import Icon from 'ol/style/Icon';
 export class MapComponent implements OnInit, OnDestroy {
   @ViewChild(BarogramComponent, { static: false }) barogram!: BarogramComponent;
 
-  map!: Map;
+  map!: OlMap;
   glidersVectorLayer!: VectorLayer<VectorSource>;
   flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
   flightPathVectorLayer!: VectorLayer<VectorSource>;
@@ -49,6 +49,7 @@ export class MapComponent implements OnInit, OnDestroy {
   backgroundTileLayer!: TileLayer<TileSource>
   flights: Flight[] = [];
   selectedFlight: Flight | undefined;
+  previousSelectedFlight: Flight | undefined;
   settings!: MapSettings;
   showBarogram: boolean = false;
   isMobilePortrait: boolean = false;
@@ -58,6 +59,7 @@ export class MapComponent implements OnInit, OnDestroy {
   mapZoomBeforeActiveTracking: number | undefined;
   mapCenterBeforeActiveTracking: Coordinate | undefined;
 
+  private markerDictionary: Map<string, GliderMarkerProperties> = new Map();
   private readonly onDestroy$ = new Subject<void>();
 
   constructor(
@@ -112,6 +114,8 @@ export class MapComponent implements OnInit, OnDestroy {
       .select((x) => x.app.selectedFlight)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(selectedFlight => this.selectedFlight = selectedFlight ? selectedFlight : undefined);
+
+    // Sync marker on map with selected timestamp in barogram
     this.mapBarogramSyncService.markerLocationUpdateRequested
       .pipe(takeUntil(this.onDestroy$))
       .subscribe((markerLocationUpdate) => {
@@ -157,19 +161,25 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   selectGlider(flarmId: string): void {
+    if (this.selectedFlight) {
+      this.unselectGlider();
+    }
     const flight = this.flights.find((x) => x.flarmId === flarmId);
     if (flight) {
       this.store.dispatch(selectFlight({flight}))
+      const gliderType = this.gliderMarkerService.getGliderType(flarmId);
+      this.updateSingleMarkerOnMap(flight, gliderType)
       this.store.dispatch(loadFlightHistory({ flarmId }));
-      //this.updateSelectedGliderMarker(flight);
     }
   }
 
   unselectGlider(): void {
+    this.previousSelectedFlight = this.selectedFlight;
     this.store.dispatch(selectFlight({flight: null}))
     this.stopActiveTracking();
     this.showBarogram = false;
-    //this.updateSelectedGliderMarker(selectedFlight as Flight);
+    const gliderType = this.gliderMarkerService.getGliderType(this.previousSelectedFlight?.flarmId);
+    this.updateSingleMarkerOnMap(this.previousSelectedFlight as Flight, gliderType)
     this.flightPathStrokeVectorLayer.getSource()?.clear();
     this.flightPathVectorLayer.getSource()?.clear();
     this.flightPathMarkerVectorLayer.getSource()?.clear();
@@ -258,77 +268,84 @@ export class MapComponent implements OnInit, OnDestroy {
 
   // Draw glider markers on map (update marker position if marker already exists)
   private updateGliderPositionsOnMap (flights: Flight[]) {
-    const clubGliderFlights: Flight[] = []
-    const privateGliderFlights: Flight[] = []
     flights.forEach(flight => {
-      if (clubGliders.some(x => x.FlarmId === flight.flarmId)) {
-        clubGliderFlights.push(flight);
-      }
-      else if (privateGliders.some(x => x.FlarmId === flight.flarmId)) {
-        privateGliderFlights.push(flight);
-      }
-      else {
-        this.updateSingleMarkerOnMap(flight, GliderType.all)
-      }
+      const gliderType = this.gliderMarkerService.getGliderType(flight.flarmId);
+      this.updateSingleMarkerOnMap(flight, gliderType)
     });
-    privateGliderFlights.forEach(flight => {
-      this.updateSingleMarkerOnMap(flight, GliderType.private);
-    });
-    clubGliderFlights.forEach(flight => {
-      this.updateSingleMarkerOnMap(flight, GliderType.club);
-    });
+
     // Remove features that no longer exist in flights
-    this.glidersVectorLayer
-      .getSource()
-      ?.getFeatures()
+    this.glidersVectorLayer.getSource()?.getFeatures()
       .forEach((feature) => {
         const flarmId = feature.getId();
-        if (!flights.find((flight) => flight.flarmId === flarmId)) {
+        const flightStillExists = flights.find((flight) => flight.flarmId === flarmId)
+        if (!flightStillExists) {
           this.glidersVectorLayer.getSource()?.removeFeature(feature);
         }
-      });
+      }
+    );
+
   }
 
   private updateSingleMarkerOnMap (flight: Flight, gliderType: GliderType) {
       if (!flight.longitude || !flight.latitude) {
         return;
       }
-      const existingFeature = this.glidersVectorLayer
-        .getSource()
-        ?.getFeatureById(flight.flarmId);
-      // If marker already exists -> just update it's position
+      const existingFeature = this.glidersVectorLayer.getSource()?.getFeatureById(flight.flarmId);
+      // If marker already exists and is selected or just got unseleted -> update it's position and style
+      // If marker already exists and has no selection event -> just update it's position
       if (existingFeature) {
         existingFeature.setGeometry(
           new Point(fromLonLat([flight.longitude, flight.latitude]))
         );
+        const shouldUpdateStyle = this.doesMarkerNeedStyleUpdate(flight.flarmId);
+        if (shouldUpdateStyle) {
+          const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
+          const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected, gliderType);
+          existingFeature.setGeometry(
+            new Point(fromLonLat([flight.longitude, flight.latitude]))
+          );
+          existingFeature.setStyle(iconStyle);
+        }
       }
       // If marker does not exist -> create new marker
       else {
-        const gliderMarkersFeature = new Feature({
+        const gliderMarkerFeature = new Feature({
           geometry: new Point(fromLonLat([flight.longitude, flight.latitude])),
           flarmId: flight.flarmId,
         });
-        gliderMarkersFeature.setId(flight.flarmId);
+        gliderMarkerFeature.setId(flight.flarmId);
         const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
         const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected, gliderType);
-        gliderMarkersFeature.setStyle(iconStyle);
-        this.glidersVectorLayer.getSource()?.addFeature(gliderMarkersFeature);
+        gliderMarkerFeature.setStyle(iconStyle);
+        this.glidersVectorLayer.getSource()?.addFeature(gliderMarkerFeature);
       }
+      this.updateMarkerInDictionary(flight.flarmId);
   }
 
-  // Change marker color when glider is selected
-  private updateSelectedGliderMarker(flight: Flight) {
-    if (!flight.longitude || !flight.latitude) {
-      return;
+  private doesMarkerNeedStyleUpdate(flarmId: string): boolean {
+    const lastProperties = this.markerDictionary.get(flarmId);
+    if (!lastProperties) {
+      return true;
     }
-    const existingFeature = this.glidersVectorLayer
-      .getSource()
-      ?.getFeatureById(flight.flarmId);
-    const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-    if (existingFeature) {
-      const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
-      existingFeature.setStyle(iconStyle);
+    const isFlightSelected = this.selectedFlight?.flarmId === flarmId;
+    if (lastProperties.isSelected !== isFlightSelected) {
+      return true;
     }
+    return false;
+  }
+
+  private updateMarkerInDictionary(flarmId: string): void {
+    const lastProperties = this.markerDictionary.get(flarmId);
+    let newProperties: GliderMarkerProperties = {
+      isSelected: this.selectedFlight?.flarmId === flarmId
+    }
+    if (lastProperties) {
+      newProperties = {
+        ...lastProperties,
+        isSelected: this.selectedFlight?.flarmId === flarmId
+      }
+    }
+    this.markerDictionary.set(flarmId, newProperties);
   }
 
   private drawFlightPathFromHistory(historyEntries: HistoryEntry[]): void {
@@ -365,20 +382,14 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private drawMarkerOnFlightPath(markerLocationUpdate: MarkerLocationUpdate) {
-    // Clear previous markers
     this.flightPathMarkerVectorLayer.getSource()?.clear();
-
-    // If no lonLat is provided, just clear the markers and return
     if (!markerLocationUpdate) {
       return;
     }
-
     const marker = new Feature({
       geometry: new Point(fromLonLat([markerLocationUpdate.longitude, markerLocationUpdate.latitude]))
     });
-
     const rotationRadians = markerLocationUpdate.rotation * (Math.PI / 180);
-
     marker.setStyle(
       new Style({
         image: new Icon({
@@ -390,7 +401,6 @@ export class MapComponent implements OnInit, OnDestroy {
         }),
       }),
     );
-
     this.flightPathMarkerVectorLayer.getSource()?.addFeature(marker);
   }
 
@@ -516,7 +526,7 @@ export class MapComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.map = new Map({
+    this.map = new OlMap({
       target: 'map',
       layers: [
         this.backgroundTileLayer,

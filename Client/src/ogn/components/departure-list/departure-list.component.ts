@@ -69,7 +69,6 @@ export class DepartureListComponent implements OnInit, OnDestroy {
   }
 
   private formatFlightDuration(departureTimestamp: number | undefined, landingTimestamp: number | undefined): string {
-    console.log('formatFlightDuration', departureTimestamp, landingTimestamp);
     if (departureTimestamp) {
         let totalSeconds = Math.floor((+new Date() - +new Date(departureTimestamp * 1000)) / 1000);
         if (landingTimestamp) {

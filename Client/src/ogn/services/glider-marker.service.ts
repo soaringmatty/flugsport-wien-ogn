@@ -9,12 +9,19 @@ import { takeUntil } from 'rxjs';
 import { MapSettings } from '../models/map-settings.model';
 import { GliderType } from '../models/glider-type';
 import { MarkerColorScheme } from '../models/marker-color-scheme';
+import { clubGliders, privateGliders } from '../constants/known-gliders';
 
 export const groundHeightBrown = '#947D6E';
 export const groundHeightBackgroundBrown = '#A78D7C';
 export const flightPathDarkRed = '#8B0000';
 export const fligthPathDarkBlue = '#244485';
 export const flightPathStrokeWhite = '#FFFFFFA0';
+
+export interface GliderMarkerProperties {
+  isSelected: boolean;
+  gliderType?: GliderType;
+  opacity?: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -47,6 +54,16 @@ export class GliderMarkerService {
     });
   }
 
+  getGliderType(flarmId?: string): GliderType {
+    if (clubGliders.some(x => x.FlarmId === flarmId)) {
+      return GliderType.club;
+    }
+    if (privateGliders.some(x => x.FlarmId === flarmId)) {
+      return GliderType.private;
+    }
+    return GliderType.all;
+  }
+
   private createLabelledGliderMarker(
     label: string,
     settings: MapSettings,
@@ -60,11 +77,11 @@ export class GliderMarkerService {
     let imageSource = 'assets/marker_blue.png';
     let textColor = 'white';
 
-    // if (isSelected) {
-    //   imageSource = 'assets/marker_white.png';
-    //   textColor = 'black'
-    // }
-    if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
+    if (isSelected) {
+      imageSource = 'assets/marker_white.png';
+      textColor = 'black'
+    }
+    else if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
       switch (gliderType) {
         case GliderType.all:
           imageSource = 'assets/marker_grey.png';
