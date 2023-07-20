@@ -9,12 +9,19 @@ import { takeUntil } from 'rxjs';
 import { MapSettings } from '../models/map-settings.model';
 import { GliderType } from '../models/glider-type';
 import { MarkerColorScheme } from '../models/marker-color-scheme';
+import { clubGliders, privateGliders } from '../constants/known-gliders';
 
 export const groundHeightBrown = '#947D6E';
 export const groundHeightBackgroundBrown = '#A78D7C';
 export const flightPathDarkRed = '#8B0000';
 export const fligthPathDarkBlue = '#244485';
 export const flightPathStrokeWhite = '#FFFFFFA0';
+
+export interface GliderMarkerProperties {
+  isSelected: boolean;
+  gliderType?: GliderType;
+  opacity?: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -34,14 +41,14 @@ export class GliderMarkerService {
     })
   });
 
-  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false, isKnownGlider: boolean = false): Style {
+  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false): Style {
     return new Style({
         image: new Icon({
           anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, isKnownGlider, flight.timestamp),
+          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.timestamp),
           imgSize: [88, 88]
         }),
     });
@@ -51,7 +58,7 @@ export class GliderMarkerService {
     label: string,
     settings: MapSettings,
     isSelected: boolean,
-    isKnownGlider: boolean,
+    gliderType: GliderType,
     lastUpdateTimestamp?: number
   ): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
@@ -64,9 +71,19 @@ export class GliderMarkerService {
       imageSource = 'assets/marker_white.png';
       textColor = 'black'
     }
-    else if (settings?.gliderFilterOnMap === GliderType.all && !isKnownGlider && settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
-      imageSource = 'assets/marker_grey.png';
-      textColor = 'white'
+    else if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
+      switch (gliderType) {
+        case GliderType.foreign:
+          imageSource = 'assets/marker_grey.png';
+          textColor = 'white';
+          break;
+        case GliderType.private:
+          imageSource = 'assets/marker_beige.png';
+          textColor = 'black';
+          break;
+        default:
+          break;
+      }
     }
 
     // Load the icon image

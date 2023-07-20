@@ -6,6 +6,8 @@ import { Subject, takeUntil } from 'rxjs';
 import { saveSettings } from 'src/app/store/app/app.actions';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
 import config from '../../../../package.json'
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ChangelogComponent } from 'src/app/components/changelog/changelog.component';
 
 @Component({
   selector: 'app-settings',
@@ -15,9 +17,12 @@ import config from '../../../../package.json'
 export class SettingsComponent {
   settings!: MapSettings;
   versionNumber = config.version;
+  changelogDialogRef!: MatDialogRef<ChangelogComponent, any>;
   private readonly onDestroy$ = new Subject<void>();
 
-  constructor(private store: Store<State>) {
+  constructor(
+    public changelogDialog: MatDialog,
+    private store: Store<State>) {
   }
 
   ngOnInit(): void {
@@ -35,5 +40,9 @@ export class SettingsComponent {
 
   save(): void {
     this.store.dispatch(saveSettings({settings: this.settings}));
+  }
+
+  showChangelog(): void {
+    this.changelogDialogRef = this.changelogDialog.open(ChangelogComponent);
   }
 }

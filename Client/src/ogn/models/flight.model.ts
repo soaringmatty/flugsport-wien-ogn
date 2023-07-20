@@ -1,8 +1,10 @@
+import { GliderType } from "./glider-type";
+
 export interface Flight {
   flarmId: string;
   displayName: string;
   registration: string;
-  type: number;
+  type: GliderType;
   model: string;
   latitude: number;
   longitude: number;
@@ -12,8 +14,4 @@ export interface Flight {
   speed: number;
   vario: number;
   varioAverage: number;
-  receiver: string;
-  receiverPosition: any;
-  pilot: string;
-  owner: string;
 }

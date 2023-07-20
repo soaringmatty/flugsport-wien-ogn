@@ -4,8 +4,8 @@ https://go.microsoft.com/fwlink/?LinkID=208121.
 -->
 <Project>
   <PropertyGroup>
-    <_PublishTargetUrl>C:\Users\matth\projects\flugsport-wien-ogn\Api\FlugsportWienOgnApi\bin\Release\net7.0\publish\</_PublishTargetUrl>
-    <History>True|2023-06-18T12:55:20.0610194Z;</History>
+    <_PublishTargetUrl>C:\Users\matth\Documents\Angular Projects\ogn-loxn\Api\FlugsportWienOgnApi\bin\Release\net7.0\publish\</_PublishTargetUrl>
+    <History>True|2023-07-19T19:41:27.2546389Z;True|2023-07-07T14:40:38.7672252+02:00;True|2023-07-03T11:28:40.4889678+02:00;True|2023-06-18T14:55:20.0610194+02:00;</History>
     <LastFailureDetails />
   </PropertyGroup>
 </Project>

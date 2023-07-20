@@ -1,15 +1,28 @@
-.toolbar {
-  height: 64px;
+.logo {
+  height: 40px;
+  margin-right: 20px;
 }
 
 .content-mobile {
   height: calc(100% - 56px);
-  overflow: scroll;
+  overflow-y: auto;
 }
 
 .content-desktop {
   height: calc(100% - 64px);
-  overflow: scroll;
+  overflow-y: auto;
+}
+
+.toolbar-button {
+  margin-right: 6px;
+  height: 45px;
+}
+
+.larger-icon {
+  font-size: 23px !important; /* Adjust the icon size as needed */
+  height: 23px !important;
+  width: 23px !important;
+  margin-bottom: 2px;
 }
 
 ::ng-deep .mat-mdc-snack-bar-container {

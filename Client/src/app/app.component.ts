@@ -15,6 +15,7 @@ import { SettingsService } from 'src/ogn/services/settings.service';
 import { Subject, takeUntil } from 'rxjs';
 import { Actions, ofType } from '@ngrx/effects';
 import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { mobileLayoutBreakpoints, tabletLandscapeLayoutBreakpoints } from 'src/ogn/constants/layouts';
 
 @Component({
   selector: 'app-root',
@@ -25,6 +26,8 @@ export class AppComponent implements OnInit, OnDestroy {
   settingsDialogRef!: MatDialogRef<SettingsDialogComponent, any>;
   changelogDialogRef!: MatDialogRef<ChangelogComponent, any>;
   isMobilePortrait: boolean = false;
+  isMobileLandscape: boolean = false;
+  isTabletLandscape: boolean = false;
   settings!: MapSettings;
   private readonly onDestroy$ = new Subject<void>();
 
@@ -54,10 +57,23 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       })
     this.store.dispatch(loadSettings())
-    this.breakpointObserver.observe([
-      Breakpoints.HandsetPortrait
-    ]).subscribe(result => {
-      this.isMobilePortrait = result.matches;
+    this.breakpointObserver
+      .observe(mobileLayoutBreakpoints)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(result => {
+        this.isMobilePortrait = result.matches;
+    });
+    this.breakpointObserver
+      .observe(tabletLandscapeLayoutBreakpoints)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(result => {
+        this.isTabletLandscape = result.matches;
+    });
+    this.breakpointObserver
+      .observe(Breakpoints.HandsetLandscape)
+      .pipe(takeUntil(this.onDestroy$))
+      .subscribe(result => {
+        this.isMobileLandscape = result.matches;
     });
   }
 
@@ -67,26 +83,28 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openSnackBar(notification: Notification) {
-    let panelClass;
-    console.log(notification);
+    let panelClass: string[] = [];
     switch(notification.type) {
       case NotificationType.Info:
-        panelClass = 'snack-bar-info';
+        panelClass = ['snack-bar-info'];
         break;
       case NotificationType.Success:
-        panelClass = 'snack-bar-success';
+        panelClass = ['snack-bar-success'];
         break;
       case NotificationType.Warning:
-        panelClass = 'snack-bar-warn';
+        panelClass = ['snack-bar-warn'];
         break;
       case NotificationType.Error:
         panelClass = ['snack-bar-error'];
         break;
       default:
-        panelClass = '';
+        break;
+    }
+    if (this.isMobilePortrait) {
+      panelClass.push('snackbar-mobile')
     }
     this.snackBar.open(notification.message, undefined, {
-      duration: 3000,
+      duration: 2000,
       panelClass: panelClass,
     });
   }

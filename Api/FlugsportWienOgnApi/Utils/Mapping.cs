@@ -10,12 +10,13 @@ public static class Mapping
         List<Flight> flights = new();
         foreach (var rawFlight in rawFlights)
         {
+            var gliderType = KnownGliders.GetGliderTypeByFlarmId(rawFlight.FlarmID);
             flights.Add(new Flight
             {
                 FlarmId = rawFlight.FlarmID,
                 DisplayName = rawFlight.DisplayName,
                 Registration = rawFlight.Registration,
-                Type = rawFlight.Type,
+                Type = gliderType,
                 Model = rawFlight.Model,
                 Latitude = rawFlight.Lat,
                 Longitude = rawFlight.Lng,
@@ -24,9 +25,7 @@ public static class Mapping
                 Timestamp = rawFlight.Timestamp,
                 Speed = rawFlight.Speed,
                 Vario = rawFlight.Vario,
-                VarioAverage = rawFlight.VarioAverage,
-                Receiver = rawFlight.Receiver,
-                ReceiverPosition = rawFlight.ReceiverPosition
+                VarioAverage = rawFlight.VarioAverage
             });
         }
         return flights;

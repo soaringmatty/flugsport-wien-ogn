@@ -13,28 +13,5 @@ import { MapSettings } from 'src/ogn/models/map-settings.model';
   styleUrls: ['./settings-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SettingsDialogComponent implements OnInit, OnDestroy {
-  settings!: MapSettings
-  private readonly onDestroy$ = new Subject<void>();
-
-  constructor(private store: Store<State>) {
-
-  }
-
-  ngOnInit(): void {
-    this.store.select(x => x.app.settings).pipe(
-      takeUntil(this.onDestroy$)
-    ).subscribe(settings => {
-      this.settings = cloneDeep(settings);
-    })
-  }
-
-  ngOnDestroy(): void {
-    this.onDestroy$.next();
-    this.onDestroy$.complete();
-  }
-
-  save(): void {
-    this.store.dispatch(saveSettings({settings: this.settings}));
-  }
+export class SettingsDialogComponent {
 }

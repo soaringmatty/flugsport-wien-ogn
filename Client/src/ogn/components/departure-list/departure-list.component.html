@@ -1,7 +1,8 @@
 <div *ngIf="departureList.length === 0" class="no-departures-text">
   Heute noch keine Starts erkannt
 </div>
-<div *ngIf="isMobilePortrait">
+<!-- <div *ngIf="isMobilePortrait"> -->
+<div>
   <div class="glider-list" *ngFor="let element of departureList">
     <mat-card class="glider-card">
       <div class="glider-item">

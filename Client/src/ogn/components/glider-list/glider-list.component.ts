@@ -5,6 +5,7 @@ import { Store } from '@ngrx/store';
 import { Subject, interval, takeUntil } from 'rxjs';
 import { State } from 'src/app/store';
 import { loadGliderList } from 'src/app/store/app/app.actions';
+import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { Flight } from 'src/ogn/models/flight.model';
 import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { GliderStatus } from 'src/ogn/models/glider-status';
@@ -27,9 +28,7 @@ export default class GliderListComponent implements OnInit, OnDestroy {
   constructor(private breakpointObserver: BreakpointObserver, private store: Store<State>, private router: Router) { }
 
   ngOnInit(): void {
-    this.breakpointObserver.observe([
-      Breakpoints.HandsetPortrait
-    ]).subscribe(result => {
+    this.breakpointObserver.observe(mobileLayoutBreakpoints).subscribe(result => {
       this.isMobilePortrait = result.matches;
     });
     this.store

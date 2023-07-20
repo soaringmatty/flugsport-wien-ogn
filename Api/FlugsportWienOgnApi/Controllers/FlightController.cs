@@ -3,7 +3,7 @@ using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Models.Core;
 using Newtonsoft.Json.Linq;
 using FlugsportWienOgnApi.Utils;
-using FlugsportWienOgnApi.Models.Flightbook;
+using FlugsportWienOgnApi.Services;
 
 namespace FlugsportWienOgnApi.Controllers
 {
@@ -14,24 +14,22 @@ namespace FlugsportWienOgnApi.Controllers
         private readonly ILogger<FlightController> _logger;
         private readonly HttpClient _httpClient;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly string _flightBookUrl = "https://flightbook.glidernet.org/api/logbook/LOXN/";
+        private readonly FlightService _flightService;
 
-        public FlightController(ILogger<FlightController> logger, HttpClient httpClient, IHttpClientFactory httpClientFactory)
+        public FlightController(ILogger<FlightController> logger, HttpClient httpClient, IHttpClientFactory httpClientFactory, FlightService flightService)
         {
             _logger = logger;
             _httpClient = httpClient;
             _httpClientFactory = httpClientFactory;
+            _flightService = flightService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Flight>>> GetFlights()
+        public async Task<ActionResult<IEnumerable<Flight>>> GetFlights([FromQuery] string? selectedFlarmId, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng)
         {
-            string url = $"https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a=49&b=17.2&c=46.6&d=9.4";
-            //string url = $"https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a={maxLat}&b={maxLng}&c={minLat}&d={minLng}";
-            var response = await _httpClient.GetFromJsonAsync<GetOgnFlightsResponse>(url);
-            if (response != null && response.Success)
+            var flights = await _flightService.GetFlights(selectedFlarmId, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
+            if (flights != null)
             {
-                var flights = Mapping.MapOgnFlightsResponseToFlights(response.Message);
                 return Ok(flights);
             }
             return BadRequest();
@@ -44,7 +42,6 @@ namespace FlugsportWienOgnApi.Controllers
             var response = await _httpClient.GetFromJsonAsync<GetOgnFlightPathResponse>(url);
             if (response != null && response.Success)
             {
-                ;
                 return Ok(response.Message);
             }
             return BadRequest();

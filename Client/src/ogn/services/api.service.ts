@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { Flight } from '../models/flight.model';
@@ -13,8 +13,20 @@ import { DepartureListItem } from '../models/departure-list-item.model';
 export class ApiService {
   constructor(private http: HttpClient) { }
 
-  getFlights(): Observable<Flight[]> {
-    return this.http.get<Flight[]>(api.getFlights);
+  getFlights(maxLat: number, minLat: number, maxLng: number, minLng: number, selectedFlarmId?: string, clubGlidersOnly?: boolean): Observable<Flight[]> {
+    let params = new HttpParams();
+    params = params.append('maxLat', maxLat.toString());
+    params = params.append('minLat', minLat.toString());
+    params = params.append('maxLng', maxLng.toString());
+    params = params.append('minLng', minLng.toString());
+    if (selectedFlarmId) {
+      params = params.append('selectedFlarmId', selectedFlarmId);
+    }
+    if (clubGlidersOnly) {
+      params = params.append('clubGlidersOnly', clubGlidersOnly);
+    }
+
+    return this.http.get<Flight[]>(api.getFlights, { params: params });
   }
 
   getFlightPath(flarmId: string): Observable<string> {
