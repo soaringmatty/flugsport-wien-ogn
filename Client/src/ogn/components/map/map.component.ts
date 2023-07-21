@@ -161,6 +161,9 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   selectGlider(flarmId: string): void {
+    if (this.selectedFlight?.flarmId === flarmId) {
+      return;
+    }
     if (this.selectedFlight) {
       this.unselectGlider();
     }
@@ -283,7 +286,7 @@ export class MapComponent implements OnInit, OnDestroy {
 
   }
 
-  private updateSingleMarkerOnMap (flight: Flight) {
+  async updateSingleMarkerOnMap (flight: Flight) {
       if (!flight.longitude || !flight.latitude) {
         return;
       }
@@ -297,7 +300,7 @@ export class MapComponent implements OnInit, OnDestroy {
         const shouldUpdateStyle = this.doesMarkerNeedStyleUpdate(flight.flarmId);
         if (shouldUpdateStyle) {
           const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-          const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
+          const iconStyle = await this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
           existingFeature.setGeometry(
             new Point(fromLonLat([flight.longitude, flight.latitude]))
           );
@@ -312,7 +315,7 @@ export class MapComponent implements OnInit, OnDestroy {
         });
         gliderMarkerFeature.setId(flight.flarmId);
         const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-        const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
+        const iconStyle = await this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
         gliderMarkerFeature.setStyle(iconStyle);
         this.glidersVectorLayer.getSource()?.addFeature(gliderMarkerFeature);
       }
