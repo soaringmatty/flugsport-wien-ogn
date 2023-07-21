@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Chart, ChartDataset, ChartOptions, ChartType, Color, Colors, Tooltip, TooltipPositionerFunction } from 'chart.js';
+import { ChartDataset, ChartOptions, ChartType, Tooltip, TooltipPositionerFunction } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import 'chartjs-plugin-crosshair';
 import {de} from 'date-fns/locale';
