@@ -41,74 +41,75 @@ export class GliderMarkerService {
     })
   });
 
-  getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false): Style {
+  async getGliderMarkerStyle(flight: Flight, settings: MapSettings, isSelected: boolean = false): Promise<Style> {
     return new Style({
         image: new Icon({
           anchor: [0.5, 1],
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.timestamp),
+          img: await this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.timestamp),
           imgSize: [88, 88]
         }),
     });
   }
 
-  private createLabelledGliderMarker(
+  async createLabelledGliderMarker(
     label: string,
     settings: MapSettings,
     isSelected: boolean,
     gliderType: GliderType,
     lastUpdateTimestamp?: number
-  ): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+  ): Promise<HTMLCanvasElement> {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
 
-    let imageSource = 'assets/marker_blue.png';
-    let textColor = 'white';
+      let imageSource = 'assets/marker_blue.png';
+      let textColor = 'white';
 
-    if (isSelected) {
-      imageSource = 'assets/marker_white.png';
-      textColor = 'black'
-    }
-    else if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
-      switch (gliderType) {
-        case GliderType.foreign:
-          imageSource = 'assets/marker_grey.png';
-          textColor = 'white';
-          break;
-        case GliderType.private:
-          imageSource = 'assets/marker_beige.png';
-          textColor = 'black';
-          break;
-        default:
-          break;
+      if (isSelected) {
+        imageSource = 'assets/marker_white.png';
+        textColor = 'black'
       }
-    }
-
-    // Load the icon image
-    const image = new Image();
-    image.src = imageSource;
-
-    // Calculate the opacity based on the lastUpdateTimestamp
-    const minMinutes = 3;
-    const maxMinutes = 20;
-    const maxOpacity = 1;
-    const minOpacity = 0.3;
-    let opacity = maxOpacity;
-
-    if (lastUpdateTimestamp) {
-        const elapsedMinutes = (Date.now() - lastUpdateTimestamp) / 60000; // milliseconds to minutes
-        if (elapsedMinutes > minMinutes) {
-            let normalized = Math.min((elapsedMinutes - minMinutes) / (maxMinutes - minMinutes), 1);
-            opacity = maxOpacity - normalized * (maxOpacity - minOpacity);
+      else if (settings?.markerColorScheme === MarkerColorScheme.highlightKnownGliders) {
+        switch (gliderType) {
+          case GliderType.foreign:
+            imageSource = 'assets/marker_grey.png';
+            textColor = 'white';
+            break;
+          case GliderType.private:
+            imageSource = 'assets/marker_beige.png';
+            textColor = 'black';
+            break;
+          default:
+            break;
         }
-    }
+      }
 
-    // Wait for the image to load
-    image.onload = () => {
+      // Load the icon image
+      const image = new Image();
+      image.src = imageSource;
+
+      // Calculate the opacity based on the lastUpdateTimestamp
+      const minMinutes = 3;
+      const maxMinutes = 20;
+      const maxOpacity = 1;
+      const minOpacity = 0.3;
+      let opacity = maxOpacity;
+
+      if (lastUpdateTimestamp) {
+          const elapsedMinutes = (Date.now() - lastUpdateTimestamp) / 60000; // milliseconds to minutes
+          if (elapsedMinutes > minMinutes) {
+              let normalized = Math.min((elapsedMinutes - minMinutes) / (maxMinutes - minMinutes), 1);
+              opacity = maxOpacity - normalized * (maxOpacity - minOpacity);
+          }
+      }
+
+      // Wait for the image to load
+      image.onload = () => {
         if (!context) {
-            return;
+          return;
         }
         // Draw the image on the canvas with calculated opacity
         context.globalAlpha = opacity;
@@ -125,8 +126,11 @@ export class GliderMarkerService {
 
         // Draw the text on the canvas
         context.fillText(label, x, y);
-    };
 
-    return canvas;
+        resolve(canvas);
+      };
+
+      image.onerror = reject;
+    });
   }
 }

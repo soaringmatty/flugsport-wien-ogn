@@ -165,8 +165,6 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Removes focus from currently selected glider on the map
-  // -> Reset selected flight in store (which causes the info card to close), updates marker style to unselected, removes flight path from map
   unselectGlider(): void {
     const flightToUnselect = this.selectedFlight;
     if (!flightToUnselect) {
@@ -184,6 +182,9 @@ export class MapComponent implements OnInit, OnDestroy {
   // Puts a specific glider on the map in focus 
   // -> Updates selected flight in store (which causes the info card to open), updates marker style to selected, loads flight path to show on map
   private selectGlider(flarmId: string): void {
+    if (this.selectedFlight?.flarmId === flarmId) {
+      return;
+    }
     const previousSelectedFlight = this.selectedFlight;
     const flight = this.flights.find((x) => x.flarmId === flarmId);
     if (!flight) {
@@ -281,7 +282,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   // Adds, updates or removes single marker on map depending on the given flight
-  private updateSingleMarkerOnMap(flight: Flight) {
+  private async updateSingleMarkerOnMap(flight: Flight) {
     if (!flight || !flight.longitude || !flight.latitude) {
       return;
     }
@@ -295,7 +296,7 @@ export class MapComponent implements OnInit, OnDestroy {
       const shouldUpdateStyle = this.doesMarkerNeedStyleUpdate(flight.flarmId);
       if (shouldUpdateStyle) {
         const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-        const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
+        const iconStyle = await this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
         existingFeature.setGeometry(
           new Point(fromLonLat([flight.longitude, flight.latitude]))
         );
@@ -310,7 +311,7 @@ export class MapComponent implements OnInit, OnDestroy {
       });
       gliderMarkerFeature.setId(flight.flarmId);
       const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
-      const iconStyle = this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
+      const iconStyle = await this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
       gliderMarkerFeature.setStyle(iconStyle);
       this.glidersVectorLayer.getSource()?.addFeature(gliderMarkerFeature);
     }
