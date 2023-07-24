@@ -45,7 +45,10 @@ public class FlightService
     {
         var flightsToReturn = Flights.Where(
             x => x.FlarmId == selectedFlarmId ||
-            (x.Latitude >= minLat && x.Latitude <= maxLat && x.Longitude >= minLng && x.Longitude <= maxLng)
+            (
+                x.Latitude >= minLat && x.Latitude <= maxLat && x.Longitude >= minLng && x.Longitude <= maxLng &&
+                AustriaGeoCalculator.IsPointInAustria(x.Longitude, x.Latitude)
+            )
         );
         if (clubGlidersOnly == true)
         {

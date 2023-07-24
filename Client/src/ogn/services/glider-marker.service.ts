@@ -54,12 +54,27 @@ export class GliderMarkerService {
     });
   }
 
-  async createLabelledGliderMarker(
+  getMarkerOpacityByLastUpdateTimestamp(lastUpdateTimestamp: number) {
+    const elapsedMinutes = (Date.now() - lastUpdateTimestamp) / (60 * 1000); // milliseconds to minutes
+    let opacity = 1;
+    if (elapsedMinutes > 20) {
+      opacity = 0.35
+    }
+    else if (elapsedMinutes > 10) {
+      opacity = 0.55
+    }
+    else if (elapsedMinutes > 3) {
+      opacity = 0.75
+    }
+    return opacity;
+  }
+
+  private async createLabelledGliderMarker(
     label: string,
     settings: MapSettings,
     isSelected: boolean,
     gliderType: GliderType,
-    lastUpdateTimestamp?: number
+    lastUpdateTimestamp: number
   ): Promise<HTMLCanvasElement> {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -92,19 +107,7 @@ export class GliderMarkerService {
       image.src = imageSource;
 
       // Calculate the opacity based on the lastUpdateTimestamp
-      const minMinutes = 3;
-      const maxMinutes = 20;
-      const maxOpacity = 1;
-      const minOpacity = 0.3;
-      let opacity = maxOpacity;
-
-      if (lastUpdateTimestamp) {
-          const elapsedMinutes = (Date.now() - lastUpdateTimestamp) / 60000; // milliseconds to minutes
-          if (elapsedMinutes > minMinutes) {
-              let normalized = Math.min((elapsedMinutes - minMinutes) / (maxMinutes - minMinutes), 1);
-              opacity = maxOpacity - normalized * (maxOpacity - minOpacity);
-          }
-      }
+      const opacity = this.getMarkerOpacityByLastUpdateTimestamp(lastUpdateTimestamp);
 
       // Wait for the image to load
       image.onload = () => {
