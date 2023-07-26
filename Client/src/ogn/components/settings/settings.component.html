@@ -23,7 +23,7 @@
         <span class="subtitle">Marker Farbschema</span>
         <mat-radio-group class="group" [(ngModel)]="settings.markerColorScheme" (change)="save()">
             <mat-radio-button [value]="0">Vereinsflugzeuge hervorheben</mat-radio-button>
-            <mat-radio-button hidden class="reduce-margin-top" [value]="1">Je nach Flughöhe</mat-radio-button>
+            <mat-radio-button class="reduce-margin-top" [value]="1">Je nach Flughöhe</mat-radio-button>
             <mat-radio-button class="reduce-margin-top" [value]="2">Luftfahrzeugtypen (Glide and Seek)</mat-radio-button>
         </mat-radio-group>
       </div>

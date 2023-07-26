@@ -32,6 +32,7 @@ import LineString from 'ol/geom/LineString';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import { chaikinsAlgorithm } from 'src/ogn/utils/flight-path.utils';
+import { MarkerColorScheme } from 'src/ogn/models/marker-color-scheme';
 
 @Component({
   selector: 'app-map',
@@ -351,6 +352,10 @@ export class MapComponent implements OnInit, OnDestroy {
     if (lastProperties.opacity !== newOpacity) {
       return true;
     }
+    const newAltitudeLayer = Math.floor(flight.heightMSL / 250)
+    if (this.settings.markerColorScheme === MarkerColorScheme.altitude && lastProperties.altitudeLayer !== newAltitudeLayer) {
+      return true;
+    }
     return false;
   }
 
@@ -360,13 +365,15 @@ export class MapComponent implements OnInit, OnDestroy {
     const opacity = this.gliderMarkerService.getMarkerOpacityByLastUpdateTimestamp(flight.timestamp);
     let newProperties: GliderMarkerProperties = {
       isSelected: this.selectedFlight?.flarmId === flight.flarmId,
-      opacity
+      opacity,
+      altitudeLayer: Math.floor(flight.heightMSL / 250)
     }
     if (lastProperties) {
       newProperties = {
         ...lastProperties,
         isSelected: this.selectedFlight?.flarmId === flight.flarmId,
-        opacity
+        opacity,
+        altitudeLayer: Math.floor(flight.heightMSL / 250)
       }
     }
     this.markerDictionary.set(flight.flarmId, newProperties);

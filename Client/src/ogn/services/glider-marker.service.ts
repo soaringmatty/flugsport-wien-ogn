@@ -18,6 +18,7 @@ export interface GliderMarkerProperties {
   isSelected: boolean;
   gliderType?: GliderType;
   opacity?: number;
+  altitudeLayer: number;
 }
 
 @Injectable({
@@ -45,7 +46,7 @@ export class GliderMarkerService {
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: await this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.aircraftType, flight.timestamp),
+          img: await this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.aircraftType, flight.heightMSL, flight.timestamp),
           imgSize: [88, 88]
         }),
     });
@@ -72,6 +73,7 @@ export class GliderMarkerService {
     isSelected: boolean,
     gliderType: GliderType,
     aircraftType: AircraftType,
+    altitude: number,
     lastUpdateTimestamp: number
   ): Promise<HTMLCanvasElement> {
     return new Promise((resolve, reject) => {
@@ -128,6 +130,45 @@ export class GliderMarkerService {
             break;
           default:
             break;
+        }
+      }
+      else if (settings?.markerColorScheme === MarkerColorScheme.altitude) {
+        textColor = 'white';
+        if (altitude < 500) {
+          imageSource = 'assets/marker_height_500.png';
+        }
+        else if (altitude < 750) {
+          imageSource = 'assets/marker_height_750.png';
+        }
+        else if (altitude < 1000) {
+          imageSource = 'assets/marker_height_1000.png';
+        }
+        else if (altitude < 1250) {
+          imageSource = 'assets/marker_height_1250.png';
+        }
+        else if (altitude < 1500) {
+          imageSource = 'assets/marker_height_1500.png';
+        }
+        else if (altitude < 1750) {
+          imageSource = 'assets/marker_height_1750.png';
+        }
+        else if (altitude < 2000) {
+          imageSource = 'assets/marker_height_2000.png';
+        }
+        else if (altitude < 2250) {
+          imageSource = 'assets/marker_height_2250.png';
+        }
+        else if (altitude < 2500) {
+          imageSource = 'assets/marker_height_2500.png';
+        }
+        else if (altitude < 2750) {
+          imageSource = 'assets/marker_height_2750.png';
+        }
+        else if (altitude < 3000) {
+          imageSource = 'assets/marker_height_3000.png';
+        }
+        else {
+          imageSource = 'assets/marker_height_3500.png';
         }
       }
 
