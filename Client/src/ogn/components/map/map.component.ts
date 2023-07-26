@@ -50,6 +50,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private flights: Flight[] = [];
   private markerDictionary: Map<string, GliderMarkerProperties> = new Map();
   private reloadInterval!: Subscription;
+  private mapChangeTriggerTimeout: any;
   // Tracking related properties
   private isTracking: boolean = false;
   private trackingSubscription!: Subscription;
@@ -503,6 +504,32 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Store current map center and zoom in session storage and reload flights for new viewport
+  private handleMapViewChange() {
+    const zoom = this.map.getView().getZoom();
+    const center = this.map.getView().getCenter();
+    let hasAnyValuesChanged = false;
+
+    if (zoom !== undefined) {
+      const storedZoom = sessionStorage.getItem('mapZoom');
+      if (storedZoom === null || storedZoom !== zoom.toString()) {
+        sessionStorage.setItem('mapZoom', zoom.toString());
+        hasAnyValuesChanged = true;
+      }
+    }
+    if (center) {
+      const storedCenter = sessionStorage.getItem('mapCenter');
+      const lonLatCenter = toLonLat(center);
+      if (storedCenter === null || storedCenter !== JSON.stringify(lonLatCenter)) {
+        sessionStorage.setItem('mapCenter', JSON.stringify(lonLatCenter));
+        hasAnyValuesChanged = true;
+      }
+    }
+    if (hasAnyValuesChanged) {
+      this.loadFlightsWithFilter();
+    }
+  }
+
   // Initialize map (Layers, Events, Position, Zoom)
   private initializeMap() {
     // Load the stored map state or use the default values
@@ -527,30 +554,13 @@ export class MapComponent implements OnInit, OnDestroy {
       minZoom: 6,
       enableRotation: false
     });
-    // Always store current map center and zoom in session storage
-    mapView.on('change', () => {
-      const zoom = this.map.getView().getZoom();
-      const center = this.map.getView().getCenter();
-      let hasAnyValuesChanged = false;
 
-      if (zoom !== undefined) {
-        const storedZoom = sessionStorage.getItem('mapZoom');
-        if (storedZoom === null || storedZoom !== zoom.toString()) {
-          sessionStorage.setItem('mapZoom', zoom.toString());
-          hasAnyValuesChanged = true;
-        }
+  // Store current map center and zoom in session storage and reload flights for new viewport
+    mapView.on('change', () => {
+      if (this.mapChangeTriggerTimeout) {
+        clearTimeout(this.mapChangeTriggerTimeout);
       }
-      if (center) {
-        const storedCenter = sessionStorage.getItem('mapCenter');
-        const lonLatCenter = toLonLat(center);
-        if (storedCenter === null || storedCenter !== JSON.stringify(lonLatCenter)) {
-          sessionStorage.setItem('mapCenter', JSON.stringify(lonLatCenter));
-          hasAnyValuesChanged = true;
-        }
-      }
-      if (hasAnyValuesChanged) {
-        this.loadFlightsWithFilter();
-      }
+      this.mapChangeTriggerTimeout = setTimeout(() => this.handleMapViewChange(), 500); // 500ms delay
     });
 
     this.map = new OlMap({
