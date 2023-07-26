@@ -44,8 +44,8 @@ export class MapComponent implements OnInit, OnDestroy {
   selectedFlight: Flight | undefined;
   showBarogram: boolean = false;
   isMobilePortrait: boolean = false;
+  settings!: MapSettings;
 
-  private settings!: MapSettings;
   private flights: Flight[] = [];
   private markerDictionary: Map<string, GliderMarkerProperties> = new Map();
   private reloadInterval!: Subscription;
@@ -109,6 +109,10 @@ export class MapComponent implements OnInit, OnDestroy {
         this.setMapTilesAccordingToSettings();
         if (settingsAlreadyInitialized) {
           // Reload data if settings are manually updated
+          this.markerDictionary.clear();
+          this.clubGlidersLayer.getSource()?.clear();
+          this.privateGlidersLayer.getSource()?.clear();
+          this.foreignGlidersLayer.getSource()?.clear();
           this.loadFlightsWithFilter();
           if (this.selectedFlight) {
             this.store.dispatch(loadFlightHistory({ flarmId: this.selectedFlight.flarmId }));
@@ -447,6 +451,7 @@ export class MapComponent implements OnInit, OnDestroy {
       maxLng,
       minLng,
       selectedFlarmId: this.selectedFlight?.flarmId,
+      glidersOnly: this.settings.showGlidersOnly,
       clubGlidersOnly: this.settings.gliderFilterOnMap === GliderType.club ? true : false
     }))
   }

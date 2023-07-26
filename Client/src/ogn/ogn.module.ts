@@ -22,6 +22,7 @@ import { MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
 import { SettingsComponent } from './components/settings/settings.component';
 import { DepartureListComponent } from './components/departure-list/departure-list.component';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @NgModule({
   declarations: [
@@ -50,6 +51,7 @@ import { DepartureListComponent } from './components/departure-list/departure-li
     NgChartsModule,
     MatSortModule,
     MatChipsModule,
+    MatSlideToggleModule,
   ],
   exports: [
     SettingsDialogComponent

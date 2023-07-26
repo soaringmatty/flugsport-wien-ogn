@@ -6,6 +6,7 @@ export interface MapSettings {
     version: string;
     gliderFilterOnMap: GliderType;
     hideGlidersOnGround: boolean;
+    showGlidersOnly: boolean;
     mapType: MapType
     useFlightPathSmoothing: boolean;
     onlyShowLastFlight: boolean;
@@ -13,4 +14,5 @@ export interface MapSettings {
     showChangelogForNewVersion: boolean;
     markerColorScheme: MarkerColorScheme;
     updateTimeout: number;
+    useUtcTimeInDepartureList: boolean;
 }

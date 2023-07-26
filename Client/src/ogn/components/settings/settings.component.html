@@ -6,30 +6,31 @@
       <mat-radio-group class="group" [(ngModel)]="settings.mapType" (change)="save()">
           <mat-radio-button [value]="0">Gelände (Stamen)</mat-radio-button>
           <mat-radio-button class="reduce-margin-top" [value]="1">Open Street Map</mat-radio-button>
-          <mat-radio-button disabled class="reduce-margin-top" [value]="2">Satellit</mat-radio-button>
       </mat-radio-group>
 
       <span class="subtitle">Filter</span>
       <mat-radio-group class="group" [(ngModel)]="settings.gliderFilterOnMap" (change)="save()">
           <mat-radio-button [value]="0">Nur Vereinsflugzeuge</mat-radio-button>
           <mat-radio-button class="reduce-margin-top-slightly" [value]="1">Vereinsflugzeuge & Private Flugzeuge von Mitgliedern</mat-radio-button>
-          <mat-radio-button class="reduce-margin-top-slightly" [value]="2">Alle Segelflugzeuge</mat-radio-button>
+          <mat-radio-button class="reduce-margin-top-slightly" [value]="2">Alle Flugzeuge</mat-radio-button>
       </mat-radio-group>
-      <mat-checkbox [(ngModel)]="settings.hideGlidersOnGround" (change)="save()">Flugzeuge am Boden ausblenden</mat-checkbox>
+      <div class="group">
+        <mat-checkbox [(ngModel)]="settings.showGlidersOnly" (change)="save()">Nur Segelflugzeuge anzeigen</mat-checkbox>
+        <mat-checkbox [(ngModel)]="settings.hideGlidersOnGround" class="reduce-margin-top" (change)="save()">Flugzeuge am Boden ausblenden</mat-checkbox>
+      </div>
 
       <div class="group increase-margin-top">
         <span class="subtitle">Marker Farbschema</span>
         <mat-radio-group class="group" [(ngModel)]="settings.markerColorScheme" (change)="save()">
             <mat-radio-button [value]="0">Vereinsflugzeuge hervorheben</mat-radio-button>
             <mat-radio-button hidden class="reduce-margin-top" [value]="1">Je nach Flughöhe</mat-radio-button>
-            <mat-radio-button class="reduce-margin-top" [value]="2">Nur Blau (ursprünglich)</mat-radio-button>
+            <mat-radio-button class="reduce-margin-top" [value]="2">Luftfahrzeugtypen (Glide and Seek)</mat-radio-button>
         </mat-radio-group>
       </div>
 
       <div class="group" style="margin-top: 4px;">
         <span class="subtitle">Flugweg</span>
         <mat-checkbox [(ngModel)]="settings.useFlightPathSmoothing" (change)="save()">Flugweg abrunden (keine harten Ecken)</mat-checkbox>
-        <mat-checkbox [(ngModel)]="settings.onlyShowLastFlight" class="reduce-margin-top" (change)="save()">Nur aktuellen / letzten Flug anzeigen</mat-checkbox>
       </div>
   </div>
     <div class="section">

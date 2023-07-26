@@ -60,7 +60,7 @@ public class GliderStatusController : ControllerBase
 
         var homeLatitude = 47.84028;
         var homeLongitude = 16.22139;
-        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders() : KnownGliders.ClubGliders;
+        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders : KnownGliders.ClubGliders;
         foreach (var glider in knownGliders)
         {
             var flight = flights.FirstOrDefault(x => x.FlarmId == glider.FlarmId);

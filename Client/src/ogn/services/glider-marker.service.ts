@@ -3,13 +3,10 @@ import Style from 'ol/style/Style';
 import Stroke from 'ol/style/Stroke';
 import { Flight } from '../models/flight.model';
 import Icon from 'ol/style/Icon';
-import { Store } from '@ngrx/store';
-import { State } from 'src/app/store';
-import { takeUntil } from 'rxjs';
 import { MapSettings } from '../models/map-settings.model';
 import { GliderType } from '../models/glider-type';
 import { MarkerColorScheme } from '../models/marker-color-scheme';
-import { clubGliders, privateGliders } from '../constants/known-gliders';
+import { AircraftType } from '../models/aircraft-type';
 
 export const groundHeightBrown = '#947D6E';
 export const groundHeightBackgroundBrown = '#A78D7C';
@@ -48,7 +45,7 @@ export class GliderMarkerService {
           anchorXUnits: 'fraction',
           anchorYUnits: 'fraction',
           scale: 0.38,
-          img: await this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.timestamp),
+          img: await this.createLabelledGliderMarker(flight.displayName, settings, isSelected, flight.type, flight.aircraftType, flight.timestamp),
           imgSize: [88, 88]
         }),
     });
@@ -58,13 +55,13 @@ export class GliderMarkerService {
     const elapsedMinutes = (Date.now() - lastUpdateTimestamp) / (60 * 1000); // milliseconds to minutes
     let opacity = 1;
     if (elapsedMinutes > 20) {
-      opacity = 0.35
+      opacity = 0.4
     }
     else if (elapsedMinutes > 10) {
-      opacity = 0.55
+      opacity = 0.6
     }
     else if (elapsedMinutes > 3) {
-      opacity = 0.75
+      opacity = 0.8
     }
     return opacity;
   }
@@ -74,6 +71,7 @@ export class GliderMarkerService {
     settings: MapSettings,
     isSelected: boolean,
     gliderType: GliderType,
+    aircraftType: AircraftType,
     lastUpdateTimestamp: number
   ): Promise<HTMLCanvasElement> {
     return new Promise((resolve, reject) => {
@@ -96,6 +94,37 @@ export class GliderMarkerService {
           case GliderType.private:
             imageSource = 'assets/marker_beige.png';
             textColor = 'black';
+            break;
+          default:
+            break;
+        }
+        if (gliderType === GliderType.club && (aircraftType === AircraftType.towplane || aircraftType === AircraftType.motorplane)) {
+          imageSource = 'assets/marker_red.png';
+          textColor = 'white';
+        }
+      }
+      else if (settings?.markerColorScheme === MarkerColorScheme.aircraftType) {
+        switch (aircraftType) {
+          case AircraftType.glider:
+            imageSource = 'assets/marker_beige.png';
+            textColor = 'black';
+            break;
+          case AircraftType.towplane:
+          case AircraftType.motorplane:
+            imageSource = 'assets/marker_blue.png';
+            textColor = 'white';
+            break;
+          case AircraftType.hangOrParaglider:
+            imageSource = 'assets/marker_red.png';
+            textColor = 'white';
+            break;
+          case AircraftType.helicopter:
+            imageSource = 'assets/marker_green.png';
+            textColor = 'white';
+            break;
+          case AircraftType.unknown:
+            imageSource = 'assets/marker_grey.png';
+            textColor = 'white';
             break;
           default:
             break;

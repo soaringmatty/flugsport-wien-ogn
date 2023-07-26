@@ -1,10 +1,11 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { cloneDeep } from 'lodash';
 import { interval, Subject, takeUntil, timestamp } from 'rxjs';
 import { State } from 'src/app/store';
-import { loadDepartureList } from 'src/app/store/app/app.actions';
+import { loadDepartureList, saveSettings } from 'src/app/store/app/app.actions';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
 import { GliderType } from 'src/ogn/models/glider-type';
@@ -15,7 +16,9 @@ import { MapSettings } from 'src/ogn/models/map-settings.model';
   templateUrl: './departure-list.component.html',
   styleUrls: ['./departure-list.component.scss']
 })
-export class DepartureListComponent implements OnInit, OnDestroy {
+export class DepartureListComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('switch', { read: ElementRef }) element: ElementRef | undefined;
+
   departureList: DepartureListItem[] = [];
   isMobilePortrait: boolean = false;
   settings!: MapSettings
@@ -38,10 +41,17 @@ export class DepartureListComponent implements OnInit, OnDestroy {
       .select((x) => x.app.settings)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(settings => {
-        this.settings = settings
+        this.settings = cloneDeep(settings);
       });
     this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}));
     this.setupTimerForGliderPositionUpdates();
+  }
+
+  ngAfterViewInit() {
+    if (this.element) {
+      this.element.nativeElement.querySelector('.mdc-switch__icon--on').firstChild.setAttribute('d', '');
+      this.element.nativeElement.querySelector('.mdc-switch__icon--off').firstChild.setAttribute('d', '');
+    }
   }
 
   ngOnDestroy(): void {
@@ -58,14 +68,18 @@ export class DepartureListComponent implements OnInit, OnDestroy {
       return ''
     }
     var date = new Date(timestamp * 1000);
-    var hours = date.getHours();
-    var minutes = date.getMinutes();
+    var hours = this.settings?.useUtcTimeInDepartureList ? date.getUTCHours() : date.getHours();
+    var minutes = this.settings?.useUtcTimeInDepartureList ? date.getUTCMinutes() : date.getMinutes();
 
     // Add leading zero if necessary
     const hoursString = hours < 10 ? '0' + hours : hours;
     const minutesString = minutes < 10 ? '0' + minutes : minutes;
 
     return hoursString + ':' + minutesString;
+  }
+
+  saveTimeSettings(): void {
+    this.store.dispatch(saveSettings({settings: this.settings}));
   }
 
   private formatFlightDuration(departureTimestamp: number | undefined, landingTimestamp: number | undefined): string {

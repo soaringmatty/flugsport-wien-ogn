@@ -19,7 +19,7 @@ export class AppEffects {
 
   loadFlights$ = createEffect(() => this.actions$.pipe(
     ofType(AppActions.loadFlights),
-    exhaustMap((action) => this.apiService.getFlights(action.maxLat, action.minLat, action.maxLng, action.minLng, action.selectedFlarmId, action.clubGlidersOnly)
+    exhaustMap((action) => this.apiService.getFlights(action.maxLat, action.minLat, action.maxLng, action.minLng, action.selectedFlarmId, action.glidersOnly, action.clubGlidersOnly)
         .pipe(
             map(flights => {
                 return AppActions.loadFlightsSuccess({flights})

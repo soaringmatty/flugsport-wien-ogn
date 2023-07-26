@@ -29,7 +29,7 @@ export enum AppActionTypes {
 
 export const loadFlights = createAction(
     AppActionTypes.loadFlights,
-    props<{maxLat: number, minLat: number, maxLng: number, minLng: number, selectedFlarmId?: string, clubGlidersOnly?: boolean}>()
+    props<{maxLat: number, minLat: number, maxLng: number, minLng: number, selectedFlarmId?: string, glidersOnly?: boolean, clubGlidersOnly?: boolean}>()
 );
 
 export const loadFlightsSuccess = createAction(

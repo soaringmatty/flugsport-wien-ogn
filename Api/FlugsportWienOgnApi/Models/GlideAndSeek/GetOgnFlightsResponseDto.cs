@@ -5,7 +5,7 @@ public class GetOgnFlightsResponseDto
     public string FlarmID { get; set; }
     public string DisplayName { get; set; }
     public string Registration { get; set; }
-    public int Type { get; set; }
+    public GlideAndSeekAircraftType Type { get; set; }
     public string Model { get; set; }
     public double Lat { get; set; }
     public double Lng { get; set; }

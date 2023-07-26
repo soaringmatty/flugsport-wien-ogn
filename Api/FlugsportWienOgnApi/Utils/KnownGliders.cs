@@ -15,7 +15,15 @@ public static class KnownGliders
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5491", RegistrationShort = "91", Model = "DG 300 Elan", FlarmId = "DDAF0B" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5603", RegistrationShort = "DS", Model = "Ventus 2b", FlarmId = "4404FD" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-5711", RegistrationShort = "DI", Model = "DG 500 Orion", FlarmId = "DD9F86" },
-        //new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-TEST", RegistrationShort = "TST", Model = "Test", FlarmId = "3E7053" },
+        //new Glider { Owner = "Test", Registration = "OE-TEST", RegistrationShort = "TST", Model = "Test", FlarmId = "3E7053" },
+    };
+
+    public static List<Glider> ClubMotorPlanes = new List<Glider>()
+    {
+        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "D-KRES", RegistrationShort = "RES", Model = "Dimona HK 36 TTC", FlarmId = "3EC94E" },
+        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-9466", RegistrationShort = "466", Model = "Dimona HK 36 TTC", FlarmId = "440524" },
+        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-CBB", RegistrationShort = "CBB", Model = "Katana DA 20 A1", FlarmId = "440523" },
+        //new Glider { Owner = "Test", Registration = "OE-TEST", RegistrationShort = "TST", Model = "Test", FlarmId = "4B26AD" },
     };
 
     public static List<Glider> PrivateGliders = new List<Glider>()
@@ -32,14 +40,15 @@ public static class KnownGliders
         //new Glider { Owner = "Kathrin Havemann / Mario Neumann", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", FlarmId = "?D-6928?" }, // TODO
     };
 
-    public static IEnumerable<Glider> ClubAndPrivateGliders()
-    {
-        return ClubGliders.Concat(PrivateGliders);
-    }
+    public static IEnumerable<Glider> ClubAndPrivateGliders = ClubGliders.Concat(PrivateGliders);
+
+    public static IEnumerable<Glider> ClubGlidersAndMotorplanes = ClubGliders.Concat(ClubMotorPlanes);
+
+    public static IEnumerable<Glider> AllKnownPlanes = ClubGliders.Concat(ClubMotorPlanes).Concat(PrivateGliders);
 
     public static GliderType GetGliderTypeByFlarmId(string flarmId)
     {
-        if (ClubGliders.Any(x => x.FlarmId == flarmId))
+        if (ClubGlidersAndMotorplanes.Any(x => x.FlarmId == flarmId))
         {
             return GliderType.Club;
         }

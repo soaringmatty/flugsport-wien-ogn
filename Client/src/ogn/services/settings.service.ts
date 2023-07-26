@@ -9,13 +9,15 @@ export const defaultSettings: MapSettings = {
   version: config.version,
   gliderFilterOnMap: GliderType.club,
   hideGlidersOnGround: false,
+  showGlidersOnly: false,
   mapType: MapType.osm,
   useFlightPathSmoothing: true,
   onlyShowLastFlight: false,
   gliderFilterInLists: GliderType.club,
   showChangelogForNewVersion: true,
   markerColorScheme: MarkerColorScheme.highlightKnownGliders,
-  updateTimeout: 5000
+  updateTimeout: 5000,
+  useUtcTimeInDepartureList: true,
 }
 
 @Injectable({
