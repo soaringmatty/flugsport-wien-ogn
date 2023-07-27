@@ -6,6 +6,7 @@ public class Flight
     public string DisplayName { get; set; }
     public string Registration { get; set; }
     public GliderType Type { get; set; }
+    public AircraftType AircraftType { get; set; }
     public string Model { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }

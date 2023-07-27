@@ -2,7 +2,15 @@
   Heute noch keine Starts erkannt
 </div>
 <!-- <div *ngIf="isMobilePortrait"> -->
-<div>
+<div *ngIf="departureList.length > 0">
+  <div class="sticky">
+    <mat-card class="settings-bar">
+      <span style="margin-right: 8px;">Lokalzeit</span>
+      <mat-slide-toggle #switch [(ngModel)]="settings.useUtcTimeInDepartureList" (change)="saveTimeSettings()"></mat-slide-toggle>
+      <span style="margin-left: 5px;">UTC</span>
+    </mat-card>
+  </div>
+
   <div class="glider-list" *ngFor="let element of departureList">
     <mat-card class="glider-card">
       <div class="glider-item">

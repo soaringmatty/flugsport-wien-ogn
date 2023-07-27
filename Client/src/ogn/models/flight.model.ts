@@ -1,3 +1,4 @@
+import { AircraftType } from "./aircraft-type";
 import { GliderType } from "./glider-type";
 
 export interface Flight {
@@ -5,6 +6,7 @@ export interface Flight {
   displayName: string;
   registration: string;
   type: GliderType;
+  aircraftType: AircraftType;
   model: string;
   latitude: number;
   longitude: number;

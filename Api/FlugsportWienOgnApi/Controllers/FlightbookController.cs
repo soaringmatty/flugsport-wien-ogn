@@ -42,7 +42,7 @@ public class FlightbookController : ControllerBase
                 LandingTimestamp = flight.stop_tsp
             });
 
-        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders() : KnownGliders.ClubGliders;
+        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders : KnownGliders.ClubGliders;
 
         var departureList =
             from flightBook in joinedFlightbook
@@ -60,33 +60,6 @@ public class FlightbookController : ControllerBase
 
         //DEMO
         //departureList = new List<DepartureListItem>() {
-        //    new DepartureListItem
-        //    {
-        //        FlarmId = "TEST01",
-        //        Registration = "D-TST1",
-        //        RegistrationShort = "T1",
-        //        Model = "Test",
-        //        TakeOffTimestamp = 1688467278,
-        //        LandingTimestamp = 1688469980
-        //    },
-        //    new DepartureListItem
-        //    {
-        //        FlarmId = "TEST02",
-        //        Registration = "D-TST2",
-        //        RegistrationShort = "T2",
-        //        Model = "Test",
-        //        TakeOffTimestamp = 1688462280,
-        //        LandingTimestamp = null
-        //    },
-        //    new DepartureListItem
-        //    {
-        //        FlarmId = "TEST03",
-        //        Registration = "D-TST3",
-        //        RegistrationShort = "T3",
-        //        Model = "Test",
-        //        TakeOffTimestamp = 1688461244,
-        //        LandingTimestamp = 1688466937
-        //    },
         //    new DepartureListItem { FlarmId = "TEST04", Registration = "D-TST4", RegistrationShort = "T4", Model = "Test", TakeOffTimestamp = 1688462400, LandingTimestamp = null },
         //    new DepartureListItem { FlarmId = "TEST05", Registration = "D-TST5", RegistrationShort = "T5", Model = "Test", TakeOffTimestamp = 1688462500, LandingTimestamp = 1688464000 },
         //    new DepartureListItem { FlarmId = "TEST06", Registration = "D-TST6", RegistrationShort = "T6", Model = "Test", TakeOffTimestamp = 1688462600, LandingTimestamp = null },

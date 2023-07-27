@@ -1,6 +1,7 @@
 <div id="map" class="map"></div>
 <app-info-card
     [flight]="selectedFlight"
+    [settings]="settings"
     (close)="unselectGlider()"
     (toggleActiveTracking)="toggleActiveTracking($event)"
     (toggleBarogram)="toggleBarogram($event)">

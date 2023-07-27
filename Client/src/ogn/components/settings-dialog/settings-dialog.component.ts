@@ -5,7 +5,7 @@ import { cloneDeep } from 'lodash';
 import { Subject, takeUntil } from 'rxjs';
 import { State } from 'src/app/store';
 import { AppActionTypes, loadFlights, saveSettings } from 'src/app/store/app/app.actions';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 
 @Component({
   selector: 'app-settings-dialog',

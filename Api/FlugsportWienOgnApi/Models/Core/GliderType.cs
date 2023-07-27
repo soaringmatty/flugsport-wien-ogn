@@ -4,5 +4,5 @@ public enum GliderType
 {
     Club,
     Private,
-    Foreign
+    Foreign,
 }

@@ -13,7 +13,7 @@ import { DepartureListItem } from '../models/departure-list-item.model';
 export class ApiService {
   constructor(private http: HttpClient) { }
 
-  getFlights(maxLat: number, minLat: number, maxLng: number, minLng: number, selectedFlarmId?: string, clubGlidersOnly?: boolean): Observable<Flight[]> {
+  getFlights(maxLat: number, minLat: number, maxLng: number, minLng: number, selectedFlarmId?: string, glidersOnly?: boolean, clubGlidersOnly?: boolean): Observable<Flight[]> {
     let params = new HttpParams();
     params = params.append('maxLat', maxLat.toString());
     params = params.append('minLat', minLat.toString());
@@ -21,6 +21,9 @@ export class ApiService {
     params = params.append('minLng', minLng.toString());
     if (selectedFlarmId) {
       params = params.append('selectedFlarmId', selectedFlarmId);
+    }
+    if (glidersOnly) {
+      params = params.append('glidersOnly', glidersOnly);
     }
     if (clubGlidersOnly) {
       params = params.append('clubGlidersOnly', clubGlidersOnly);

@@ -1,59 +1,74 @@
 <mat-card *ngIf="flight" [ngClass]="isMobilePortrait ? 'info-card-mobile' : 'info-card-desktop'">
     <mat-card-header>
-        <div class="info-card-header">
-            <div>
-              <mat-card-title>{{ flight.registration }} ({{ flight.displayName }})</mat-card-title>
-              <mat-card-subtitle>Flarm ID: {{ flight.flarmId }}</mat-card-subtitle>
-            </div>
-            <button mat-icon-button class="close-button" (click)="closeDialog()">
-              <mat-icon>close</mat-icon>
-            </button>
+      <div class="info-card-header">
+        <div>
+          <mat-card-title>{{ flight.registration }} ({{ flight.displayName }})</mat-card-title>
+          <mat-card-subtitle>Flarm ID: {{ flight.flarmId }}</mat-card-subtitle>
         </div>
+        <button mat-icon-button class="close-button" (click)="closeDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
     </mat-card-header>
     <mat-card-content>
-        <div>
-            <span class="label">Modell: </span>
-            <span>{{ flight.model }}</span>
-        </div>
-        <div>
-            <span class="label">Letztes Update: </span>
-            <span>{{ flight.timestamp | timeAgo }}</span>
-        </div>
-        <div>
-            <span class="label">Geschwindigkeit: </span>
-            <span>{{ roundNumber(flight.speed) }} km/h</span>
-        </div>
-        <div>
-            <span class="label">Höhe (MSL): </span>
-            <span>{{ roundNumber(flight.heightMSL) }} m</span>
-        </div>
-        <div>
-            <span class="label">Höhe ü. Grund: </span>
-            <span [ngClass]="flight.heightAGL < 50 ? 'red' : (flight.heightAGL < 200 ? 'yellow' : '')">
-                {{ roundNumber(flight.heightAGL) }} m
-            </span>
-        </div>
-        <div>
-            <span class="label">Vario: </span>
-            <span [ngClass]="flight.vario > 0 ? 'green' : (flight.vario < 0 ? 'red' : '')">
-                {{ flight.vario > 0 ? '+' : ''}}{{ roundVario(flight.vario) }} m/s
-            </span>
-        </div>
-        <div>
-            <span class="label">Vario (60s): </span>
-            <span [ngClass]="flight.varioAverage > 0 ? 'green' : (flight.varioAverage < 0 ? 'red' : '')">
-                {{ flight.varioAverage > 0 ? '+' : ''}}{{ roundVario(flight.varioAverage) }} m/s
-            </span>
-        </div>
+      <div>
+          <span class="label">Typ: </span>
+          <span [ngSwitch]="flight.aircraftType">
+            <span *ngSwitchCase="0">Unbekannt</span>
+            <span *ngSwitchCase="1">Segelflugzeug</span>
+            <span *ngSwitchCase="2">Schleppflugzeug</span>
+            <span *ngSwitchCase="3">Motorflugzeug</span>
+            <span *ngSwitchCase="4">Paragleiter / Hängegleiter</span>
+            <span *ngSwitchCase="5">Hubschrauber</span>
+          </span>
+      </div>
+      <div>
+          <span class="label">Modell: </span>
+          <span>{{ flight.model }}</span>
+      </div>
+      <div>
+          <span class="label">Letztes Update: </span>
+          <span>{{ flight.timestamp | timeAgo }}</span>
+      </div>
+      <div>
+          <span class="label">Geschwindigkeit: </span>
+          <span>{{ roundNumber(flight.speed) }} km/h</span>
+      </div>
+      <div>
+          <span class="label">Höhe (MSL): </span>
+          <span>{{ roundNumber(flight.heightMSL) }} m</span>
+      </div>
+      <div>
+          <span class="label">Höhe ü. Grund: </span>
+          <span [ngClass]="flight.heightAGL < 50 ? 'red' : (flight.heightAGL < 200 ? 'yellow' : '')">
+              {{ roundNumber(flight.heightAGL) }} m
+          </span>
+      </div>
+      <div>
+          <span class="label">Vario: </span>
+          <span [ngClass]="flight.vario > 0 ? 'green' : (flight.vario < 0 ? 'red' : '')">
+              {{ flight.vario > 0 ? '+' : ''}}{{ roundVario(flight.vario) }} m/s
+          </span>
+      </div>
+      <div>
+          <span class="label">Vario (60s): </span>
+          <span [ngClass]="flight.varioAverage > 0 ? 'green' : (flight.varioAverage < 0 ? 'red' : '')">
+              {{ flight.varioAverage > 0 ? '+' : ''}}{{ roundVario(flight.varioAverage) }} m/s
+          </span>
+      </div>
 
-        <div [ngClass]="isMobilePortrait ? 'action-button-container-mobile' : 'action-button-container-desktop'">
-            <button mat-icon-button (click)="toggleTracking()" [matTooltip]="isTracking ? 'Verfolgung beenden' : 'Flugzeug verfolgen'">
-              <mat-icon>{{isTracking ? 'location_disabled' : 'location_searching'}}</mat-icon>
-            </button>
-            <button mat-icon-button [ngClass]="isMobilePortrait ? 'second-action-button-mobile' : ''" (click)="toggleBarogramVisibility()"
-             [matTooltip]="showBarogram ? 'Barogramm ausblenden' : 'Barogramm anzeigen'">
-              <mat-icon>area_chart</mat-icon>
-            </button>
-        </div>
+      <div [ngClass]="isMobilePortrait ? 'action-button-container-mobile' : 'action-button-container-desktop'">
+          <button mat-icon-button (click)="toggleTracking()" [matTooltip]="isTracking ? 'Verfolgung beenden' : 'Flugzeug verfolgen'">
+            <mat-icon>{{isTracking ? 'location_disabled' : 'location_searching'}}</mat-icon>
+          </button>
+          <button mat-icon-button [ngClass]="isMobilePortrait ? 'second-action-button-mobile' : ''" (click)="toggleBarogramVisibility()"
+            [matTooltip]="showBarogram ? 'Barogramm ausblenden' : 'Barogramm anzeigen'">
+            <mat-icon>area_chart</mat-icon>
+          </button>
+          <button mat-icon-button [ngClass]="isMobilePortrait ? 'second-action-button-mobile' : ''" (click)="toggleFlightPathLength()"
+            [matTooltip]="showOnlyLastFlight ? 'Gesamten Flugweg anzeigen' : 'Nur aktuellen Flug anzeigen'">
+            <mat-icon class="material-icons-outlined">{{showOnlyLastFlight ? 'font_download' : 'font_download_off'}}</mat-icon>
+          </button>
+      </div>
     </mat-card-content>
 </mat-card>

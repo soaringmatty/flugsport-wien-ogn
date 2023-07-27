@@ -1,21 +1,27 @@
 import { Injectable } from '@angular/core';
-import { MapSettings } from '../models/map-settings.model';
+import { MapSettings } from '../models/settings.model';
 import { GliderType } from '../models/glider-type';
 import { MapType } from '../models/map-type';
 import config from '../../../package.json';
 import { MarkerColorScheme } from '../models/marker-color-scheme';
+import { GliderFilter } from '../models/glider-filter';
 
 export const defaultSettings: MapSettings = {
   version: config.version,
-  gliderFilterOnMap: GliderType.club,
+  gliderFilterOnMap: GliderFilter.club,
   hideGlidersOnGround: false,
   mapType: MapType.osm,
   useFlightPathSmoothing: true,
   onlyShowLastFlight: false,
-  gliderFilterInLists: GliderType.club,
+  gliderFilterInLists: GliderFilter.club,
   showChangelogForNewVersion: true,
   markerColorScheme: MarkerColorScheme.highlightKnownGliders,
-  updateTimeout: 5000
+  useUtcTimeInDepartureList: true,
+  reduceDataUsage: false
+}
+
+export function getRefreshTimeout(reduceDataUsage: boolean): number {
+  return reduceDataUsage ? 10000 : 5000;
 }
 
 @Injectable({

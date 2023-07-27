@@ -1,10 +1,10 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Flight } from 'src/ogn/models/flight.model';
-import { Subject, Subscription, interval, takeUntil } from 'rxjs';
+import { Observable, Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { loadFlightHistory, loadFlights, selectFlight } from 'src/app/store/app/app.actions';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 import { BarogramComponent } from '../barogram/barogram.component';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -31,6 +31,10 @@ import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
+import { chaikinsAlgorithm } from 'src/ogn/utils/flight-path.utils';
+import { MarkerColorScheme } from 'src/ogn/models/marker-color-scheme';
+import { getRefreshTimeout } from 'src/ogn/services/settings.service';
+import { GliderFilter } from 'src/ogn/models/glider-filter';
 
 @Component({
   selector: 'app-map',
@@ -43,10 +47,12 @@ export class MapComponent implements OnInit, OnDestroy {
   selectedFlight: Flight | undefined;
   showBarogram: boolean = false;
   isMobilePortrait: boolean = false;
+  settings!: MapSettings;
 
-  private settings!: MapSettings;
   private flights: Flight[] = [];
   private markerDictionary: Map<string, GliderMarkerProperties> = new Map();
+  private reloadInterval!: Subscription;
+  private mapChangeTriggerTimeout: any;
   // Tracking related properties
   private isTracking: boolean = false;
   private trackingSubscription!: Subscription;
@@ -54,10 +60,12 @@ export class MapComponent implements OnInit, OnDestroy {
   private mapCenterBeforeActiveTracking: Coordinate | undefined;
   // Map and Layers
   private map!: OlMap;
-  private glidersVectorLayer!: VectorLayer<VectorSource>;
-  private flightPathStrokeVectorLayer!: VectorLayer<VectorSource>;
-  private flightPathVectorLayer!: VectorLayer<VectorSource>;
-  private flightPathMarkerVectorLayer!: VectorLayer<VectorSource>;
+  private clubGlidersLayer!: VectorLayer<VectorSource>;
+  private privateGlidersLayer!: VectorLayer<VectorSource>;
+  private foreignGlidersLayer!: VectorLayer<VectorSource>;
+  private flightPathStrokeLayer!: VectorLayer<VectorSource>;
+  private flightPathLayer!: VectorLayer<VectorSource>;
+  private flightPathMarkerLayer!: VectorLayer<VectorSource>;
   private mapTileLayer!: TileLayer<TileSource>
 
   private readonly onDestroy$ = new Subject<void>();
@@ -105,6 +113,10 @@ export class MapComponent implements OnInit, OnDestroy {
         this.setMapTilesAccordingToSettings();
         if (settingsAlreadyInitialized) {
           // Reload data if settings are manually updated
+          this.markerDictionary.clear();
+          this.clubGlidersLayer.getSource()?.clear();
+          this.privateGlidersLayer.getSource()?.clear();
+          this.foreignGlidersLayer.getSource()?.clear();
           this.loadFlightsWithFilter();
           if (this.selectedFlight) {
             this.store.dispatch(loadFlightHistory({ flarmId: this.selectedFlight.flarmId }));
@@ -165,6 +177,7 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Removes focus from currently selected glider, clears flight path from map and closes info card and barogram
   unselectGlider(): void {
     const flightToUnselect = this.selectedFlight;
     if (!flightToUnselect) {
@@ -173,13 +186,13 @@ export class MapComponent implements OnInit, OnDestroy {
     this.showBarogram = false;
     this.store.dispatch(selectFlight({ flight: null }))
     this.updateSingleMarkerOnMap(flightToUnselect)
-    this.flightPathStrokeVectorLayer.getSource()?.clear();
-    this.flightPathVectorLayer.getSource()?.clear();
-    this.flightPathMarkerVectorLayer.getSource()?.clear();
+    this.flightPathStrokeLayer.getSource()?.clear();
+    this.flightPathLayer.getSource()?.clear();
+    this.flightPathMarkerLayer.getSource()?.clear();
     this.stopActiveTracking();
   }
 
-  // Puts a specific glider on the map in focus 
+  // Puts a specific glider on the map in focus
   // -> Updates selected flight in store (which causes the info card to open), updates marker style to selected, loads flight path to show on map
   private selectGlider(flarmId: string): void {
     if (this.selectedFlight?.flarmId === flarmId) {
@@ -269,13 +282,22 @@ export class MapComponent implements OnInit, OnDestroy {
     flights.forEach(flight => {
       this.updateSingleMarkerOnMap(flight)
     });
-    // Remove markers of flights that no longer exist
-    this.glidersVectorLayer.getSource()?.getFeatures()
+    this.removeObsoleteGliderMarkers(flights);
+  }
+
+  // Remove markers of flights that no longer exist
+  private removeObsoleteGliderMarkers(flights: Flight[]) {
+    const gliderMarkersLayer = [this.clubGlidersLayer, this.privateGlidersLayer, this.foreignGlidersLayer];
+    gliderMarkersLayer.forEach(layer => this.removeObsoleteGliderMarkersFromLayer(layer, flights))
+  }
+
+  private removeObsoleteGliderMarkersFromLayer(layer: VectorLayer<VectorSource>, flights: Flight[]) {
+    layer.getSource()?.getFeatures()
       .forEach((feature) => {
         const flarmId = feature.getId();
         const flightStillExists = flights.find((flight) => flight.flarmId === flarmId)
         if (!flightStillExists) {
-          this.glidersVectorLayer.getSource()?.removeFeature(feature);
+          layer.getSource()?.removeFeature(feature);
         }
       }
     );
@@ -286,14 +308,15 @@ export class MapComponent implements OnInit, OnDestroy {
     if (!flight || !flight.longitude || !flight.latitude) {
       return;
     }
-    const existingFeature = this.glidersVectorLayer.getSource()?.getFeatureById(flight.flarmId);
+    const layer = this.getLayerByGliderType(flight.type);
+    const existingFeature = layer.getSource()?.getFeatureById(flight.flarmId);
     // If marker already exists and just got selected or unseleted -> update it's position and style
     // If marker already exists and has no selection event -> just update it's position
     if (existingFeature) {
       existingFeature.setGeometry(
         new Point(fromLonLat([flight.longitude, flight.latitude]))
       );
-      const shouldUpdateStyle = this.doesMarkerNeedStyleUpdate(flight.flarmId);
+      const shouldUpdateStyle = this.doesMarkerNeedStyleUpdate(flight);
       if (shouldUpdateStyle) {
         const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
         const iconStyle = await this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
@@ -313,39 +336,53 @@ export class MapComponent implements OnInit, OnDestroy {
       const isSelected = this.selectedFlight?.flarmId === flight.flarmId;
       const iconStyle = await this.gliderMarkerService.getGliderMarkerStyle(flight, this.settings, isSelected);
       gliderMarkerFeature.setStyle(iconStyle);
-      this.glidersVectorLayer.getSource()?.addFeature(gliderMarkerFeature);
+      layer.getSource()?.addFeature(gliderMarkerFeature);
     }
-    this.updateMarkerInDictionary(flight.flarmId);
+    this.updateMarkerInDictionary(flight);
   }
 
   // Returns value that indicates whether or not a specific marker needs an style update depending on its selection status or last update timestamp
-  private doesMarkerNeedStyleUpdate(flarmId: string): boolean {
-    const lastProperties = this.markerDictionary.get(flarmId);
+  private doesMarkerNeedStyleUpdate(flight: Flight): boolean {
+    const lastProperties = this.markerDictionary.get(flight.flarmId);
     if (!lastProperties) {
       return true;
     }
-    const isFlightSelected = this.selectedFlight?.flarmId === flarmId;
+    const isFlightSelected = this.selectedFlight?.flarmId === flight.flarmId;
     if (lastProperties.isSelected !== isFlightSelected) {
+      return true;
+    }
+    const newOpacity = this.gliderMarkerService.getMarkerOpacityByLastUpdateTimestamp(flight.timestamp);
+    if (lastProperties.opacity !== newOpacity) {
+      return true;
+    }
+    const newAltitudeLayer = Math.floor(flight.heightMSL / 250)
+    if (this.settings.markerColorScheme === MarkerColorScheme.altitude && lastProperties.altitudeLayer !== newAltitudeLayer) {
       return true;
     }
     return false;
   }
 
   // Stores marker style affecting information about a specific flight in a dictionary
-  private updateMarkerInDictionary(flarmId: string): void {
-    const lastProperties = this.markerDictionary.get(flarmId);
+  private updateMarkerInDictionary(flight: Flight): void {
+    const lastProperties = this.markerDictionary.get(flight.flarmId);
+    const opacity = this.gliderMarkerService.getMarkerOpacityByLastUpdateTimestamp(flight.timestamp);
     let newProperties: GliderMarkerProperties = {
-      isSelected: this.selectedFlight?.flarmId === flarmId
+      isSelected: this.selectedFlight?.flarmId === flight.flarmId,
+      opacity,
+      altitudeLayer: Math.floor(flight.heightMSL / 250)
     }
     if (lastProperties) {
       newProperties = {
         ...lastProperties,
-        isSelected: this.selectedFlight?.flarmId === flarmId
+        isSelected: this.selectedFlight?.flarmId === flight.flarmId,
+        opacity,
+        altitudeLayer: Math.floor(flight.heightMSL / 250)
       }
     }
-    this.markerDictionary.set(flarmId, newProperties);
+    this.markerDictionary.set(flight.flarmId, newProperties);
   }
 
+  // Draws flight path from a list of history entries on the map
   private drawFlightPathFromHistory(historyEntries: HistoryEntry[]): void {
     let coordinates: Coordinate[] = []
     if (this.settings.onlyShowLastFlight) {
@@ -361,7 +398,7 @@ export class MapComponent implements OnInit, OnDestroy {
     }
     let geometry = new LineString(coordinates);
     if (this.settings.useFlightPathSmoothing) {
-      const smoothedCoords: Coordinate[] = this.chaikinsAlgorithm(coordinates);
+      const smoothedCoords: Coordinate[] = chaikinsAlgorithm(coordinates);
       if (!smoothedCoords?.length) {
         return;
       }
@@ -373,14 +410,15 @@ export class MapComponent implements OnInit, OnDestroy {
     outerLineFeature.setStyle(this.gliderMarkerService.flightPathStrokeStyle);
     innerLineFeature.setStyle(this.gliderMarkerService.flightPathStyle);
 
-    this.flightPathStrokeVectorLayer.getSource()?.clear();
-    this.flightPathStrokeVectorLayer.getSource()?.addFeature(outerLineFeature);
-    this.flightPathVectorLayer.getSource()?.clear();
-    this.flightPathVectorLayer.getSource()?.addFeature(innerLineFeature);
+    this.flightPathStrokeLayer.getSource()?.clear();
+    this.flightPathStrokeLayer.getSource()?.addFeature(outerLineFeature);
+    this.flightPathLayer.getSource()?.clear();
+    this.flightPathLayer.getSource()?.addFeature(innerLineFeature);
   }
 
+  // Draws a marker on the corresponding location on the flight path when a timestamp is selected in the barogram
   private drawMarkerOnFlightPath(markerLocationUpdate: MarkerLocationUpdate) {
-    this.flightPathMarkerVectorLayer.getSource()?.clear();
+    this.flightPathMarkerLayer.getSource()?.clear();
     if (!markerLocationUpdate) {
       return;
     }
@@ -399,20 +437,23 @@ export class MapComponent implements OnInit, OnDestroy {
         }),
       }),
     );
-    this.flightPathMarkerVectorLayer.getSource()?.addFeature(marker);
+    this.flightPathMarkerLayer.getSource()?.addFeature(marker);
   }
 
+  // Setup timer that reloads flights on the map every few seconds
   private setupTimerForGliderPositionUpdates() {
-    interval(this.settings.updateTimeout)
+    this.reloadInterval?.unsubscribe();
+    const refreshTimeout = getRefreshTimeout(this.settings.reduceDataUsage);
+    this.reloadInterval = interval(refreshTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
         this.loadFlightsWithFilter();
       });
   }
 
+  // Loads flights for the current viewport with selected filtesr from settings
   private loadFlightsWithFilter() {
     const extent = this.map.getView().calculateExtent(this.map.getSize());
-    // Transform the extent to EPSG:4326
     const extentLonLat = transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
     const [minLng, minLat, maxLng, maxLat] = extentLonLat;
     this.store.dispatch(loadFlights({
@@ -421,41 +462,12 @@ export class MapComponent implements OnInit, OnDestroy {
       maxLng,
       minLng,
       selectedFlarmId: this.selectedFlight?.flarmId,
-      clubGlidersOnly: this.settings.gliderFilterOnMap === GliderType.club ? true : false
+      glidersOnly: this.settings.gliderFilterOnMap === GliderFilter.allAirplanes ? false : true,
+      clubGlidersOnly: this.settings.gliderFilterOnMap === GliderFilter.club ? true : false
     }))
   }
 
-  private chaikinsAlgorithm(
-    coords: Coordinate[],
-    iterations: number = 3,
-    factor: number = 0.25
-  ): Coordinate[] {
-    let result = coords;
-    for (let i = 0; i < iterations; i++) {
-      let smoothedCoords: Coordinate[] = [];
-      for (let i = 0; i < result.length - 1; i++) {
-        const p0 = result[i];
-        const p1 = result[i + 1];
-
-        const Q: Coordinate = [
-          (1 - factor) * p0[0] + factor * p1[0],
-          (1 - factor) * p0[1] + factor * p1[1],
-        ];
-        const R: Coordinate = [
-          factor * p0[0] + (1 - factor) * p1[0],
-          factor * p0[1] + (1 - factor) * p1[1],
-        ];
-        smoothedCoords.push(Q);
-        smoothedCoords.push(R);
-      }
-      result = smoothedCoords;
-    }
-    // Add the original end points
-    result.unshift(coords[0]);
-    result.push(coords[coords.length - 1]);
-    return result;
-  }
-
+  // Selects specific glider marker bases on a map click event
   private onMarkerClicked(e: any) {
     const features = this.map.getFeaturesAtPixel(e.pixel, { hitTolerance: 4 });
     if (!features || features.length < 1) {
@@ -468,19 +480,61 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Updates map tiles according to settings
   private setMapTilesAccordingToSettings(): void {
-    let source = new Stamen({ layer: 'terrain' });
+    let source = null;
     switch (this.settings.mapType) {
-      case MapType.osm:
-        source = new OSM()
+      case MapType.stamen:
+        source = new Stamen({ layer: 'terrain' });
         break;
-      case MapType.satellite:
+      case MapType.osm:
       default:
+        source = new OSM()
         break;
     }
     this.mapTileLayer.setSource(source);
   }
 
+  // Get marker layer depending on glider type
+  private getLayerByGliderType(gliderType: GliderType): VectorLayer<VectorSource> {
+    switch (gliderType) {
+      case GliderType.club:
+        return this.clubGlidersLayer;
+      case GliderType.private:
+        return this.privateGlidersLayer;
+      default:
+        return this.foreignGlidersLayer;
+    }
+  }
+
+  // Store current map center and zoom in session storage and reload flights for new viewport
+  private handleMapViewChange() {
+    const zoom = this.map.getView().getZoom();
+    const center = this.map.getView().getCenter();
+    let hasAnyValuesChanged = false;
+
+    if (zoom !== undefined) {
+      const storedZoom = sessionStorage.getItem('mapZoom');
+      if (storedZoom === null || storedZoom !== zoom.toString()) {
+        sessionStorage.setItem('mapZoom', zoom.toString());
+        hasAnyValuesChanged = true;
+      }
+    }
+    if (center) {
+      const storedCenter = sessionStorage.getItem('mapCenter');
+      const lonLatCenter = toLonLat(center);
+      if (storedCenter === null || storedCenter !== JSON.stringify(lonLatCenter)) {
+        sessionStorage.setItem('mapCenter', JSON.stringify(lonLatCenter));
+        hasAnyValuesChanged = true;
+      }
+    }
+    if (hasAnyValuesChanged) {
+      this.setupTimerForGliderPositionUpdates();
+      this.loadFlightsWithFilter();
+    }
+  }
+
+  // Initialize map (Layers, Events, Position, Zoom)
   private initializeMap() {
     // Load the stored map state or use the default values
     const storedCenter = sessionStorage.getItem('mapCenter');
@@ -490,61 +544,44 @@ export class MapComponent implements OnInit, OnDestroy {
       : coordinates.loxn;
     const initialZoom = storedZoom ? +storedZoom : 12;
 
-    this.mapTileLayer = new TileLayer({
-      source: new OSM(),
-    });
-    this.glidersVectorLayer = new VectorLayer({
-      source: new VectorSource(),
-    });
-    this.flightPathStrokeVectorLayer = new VectorLayer({
-      source: new VectorSource(),
-    });
-    this.flightPathVectorLayer = new VectorLayer({
-      source: new VectorSource(),
-    });
-    this.flightPathMarkerVectorLayer = new VectorLayer({
-      source: new VectorSource(),
-    });
+    this.mapTileLayer = new TileLayer({source: new OSM()});
+    this.clubGlidersLayer = new VectorLayer({source: new VectorSource()});
+    this.privateGlidersLayer = new VectorLayer({source: new VectorSource()});
+    this.foreignGlidersLayer = new VectorLayer({source: new VectorSource()});
+    this.flightPathStrokeLayer = new VectorLayer({source: new VectorSource()});
+    this.flightPathLayer = new VectorLayer({source: new VectorSource()});
+    this.flightPathMarkerLayer = new VectorLayer({source: new VectorSource()});
+
     const mapView = new View({
       center: fromLonLat(initialCenter),
       zoom: initialZoom,
       minZoom: 6,
       enableRotation: false
     });
-    // Always store current map center and zoom in session storage
-    mapView.on('change', () => {
-      const zoom = this.map.getView().getZoom();
-      const center = this.map.getView().getCenter();
-      let hasAnyValuesChanged = false;
 
-      if (zoom !== undefined) {
-        const storedZoom = sessionStorage.getItem('mapZoom');
-        if (storedZoom === null || storedZoom !== zoom.toString()) {
-          sessionStorage.setItem('mapZoom', zoom.toString());
-          hasAnyValuesChanged = true;
-        }
+  // Store current map center and zoom in session storage and reload flights for new viewport
+    mapView.on('change', () => {
+      if (!this.settings.reduceDataUsage) {
+        this.handleMapViewChange();
+        return;
       }
-      if (center) {
-        const storedCenter = sessionStorage.getItem('mapCenter');
-        const lonLatCenter = toLonLat(center);
-        if (storedCenter === null || storedCenter !== JSON.stringify(lonLatCenter)) {
-          sessionStorage.setItem('mapCenter', JSON.stringify(lonLatCenter));
-          hasAnyValuesChanged = true;
-        }
+      // Delay reloading data when reduceDataUsage is active in settings
+      if (this.mapChangeTriggerTimeout) {
+        clearTimeout(this.mapChangeTriggerTimeout);
       }
-      if (hasAnyValuesChanged) {
-        this.loadFlightsWithFilter();
-      }
+      this.mapChangeTriggerTimeout = setTimeout(() => this.handleMapViewChange(), 600); // 600ms delay
     });
 
     this.map = new OlMap({
       target: 'map',
       layers: [
         this.mapTileLayer,
-        this.flightPathStrokeVectorLayer,
-        this.flightPathVectorLayer,
-        this.flightPathMarkerVectorLayer,
-        this.glidersVectorLayer,
+        this.flightPathStrokeLayer,
+        this.flightPathLayer,
+        this.flightPathMarkerLayer,
+        this.foreignGlidersLayer,
+        this.privateGlidersLayer,
+        this.clubGlidersLayer,
       ],
       view: mapView,
     });

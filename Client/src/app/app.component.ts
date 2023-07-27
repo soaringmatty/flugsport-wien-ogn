@@ -14,7 +14,7 @@ import { ChangelogComponent } from './components/changelog/changelog.component';
 import { SettingsService } from 'src/ogn/services/settings.service';
 import { Subject, takeUntil } from 'rxjs';
 import { Actions, ofType } from '@ngrx/effects';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 import { mobileLayoutBreakpoints, tabletLandscapeLayoutBreakpoints } from 'src/ogn/constants/layouts';
 
 @Component({

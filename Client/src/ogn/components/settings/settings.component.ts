@@ -4,7 +4,7 @@ import { cloneDeep } from 'lodash';
 import { State } from 'src/app/store';
 import { Subject, takeUntil } from 'rxjs';
 import { saveSettings } from 'src/app/store/app/app.actions';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 import config from '../../../../package.json'
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ChangelogComponent } from 'src/app/components/changelog/changelog.component';
