@@ -7,10 +7,12 @@ import { State } from 'src/app/store';
 import { loadGliderList } from 'src/app/store/app/app.actions';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { Flight } from 'src/ogn/models/flight.model';
+import { GliderFilter } from 'src/ogn/models/glider-filter';
 import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { GliderStatus } from 'src/ogn/models/glider-status';
 import { GliderType } from 'src/ogn/models/glider-type';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
+import { getRefreshTimeout } from 'src/ogn/services/settings.service';
 
 @Component({
   selector: 'app-glider-list',
@@ -22,7 +24,6 @@ export default class GliderListComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['displayName', 'model', 'status', 'flightDuration', 'distanceFromHome', 'altitude', 'action'];
   isMobilePortrait: boolean = false;
   settings!: MapSettings
-  private readonly updateListTimeout = 5000;
   private readonly onDestroy$ = new Subject<void>();
 
   constructor(private breakpointObserver: BreakpointObserver, private store: Store<State>, private router: Router) { }
@@ -43,7 +44,7 @@ export default class GliderListComponent implements OnInit, OnDestroy {
       .subscribe(settings => {
         this.settings = settings
       });
-    this.store.dispatch(loadGliderList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}));
+    this.store.dispatch(loadGliderList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderFilter.clubAndprivate}));
     this.setupTimerForGliderPositionUpdates();
   }
 
@@ -103,10 +104,11 @@ export default class GliderListComponent implements OnInit, OnDestroy {
   }
 
   private setupTimerForGliderPositionUpdates() {
-    interval(this.updateListTimeout)
+    const refreshTimeout = getRefreshTimeout(this.settings.reduceDataUsage);
+    interval(refreshTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
-        this.store.dispatch(loadGliderList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}))
+        this.store.dispatch(loadGliderList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderFilter.clubAndprivate}))
       });
   }
 }

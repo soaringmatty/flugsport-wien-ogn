@@ -12,7 +12,7 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { flightPathDarkRed, groundHeightBackgroundBrown } from 'src/ogn/services/glider-marker.service';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { FlightAnalysationService } from 'src/ogn/services/flight-analysation.service';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 import { MapBarogramSyncService } from 'src/ogn/services/map-barogram-sync.service';
 
 declare module 'chart.js' {

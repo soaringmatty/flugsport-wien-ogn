@@ -3,7 +3,7 @@ import Style from 'ol/style/Style';
 import Stroke from 'ol/style/Stroke';
 import { Flight } from '../models/flight.model';
 import Icon from 'ol/style/Icon';
-import { MapSettings } from '../models/map-settings.model';
+import { MapSettings } from '../models/settings.model';
 import { GliderType } from '../models/glider-type';
 import { MarkerColorScheme } from '../models/marker-color-scheme';
 import { AircraftType } from '../models/aircraft-type';
@@ -142,24 +142,30 @@ export class GliderMarkerService {
         }
         else if (altitude < 1000) {
           imageSource = 'assets/marker_height_1000.png';
+          textColor = 'black';
         }
         else if (altitude < 1250) {
           imageSource = 'assets/marker_height_1250.png';
+          textColor = 'black';
         }
         else if (altitude < 1500) {
           imageSource = 'assets/marker_height_1500.png';
+          textColor = 'black';
         }
         else if (altitude < 1750) {
           imageSource = 'assets/marker_height_1750.png';
+          textColor = 'black';
         }
         else if (altitude < 2000) {
           imageSource = 'assets/marker_height_2000.png';
         }
         else if (altitude < 2250) {
           imageSource = 'assets/marker_height_2250.png';
+          textColor = 'black';
         }
         else if (altitude < 2500) {
           imageSource = 'assets/marker_height_2500.png';
+          textColor = 'black';
         }
         else if (altitude < 2750) {
           imageSource = 'assets/marker_height_2750.png';

@@ -1,7 +1,7 @@
 import { createReducer, on } from '@ngrx/store';
 import { loadDepartureListSuccess, loadFlightHistorySuccess, loadFlightPathSuccess, loadFlightsSuccess, loadGliderListSuccess, loadSettingsSuccess, saveSettings, selectFlight } from './app.actions';
 import { Flight } from 'src/ogn/models/flight.model';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 import { GliderType } from 'src/ogn/models/glider-type';
 import { clubGliders, privateGliders } from 'src/ogn/constants/known-gliders';
 import { defaultSettings } from 'src/ogn/services/settings.service';
@@ -10,6 +10,7 @@ import { isEqual } from 'lodash';
 import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { gl } from 'date-fns/locale';
 import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
+import { GliderFilter } from 'src/ogn/models/glider-filter';
 
 export interface AppState {
   flights: Flight[];
@@ -37,10 +38,10 @@ export const appReducer = createReducer(
     let filteredFlights = flights;
     // Filter list of flights depending on settings (club / private / all)
     switch (state.settings.gliderFilterOnMap) {
-      case GliderType.club:
+      case GliderFilter.club:
         filteredFlights = flights.filter(flight => clubGliders.find(glider => flight.flarmId && flight.flarmId === glider.FlarmId));
         break;
-      case GliderType.private:
+      case GliderFilter.clubAndprivate:
         const clubGliderFlights = flights.filter(flight => clubGliders.find(glider => flight.flarmId && flight.flarmId === glider.FlarmId))
         const privateGliderFlights = flights.filter(flight => privateGliders.find(glider => flight.flarmId && flight.flarmId === glider.FlarmId))
         filteredFlights = clubGliderFlights.concat(privateGliderFlights);

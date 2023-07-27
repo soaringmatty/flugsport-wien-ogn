@@ -8,8 +8,9 @@ import { State } from 'src/app/store';
 import { loadDepartureList, saveSettings } from 'src/app/store/app/app.actions';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
+import { GliderFilter } from 'src/ogn/models/glider-filter';
 import { GliderType } from 'src/ogn/models/glider-type';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 
 @Component({
   selector: 'app-departure-list',
@@ -43,7 +44,7 @@ export class DepartureListComponent implements OnInit, OnDestroy, AfterViewInit 
       .subscribe(settings => {
         this.settings = cloneDeep(settings);
       });
-    this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}));
+    this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderFilter.clubAndprivate}));
     this.setupTimerForGliderPositionUpdates();
   }
 
@@ -103,7 +104,7 @@ export class DepartureListComponent implements OnInit, OnDestroy, AfterViewInit 
     interval(this.updateListTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
-        this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderType.private}))
+        this.store.dispatch(loadDepartureList({includePrivateGliders: this.settings?.gliderFilterInLists === GliderFilter.clubAndprivate}))
       });
   }
 }

@@ -4,7 +4,7 @@ import { Observable, Subject, Subscription, interval, takeUntil } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { State } from 'src/app/store';
 import { loadFlightHistory, loadFlights, selectFlight } from 'src/app/store/app/app.actions';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 import { BarogramComponent } from '../barogram/barogram.component';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -33,6 +33,8 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import { chaikinsAlgorithm } from 'src/ogn/utils/flight-path.utils';
 import { MarkerColorScheme } from 'src/ogn/models/marker-color-scheme';
+import { getRefreshTimeout } from 'src/ogn/services/settings.service';
+import { GliderFilter } from 'src/ogn/models/glider-filter';
 
 @Component({
   selector: 'app-map',
@@ -441,7 +443,8 @@ export class MapComponent implements OnInit, OnDestroy {
   // Setup timer that reloads flights on the map every few seconds
   private setupTimerForGliderPositionUpdates() {
     this.reloadInterval?.unsubscribe();
-    this.reloadInterval = interval(this.settings.updateTimeout)
+    const refreshTimeout = getRefreshTimeout(this.settings.reduceDataUsage);
+    this.reloadInterval = interval(refreshTimeout)
       .pipe(takeUntil(this.onDestroy$))
       .subscribe(() => {
         this.loadFlightsWithFilter();
@@ -459,8 +462,8 @@ export class MapComponent implements OnInit, OnDestroy {
       maxLng,
       minLng,
       selectedFlarmId: this.selectedFlight?.flarmId,
-      glidersOnly: this.settings.showGlidersOnly,
-      clubGlidersOnly: this.settings.gliderFilterOnMap === GliderType.club ? true : false
+      glidersOnly: this.settings.gliderFilterOnMap === GliderFilter.allAirplanes ? false : true,
+      clubGlidersOnly: this.settings.gliderFilterOnMap === GliderFilter.club ? true : false
     }))
   }
 
@@ -526,6 +529,7 @@ export class MapComponent implements OnInit, OnDestroy {
       }
     }
     if (hasAnyValuesChanged) {
+      this.setupTimerForGliderPositionUpdates();
       this.loadFlightsWithFilter();
     }
   }
@@ -557,10 +561,15 @@ export class MapComponent implements OnInit, OnDestroy {
 
   // Store current map center and zoom in session storage and reload flights for new viewport
     mapView.on('change', () => {
+      if (!this.settings.reduceDataUsage) {
+        this.handleMapViewChange();
+        return;
+      }
+      // Delay reloading data when reduceDataUsage is active in settings
       if (this.mapChangeTriggerTimeout) {
         clearTimeout(this.mapChangeTriggerTimeout);
       }
-      this.mapChangeTriggerTimeout = setTimeout(() => this.handleMapViewChange(), 500); // 500ms delay
+      this.mapChangeTriggerTimeout = setTimeout(() => this.handleMapViewChange(), 600); // 600ms delay
     });
 
     this.map = new OlMap({

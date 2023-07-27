@@ -5,7 +5,7 @@ import { State } from 'src/app/store';
 import { saveSettings } from 'src/app/store/app/app.actions';
 import { mobileLayoutBreakpoints } from 'src/ogn/constants/layouts';
 import { Flight } from 'src/ogn/models/flight.model';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 
 @Component({
   selector: 'app-info-card',

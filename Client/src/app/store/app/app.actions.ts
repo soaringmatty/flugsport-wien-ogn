@@ -3,7 +3,7 @@ import { DepartureListItem } from 'src/ogn/models/departure-list-item.model';
 import { Flight } from 'src/ogn/models/flight.model';
 import { GliderListItem } from 'src/ogn/models/glider-list-item.model';
 import { HistoryEntry } from 'src/ogn/models/history-entry.model';
-import { MapSettings } from 'src/ogn/models/map-settings.model';
+import { MapSettings } from 'src/ogn/models/settings.model';
 
 export enum AppActionTypes {
     loadFlights = '[App] Load Flights',

@@ -1,18 +1,18 @@
+import { GliderFilter } from "./glider-filter";
 import { GliderType } from "./glider-type";
 import { MapType } from "./map-type";
 import { MarkerColorScheme } from "./marker-color-scheme";
 
 export interface MapSettings {
     version: string;
-    gliderFilterOnMap: GliderType;
+    gliderFilterOnMap: GliderFilter;
     hideGlidersOnGround: boolean;
-    showGlidersOnly: boolean;
     mapType: MapType
     useFlightPathSmoothing: boolean;
     onlyShowLastFlight: boolean;
-    gliderFilterInLists: GliderType;
+    gliderFilterInLists: GliderFilter;
     showChangelogForNewVersion: boolean;
     markerColorScheme: MarkerColorScheme;
-    updateTimeout: number;
     useUtcTimeInDepartureList: boolean;
+    reduceDataUsage: boolean;
 }
