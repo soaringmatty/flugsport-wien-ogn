@@ -20,7 +20,7 @@ public static class KnownGliders
 
     public static List<Glider> ClubMotorPlanes = new List<Glider>()
     {
-        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "D-KRES", RegistrationShort = "RES", Model = "Dimona HK 36 TTC", FlarmId = "3EC94E" },
+        new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "D-KRES", RegistrationShort = "RES", Model = "Dimona HK 36 TTC", FlarmId = "DD9382" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-9466", RegistrationShort = "466", Model = "Dimona HK 36 TTC", FlarmId = "440524" },
         new Glider { Owner = "ASKÖ Flugsport Wien", Registration = "OE-CBB", RegistrationShort = "CBB", Model = "Katana DA 20 A1", FlarmId = "440523" },
         //new Glider { Owner = "Test", Registration = "OE-TEST", RegistrationShort = "TST", Model = "Test", FlarmId = "4B26AD" },

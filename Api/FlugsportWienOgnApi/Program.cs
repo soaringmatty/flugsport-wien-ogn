@@ -1,7 +1,6 @@
 using FlugsportWienOgnApi.Hubs;
 using FlugsportWienOgnApi.Services;
-using Newtonsoft.Json.Converters;
-using System.ComponentModel;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,17 +11,19 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
-builder.Services.AddSignalR();
-//services.AddSignalR().AddJsonProtocol(options =>
-//{
-//    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
-//});
+builder.Services.AddSignalR().AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+});
 
-builder.Services.AddSingleton<FlightService>();
+builder.Services.AddSingleton<FlightService>(); 
+builder.Services.AddSingleton<LoxnFlightbookService>();
 
 builder.Services.AddCors();
 
 var app = builder.Build();
+
+var loxnFlightbookService = app.Services.GetRequiredService<LoxnFlightbookService>();
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
@@ -45,3 +46,5 @@ app.MapHub<LiveGliderHub>("hubs/liveglider");
 //    endpoints.MapHub<NotificationReaderHub>("/hubs/notificationReader");
 //});
 app.Run();
+
+//await loxnFlightbookService.StartTracking();

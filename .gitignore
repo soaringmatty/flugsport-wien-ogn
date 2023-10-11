@@ -2010,3 +2010,5 @@ node_modules/moment/src/locale/zh-mo.js
 node_modules/moment/src/locale/zh-tw.js
 node_modules/moment/ts3.1-typings/moment.d.ts
 Api/FlugsportWienOgnApi/flugsport-wien-ogn.tar
+/Api/Arps/bin
+/Api/Arps/obj
