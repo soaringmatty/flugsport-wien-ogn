@@ -1,4 +1,6 @@
-﻿namespace FlugsportWienOgnApi.Models.Core;
+﻿using FlugsportWienOgnApi.Models.Aprs;
+
+namespace FlugsportWienOgnApi.Models.Core;
 
 public class GliderListItem : IComparable<GliderListItem>
 {
@@ -7,7 +9,7 @@ public class GliderListItem : IComparable<GliderListItem>
     public string Model { get; set; }
     public string Owner { get; set; }
     public string Pilot { get; set; }
-    public GliderStatus Status { get; set; }
+    public FlightStatus Status { get; set; }
     public int DistanceFromHome { get; set; }
     public int Altitude { get; set; }
     public long TakeOffTimestamp { get; set; }

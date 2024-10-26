@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
+using System.Reflection;
 using System.Text.RegularExpressions;
+using Arps.Models;
 
 namespace Arps;
 
@@ -21,7 +23,7 @@ public partial class StreamConverter
     /// <seealso href="https://github.com/dbursem/ogn-client-php/blob/master/lib/OGNClient.php#L87"/>
     /// </remarks>
     private const string _LINE_MATCH_PATTERN =
-        @".*?h([0-9.]*[NS])[/\\]([0-9.]*[WE]).*?(\d{3})/(\d{3})/A=(\d+).*?id[0-3]{1}[A-Fa-f0-9]{1}([A-Za-z0-9]+).*?([-0-9]+)fpm.*?([-.0-9]+)rot.*";
+        @".*?([A-Za-z0-9]+,[A-Za-z0-9]+,[A-Za-z0-9]+).*?h([0-9.]*[NS])[/\\]([0-9.]*[WE]).*?(\d{3})/(\d{3})/A=(\d+).*?id[0-3]{1}[A-Fa-f0-9]{1}([A-Za-z0-9]+).*?([-0-9]+)fpm.*?([-.0-9]+)rot.*";
 
     /// <summary>
     /// Pattern for converting coordinate strings to valid numeric string
@@ -72,14 +74,15 @@ public partial class StreamConverter
 
         var data = match.Groups;
 
-        var latitude = ConvertCoordinateValue(data, 1);
-        var longitude = ConvertCoordinateValue(data, 2);
-        var course = Convert(data, 3);
-        var speed = Convert(data, 4, _FACTOR_KNOTS_TO_KM_H);
-        var altitude = Convert(data, 5, _FACTOR_FT_TO_M);
-        var aircraftId = data[6].Value;
-        var verticalSpeed = Convert(data, 7, _FACTOR_FT_MIN_TO_M_SEC);
-        var turnRate = Math.Abs(Convert(data, 8, _FACTOR_TURNS_TWO_MIN_TO_TURNS_MIN));
+        var receiver = data[1].Value;
+        var latitude = ConvertCoordinateValue(data, 2);
+        var longitude = ConvertCoordinateValue(data, 3);
+        var course = Convert(data, 4);
+        var speed = Convert(data, 5, _FACTOR_KNOTS_TO_KM_H);
+        var altitude = Convert(data, 6, _FACTOR_FT_TO_M);
+        var aircraftId = data[7].Value;
+        var verticalSpeed = Convert(data, 8, _FACTOR_FT_MIN_TO_M_SEC);
+        var turnRate = Math.Abs(Convert(data, 9, _FACTOR_TURNS_TWO_MIN_TO_TURNS_MIN));
 
         return new FlightData(
             aircraftId,
@@ -89,7 +92,8 @@ public partial class StreamConverter
             course,
             latitude,
             longitude,
-            DateTime.Now
+            DateTime.Now,
+            receiver
         );
     }
 

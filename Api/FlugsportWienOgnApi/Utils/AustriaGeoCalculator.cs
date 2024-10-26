@@ -1,29 +1,29 @@
 ﻿using NetTopologySuite;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.IO;
-using Newtonsoft.Json;
 
 namespace FlugsportWienOgnApi.Utils;
 
-public static class AustriaGeoCalculator
+public class AustriaGeoCalculator
 {
-    public static bool IsPointInAustria(double longitude, double latitude)
+    private readonly GeometryFactory _geometryFacotry;
+    private readonly Polygon _austriaPolygon = new Polygon(new LinearRing(_austrianBoundary.ToArray()));
+
+    public AustriaGeoCalculator()
     {
-        var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-
-        // Create a LinearRing from the Coordinate list
+        _geometryFacotry = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
         var linearRing = new LinearRing(_austrianBoundary.ToArray());
-
-        // Create the Polygon
-        Polygon austria = new Polygon(linearRing);
-
-        // Check if the point is within the polygon
-        Point point = geometryFactory.CreatePoint(new Coordinate(longitude, latitude));
-        return austria.Contains(point);
+        _austriaPolygon = new Polygon(linearRing);
     }
 
-    private static List<Coordinate> _austrianBoundary = new List<Coordinate>
+    public bool IsPointInAustria(double longitude, double latitude)
     {
+        var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+        Point point = geometryFactory.CreatePoint(new Coordinate(longitude, latitude));
+        return _austriaPolygon.Contains(point);
+    }
+
+    private static readonly List<Coordinate> _austrianBoundary =
+    [
         new Coordinate(15.007324, 49.023461),
         new Coordinate(14.650269, 48.618385),
         new Coordinate(13.837280, 48.777913),
@@ -63,5 +63,5 @@ public static class AustriaGeoCalculator
         new Coordinate(16.380615, 48.738078),
         new Coordinate(15.276489, 49.009051),
         new Coordinate(15.007324, 49.023461)
-    };
+    ];
 }

@@ -1,4 +1,4 @@
-namespace Arps;
+namespace Arps.Models;
 
 public record FlightData(
     string FlarmId,
@@ -9,7 +9,8 @@ public record FlightData(
     float Course,
     float Latitude,
     float Longitude,
-    DateTime DateTime
+    DateTime DateTime,
+    string Receiver
 )
 {
     public override string ToString()

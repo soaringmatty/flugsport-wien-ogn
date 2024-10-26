@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using System.Net.Sockets;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Arps;
 
-internal class AprsService
+public class AprsService
 {
     public IObservable<string> Stream { get; }
     private AprsConfig _aprsConfig;
 
-    internal AprsService(AprsConfig aprsConfig)
+    public AprsService(AprsConfig aprsConfig)
     {
         this._aprsConfig = aprsConfig;
         Stream = CreateStream();

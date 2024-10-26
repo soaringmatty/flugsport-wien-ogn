@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Arps.Models;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Arps;
 
@@ -12,7 +8,7 @@ public class LiveGliderService
     private AprsService _arpsService;
     private StreamConverter _streamConverter;
 
-    public event Action<FlightData> OnDataReceived;
+    public event Action<FlightData>? OnDataReceived;
 
     public LiveGliderService(double filterPositionLatitude, double filterPositionLongitude, int filterRadius)
     {

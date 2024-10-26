@@ -4,7 +4,7 @@ namespace Arps;
 /// Representation of current configuration.
 /// Will automatically instantiated by the ConfigProvider
 /// </summary>
-internal record AprsConfig
+public record AprsConfig
 {
     /// <summary>
     /// APRS host that the listener should connect to
@@ -29,7 +29,7 @@ internal record AprsConfig
     /// <summary>
     /// Url that contains the list of all OGN-known aircraft (OGN DDB)
     /// </summary>
-    public string DdbAircraftListUrl { get; init; } = "https://ddb.glidernet.org/download/";
+    public string DdbAircraftListUrl { get; init; } = "https://ddb.glidernet.org/download/?t=1";
 
     /// <summary>
     /// Position that should be listened for

@@ -1,8 +1,6 @@
 ﻿using FlugsportWienOgnApi.Models.Core;
 using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Utils;
-using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
 
 namespace FlugsportWienOgnApi.Services;
 
@@ -10,6 +8,7 @@ public class FlightService
 {
     private readonly ILogger<FlightService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly AustriaGeoCalculator _austriaGeoCalculator;
     private DateTime _lastUpdateTime;
 
     public IEnumerable<Flight> Flights { get; set; }
@@ -18,6 +17,7 @@ public class FlightService
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _austriaGeoCalculator = new AustriaGeoCalculator();
         Flights = new List<Flight>();
     }
 
@@ -47,7 +47,7 @@ public class FlightService
             x => x.FlarmId == selectedFlarmId ||
             (
                 x.Latitude >= minLat && x.Latitude <= maxLat && x.Longitude >= minLng && x.Longitude <= maxLng &&
-                AustriaGeoCalculator.IsPointInAustria(x.Longitude, x.Latitude) &&
+                _austriaGeoCalculator.IsPointInAustria(x.Longitude, x.Latitude) &&
                 x.AircraftType != AircraftType.Unknown
             )
         );

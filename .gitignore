@@ -2012,3 +2012,6 @@ node_modules/moment/ts3.1-typings/moment.d.ts
 Api/FlugsportWienOgnApi/flugsport-wien-ogn.tar
 /Api/Arps/bin
 /Api/Arps/obj
+/Api/FlugsportWienOgn.Database/bin/Debug/net8.0
+/Api/FlugsportWienOgn.Database/obj
+/Client (neu)/flugsport-wien-ogn/.vscode

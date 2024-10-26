@@ -1,5 +1,6 @@
 ﻿using FlugsportWienOgnApi.Models.Core;
 using FlugsportWienOgnApi.Models.Flightbook;
+using FlugsportWienOgnApi.Services;
 using FlugsportWienOgnApi.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +14,14 @@ public class FlightbookController : ControllerBase
 {
     private readonly ILogger<FlightController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly LoxnFlightbookService _loxnFlightbookService;
     private readonly string _flightBookUrl = "https://flightbook.glidernet.org/api/logbook/LOXN/";
 
-    public FlightbookController(ILogger<FlightController> logger, IHttpClientFactory httpClientFactory)
+    public FlightbookController(ILogger<FlightController> logger, IHttpClientFactory httpClientFactory, LoxnFlightbookService loxnFlightbookService)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _loxnFlightbookService = loxnFlightbookService;
     }
 
     [HttpGet("loxn")]
@@ -72,6 +75,15 @@ public class FlightbookController : ControllerBase
         //    new DepartureListItem { FlarmId = "TEST13", Registration = "D-TS13", RegistrationShort = "T13", Model = "Test", TakeOffTimestamp = 1688463300, LandingTimestamp = 1688464800 }
         //};
 
+        return Ok(departureList);
+    }
+
+    [HttpGet("loxn/new")]
+    public ActionResult<IEnumerable<DepartureListItem>> GetLoxnFlightbookNew([FromQuery] bool includePrivateGliders)
+    {
+        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders : KnownGliders.ClubGliders;
+
+        var departureList = _loxnFlightbookService.FlightBook.OrderByDescending(item => item.TakeOffTimestamp);
         return Ok(departureList);
     }
 }

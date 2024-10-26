@@ -1,6 +1,7 @@
 ﻿using Arps;
+using FlugsportWienOgnApi.Models.Core;
 
-namespace FlugsportWienOgnApi.Models.Core;
+namespace FlugsportWienOgnApi.Models.Aprs;
 
 public class FlightPathItem
 {

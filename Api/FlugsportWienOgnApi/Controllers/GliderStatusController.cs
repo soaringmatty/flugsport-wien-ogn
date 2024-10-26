@@ -1,4 +1,5 @@
-﻿using FlugsportWienOgnApi.Models.Core;
+﻿using FlugsportWienOgnApi.Models.Aprs;
+using FlugsportWienOgnApi.Models.Core;
 using FlugsportWienOgnApi.Models.Flightbook;
 using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Utils;
@@ -78,7 +79,7 @@ public class GliderStatusController : ControllerBase
                     RegistrationShort = glider.RegistrationShort,
                     Model = glider.Model,
                     TakeOffTimestamp = -1,
-                    Status = GliderStatus.NoSignal,
+                    Status = FlightStatus.NoSignal,
                     Pilot = "Not implemented",
                     DistanceFromHome = -1,
                     Altitude = -1,
@@ -88,7 +89,7 @@ public class GliderStatusController : ControllerBase
             }
             else
             {
-                var gliderStatus = (flight.Speed > 10 && flight.HeightAGL > 10) ? GliderStatus.Flying : GliderStatus.OnGround;
+                var gliderStatus = (flight.Speed > 10 && flight.HeightAGL > 10) ? FlightStatus.Flying : FlightStatus.OnGround;
                 var distanceFromHome = (int)EarthDistanceCalculator.CalculateHaversineDistance(homeLatitude, homeLongitude, flight.Latitude, flight.Longitude);
                 var flightbookEntry = latestFlightsFlightbook.FirstOrDefault(x => x.FlarmId == glider.FlarmId);
                 gliderStatusList.Add(new GliderListItem

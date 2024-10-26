@@ -1,4 +1,4 @@
-﻿namespace FlugsportWienOgnApi.Models.Core;
+﻿namespace FlugsportWienOgnApi.Models.Aprs;
 
 public enum FlightEventType
 {
