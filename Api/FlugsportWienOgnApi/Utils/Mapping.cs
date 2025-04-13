@@ -38,7 +38,7 @@ public static class Mapping
         }
         return flights;
     }
-    public static AircraftType MapAircraftType(GlideAndSeekAircraftType rawType)
+    public static AircraftType MapAircraftType(GlideAndSeekAircraftType? rawType)
     {
         switch (rawType)
         {
