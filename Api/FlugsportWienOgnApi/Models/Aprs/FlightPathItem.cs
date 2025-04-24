@@ -1,5 +1,4 @@
-﻿using Arps;
-using FlugsportWienOgnApi.Models.Core;
+﻿using FlugsportWienOgnApi.Models.Core;
 
 namespace FlugsportWienOgnApi.Models.Aprs;
 

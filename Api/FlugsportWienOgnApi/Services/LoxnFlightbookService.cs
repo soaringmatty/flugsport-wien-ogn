@@ -1,5 +1,5 @@
-﻿using Arps;
-using Arps.Models;
+﻿using Aprs;
+using Aprs.Models;
 using FlugsportWienOgnApi.Models.Aprs;
 using FlugsportWienOgnApi.Models.Core;
 
@@ -50,7 +50,7 @@ public class LoxnFlightbookService
         _liveGliderService.OnDataReceived += ProcessFlightDataUpdate;
         Task.Factory.StartNew(async () =>
         {
-            await _aircraftProvider.InitializeAsync();
+            await _aircraftProvider.InitializeAsync(CancellationToken.None);
             await _liveGliderService.StartTracking();
         });
     }
@@ -64,7 +64,7 @@ public class LoxnFlightbookService
             Speed = Convert.ToInt32(flightData.Speed),
             Altitude = Convert.ToInt32(flightData.Altitude),
             VerticalSpeed = flightData.VerticalSpeed,
-            Timestamp = flightData.DateTime
+            Timestamp = flightData.Time
         };
         var isFirstEntry = !_flightHistory.TryGetValue(flightData.FlarmId, out var liveFlight);
         if (isFirstEntry)
@@ -102,7 +102,7 @@ public class LoxnFlightbookService
         {
             lastFlightBookEntry.IsWinchLaunch = IsWinchLaunch(flightData.FlarmId, lastEventTime);
             lastFlightBookEntry.IsLaunchMethodChecked = true;
-            _logger.LogInformation($"{flightData.DateTime.ToShortTimeString()} {flightData.FlarmId}: Departure Type checked - Winch Launch: {lastFlightBookEntry.IsWinchLaunch}");
+            _logger.LogInformation($"{flightData.Time.ToShortTimeString()} {flightData.FlarmId}: Departure Type checked - Winch Launch: {lastFlightBookEntry.IsWinchLaunch}");
         }
 
         // Remove data older than the max allowed flight data age

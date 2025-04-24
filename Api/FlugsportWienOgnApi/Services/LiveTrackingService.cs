@@ -1,5 +1,5 @@
-﻿using Arps.Models;
-using Arps;
+﻿using Aprs.Models;
+using Aprs;
 using FlugsportWienOgn.Database;
 using FlugsportWienOgn.Database.Entities;
 using FlugsportWienOgnApi.Utils;
@@ -31,14 +31,40 @@ public class LiveTrackingService
         _logger.LogInformation("Airplane Tracking has started");
     }
 
-    public async Task<IEnumerable<Flight>> GetFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng)
+    public async Task<IEnumerable<Flight>> GetFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng, int lastUpdateMaxMinutes = 30)
     {
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
-            var currentFlights = await dbContext.Planes
-                .Select(plane => new Flight
+            var flightQuery = dbContext.Planes.AsQueryable();
+
+            // Filter flights within a certain latitude and longitude range (if parameters are set)
+            if (minLat.HasValue || maxLat.HasValue || minLng.HasValue || maxLng.HasValue)
+            {
+                var minLatitude = minLat ?? double.MinValue;
+                var maxLatitude = maxLat ?? double.MaxValue;
+                var minLongitude = minLng ?? double.MinValue;
+                var maxLongitude = maxLng ?? double.MaxValue;
+
+                flightQuery = flightQuery.Where(x =>
+                    x.Latitude >= minLatitude && x.Latitude <= maxLatitude &&
+                    x.Longitude >= minLongitude && x.Longitude <= maxLongitude);
+            }
+            // Filter flights to FlugsportWien related planes only (if parameter is set)
+            if (clubGlidersOnly == true)
+            {
+                flightQuery = flightQuery.Where(x => KnownGliders.ClubGlidersAndMotorplanes.Any(glider => glider.FlarmId == x.FlarmId));
+            }
+            // Filter flights to aircraft type "glider" only (if parameter is set)
+            else if (glidersOnly == true)
+            {
+                flightQuery = flightQuery.Where(x => (AircraftType)x.AircraftType == AircraftType.Unknown);
+            }
+            // Filter flight according to last updated timestamp
+            flightQuery = flightQuery.Where(x => x.LastUpdate > DateTime.Now.AddMinutes(lastUpdateMaxMinutes * -1));
+
+            var currentFlights = await flightQuery.Select(plane => new Flight
                 {
                     FlarmId = plane.FlarmId,
                     DisplayName = plane.CallSign,
@@ -135,12 +161,24 @@ public class LiveTrackingService
     private void AddFlightDataToDatabase(FlightData flightData)
     {
         var isInAustria = _austriaGeoCalculator.IsPointInAustria(flightData.Longitude, flightData.Latitude);
-        if (!isInAustria) { return; }
+        if (!isInAustria)
+        {
+            return;
+        }
 
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
             var planeId = this.AddOrUpdatePlaneEntity(flightData, dbContext);
+
+            var lastTimestamp = dbContext.FlightData
+                .Where(fp => fp.PlaneId == planeId)
+                .Max(fp => (DateTime?)fp.Timestamp);
+
+            if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
+            {
+                return;
+            }
 
             var flightPathItem = new FlugsportWienOgn.Database.Entities.FlightPathItem
             {
@@ -150,14 +188,14 @@ public class LiveTrackingService
                 Speed = (int)Math.Round(flightData.Speed),
                 Altitude = (int)Math.Round(flightData.Altitude),
                 VerticalSpeed = flightData.VerticalSpeed,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = flightData.ReceiverTimeStamp,
                 Receiver = flightData.Receiver,
             };
-
             dbContext.FlightData.Add(flightPathItem);
             dbContext.SaveChanges();
         }
     }
+
 
     private int AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
     {
@@ -173,7 +211,7 @@ public class LiveTrackingService
             existingPlane.Speed = (int)Math.Round(flightData.Speed);
             existingPlane.Altitude = (int)Math.Round(flightData.Altitude);
             existingPlane.VerticalSpeed = flightData.VerticalSpeed;
-            existingPlane.LastUpdate = flightData.DateTime;
+            existingPlane.LastUpdate = flightData.ReceiverTimeStamp;
             dbContext.Planes.Update(existingPlane);
             return existingPlane.Id;
         }
@@ -186,19 +224,22 @@ public class LiveTrackingService
                 FlarmId = flightData.FlarmId,
                 Registration = flightData.FlarmId,
                 CallSign = $"? {flightData.FlarmId.Substring(flightData.FlarmId.Length - 2)}",
-                Model = "Unknown",
+                Model = "Unbekannt",
                 Latitude = flightData.Latitude,
                 Longitude = flightData.Longitude,
                 Speed = (int)Math.Round(flightData.Speed),
                 Altitude = (int)Math.Round(flightData.Altitude),
                 VerticalSpeed = flightData.VerticalSpeed,
-                LastUpdate = flightData.DateTime,
+                LastUpdate = flightData.ReceiverTimeStamp,
                 AircraftType = (int)AircraftType.Unknown
             };
             // Add aircraft data if it is registered
             if (aircraftData != null)
             {
-                var calculatedCallSign = aircraftData.Registration?.Substring(aircraftData.Registration.Length - 2);
+                var calculatedCallSign =
+                    (!string.IsNullOrWhiteSpace(aircraftData.Registration) && aircraftData.Registration.Length >= 4) ?
+                    aircraftData.Registration?.Substring(aircraftData.Registration.Length - 2) :
+                    "??";
                 newPlane.Registration = aircraftData.Registration;
                 newPlane.CallSign = !string.IsNullOrEmpty(aircraftData.CallSign) ? aircraftData.CallSign : calculatedCallSign;
                 newPlane.Model = aircraftData.Model;

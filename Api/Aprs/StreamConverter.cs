@@ -1,16 +1,17 @@
-using System;
+using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
 using System.Text.RegularExpressions;
-using Arps.Models;
+using Aprs.Models;
+using Microsoft.Extensions.Logging;
 
-namespace Arps;
+namespace Aprs;
 
 /// <summary>
 /// Converter for getting models from stream data messages
 /// </summary>
 public partial class StreamConverter
 {
+    private readonly ILogger<StreamConverter> _logger;
     /// <summary>
     /// Main pattern for getting all needed information from a raw stream-line.
     /// </summary>
@@ -23,7 +24,13 @@ public partial class StreamConverter
     /// <seealso href="https://github.com/dbursem/ogn-client-php/blob/master/lib/OGNClient.php#L87"/>
     /// </remarks>
     private const string _LINE_MATCH_PATTERN =
-        @".*?([A-Za-z0-9]+,[A-Za-z0-9]+,[A-Za-z0-9]+).*?h([0-9.]*[NS])[/\\]([0-9.]*[WE]).*?(\d{3})/(\d{3})/A=(\d+).*?id[0-3]{1}[A-Fa-f0-9]{1}([A-Za-z0-9]+).*?([-0-9]+)fpm.*?([-.0-9]+)rot.*";
+        @".*?([A-Za-z0-9]+,[A-Za-z0-9]+,[A-Za-z0-9]+)"  // 1: receiver identifier
+      + @".*?([0-9]{6}h)"                               // 2: timestamp (DDHHMMh or HHMMSSz)
+      + @"([0-9.]*[NS])[/\\]([0-9.]*[WE])"              // 3: latitude, 4: longitude
+      + @".*?(\d{3})/(\d{3})/A=(\d+)"                   // 5: course (°), 6: speed (kn), 7: altitude (ft)
+      + @".*?id[0-3]{1}[A-Fa-f0-9]{1}([A-Za-z0-9]+)"    // 8: aircraft ID
+      + @".*?([-0-9]+)fpm"                              // 9: vertical speed (ft/min)
+      + @".*?([-.0-9]+)rot.*";                          // 10: turn rate (turns per 2 min)
 
     /// <summary>
     /// Pattern for converting coordinate strings to valid numeric string
@@ -54,6 +61,11 @@ public partial class StreamConverter
     [GeneratedRegex(_COORDINATE_REPLACE_PATTERN)]
     private static partial Regex CoordinateReplaceRegex();
 
+    public StreamConverter(ILogger<StreamConverter> logger)
+    {
+        _logger = logger;   
+    }
+
     /// <summary>
     /// Tries converting a stream-line to FlightData model
     /// </summary>
@@ -63,7 +75,8 @@ public partial class StreamConverter
     {
         if (string.IsNullOrWhiteSpace(line))
         {
-            throw new Exception("Line is null or empty!");
+            _logger.LogError("Line is null or empty!");
+            return null;
         }
 
         var match = Regex.Match(line, _LINE_MATCH_PATTERN);
@@ -75,14 +88,15 @@ public partial class StreamConverter
         var data = match.Groups;
 
         var receiver = data[1].Value;
-        var latitude = ConvertCoordinateValue(data, 2);
-        var longitude = ConvertCoordinateValue(data, 3);
-        var course = Convert(data, 4);
-        var speed = Convert(data, 5, _FACTOR_KNOTS_TO_KM_H);
-        var altitude = Convert(data, 6, _FACTOR_FT_TO_M);
-        var aircraftId = data[7].Value;
-        var verticalSpeed = Convert(data, 8, _FACTOR_FT_MIN_TO_M_SEC);
-        var turnRate = Math.Abs(Convert(data, 9, _FACTOR_TURNS_TWO_MIN_TO_TURNS_MIN));
+        var timestamp = ConvertTimestamp(data, 2).ToLocalTime();
+        var latitude = ConvertCoordinateValue(data, 3);
+        var longitude = ConvertCoordinateValue(data, 4);
+        var course = Convert(data, 5);
+        var speed = Convert(data, 6, _FACTOR_KNOTS_TO_KM_H);
+        var altitude = Convert(data, 7, _FACTOR_FT_TO_M);
+        var aircraftId = data[8].Value;
+        var verticalSpeed = Convert(data, 9, _FACTOR_FT_MIN_TO_M_SEC);
+        var turnRate = Math.Abs(Convert(data, 10, _FACTOR_TURNS_TWO_MIN_TO_TURNS_MIN));
 
         return new FlightData(
             aircraftId,
@@ -92,6 +106,7 @@ public partial class StreamConverter
             course,
             latitude,
             longitude,
+            timestamp,
             DateTime.Now,
             receiver
         );
@@ -139,5 +154,53 @@ public partial class StreamConverter
         return orientation.Equals("S") || orientation.Equals("W")
             ? coordinateValue * -1 // S/W are seen as negative!
             : coordinateValue;
+    }
+
+    /// <summary>
+    /// Converts an APRS timestamp in DDHHMMh (local) or HHMMSSz (UTC) format 
+    /// into a DateTime instance.
+    /// </summary>
+    /// <param name="rawTimestamp">
+    /// A seven-character APRS timestamp, e.g. "071645h" or "092345z".
+    /// </param>
+    /// <returns>
+    /// A DateTime representing the parsed timestamp.
+    /// </returns>
+    private static DateTime ConvertTimestamp(GroupCollection collection, int index)
+    {
+        var rawTimestamp = collection[index].Value;
+        if (string.IsNullOrWhiteSpace(rawTimestamp) || rawTimestamp.Length != 7)
+        {
+            throw new FormatException("Invalid APRS timestamp format.");
+        }
+
+        char suffix = rawTimestamp[^1];
+        string core = rawTimestamp.Substring(0, 6);
+        DateTime now = (suffix == 'z') ? DateTime.UtcNow : DateTime.Now;
+
+        switch (suffix)
+        {
+            case 'h': // HHMMSS – hour, minute, second in UTC
+                {
+                    int hourZ = int.Parse(core.Substring(0, 2), CultureInfo.InvariantCulture);
+                    int minuteZ = int.Parse(core.Substring(2, 2), CultureInfo.InvariantCulture);
+                    int secondZ = int.Parse(core.Substring(4, 2), CultureInfo.InvariantCulture);
+
+                    DateTime utcNow = DateTime.UtcNow;
+                    // UTC DateTime is constructed with Kind=Utc
+                    return new DateTime(
+                        utcNow.Year,
+                        utcNow.Month,
+                        utcNow.Day,
+                        hourZ,
+                        minuteZ,
+                        secondZ,
+                        DateTimeKind.Utc
+                    );
+                }
+
+            default:
+                throw new FormatException($"Unknown timestamp suffix: '{suffix}'.");
+        }
     }
 }

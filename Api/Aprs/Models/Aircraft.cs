@@ -1,4 +1,4 @@
-namespace Arps.Models;
+namespace Aprs.Models;
 
 public record Aircraft(
     string Id,

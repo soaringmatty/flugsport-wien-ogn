@@ -1,30 +1,35 @@
-﻿using Arps.Models;
+﻿using Aprs.Models;
+using Microsoft.Extensions.Logging;
 using System.Reactive.Linq;
 
-namespace Arps;
+namespace Aprs;
 
 public class LiveGliderService
 {
-    private AprsService _arpsService;
+    private AprsService _aprsService;
     private StreamConverter _streamConverter;
+    private readonly ILogger<LiveGliderService> _logger;
 
     public event Action<FlightData>? OnDataReceived;
 
-    public LiveGliderService(double filterPositionLatitude, double filterPositionLongitude, int filterRadius)
+    public LiveGliderService(double filterPositionLatitude, double filterPositionLongitude, int filterRadius, ILoggerFactory loggerFactory)
     {
-        _streamConverter = new StreamConverter();
+        _logger = loggerFactory.CreateLogger<LiveGliderService>();
+        var streamConverterLogger = loggerFactory.CreateLogger<StreamConverter>();
+        _streamConverter = new StreamConverter(streamConverterLogger);
+
         var config = new AprsConfig
         {
             FilterPositionLatitude = filterPositionLatitude,
             FilterPositionLongitude = filterPositionLongitude,
             FilterRadius = filterRadius
         };
-        this._arpsService = new AprsService(config);
+        this._aprsService = new AprsService(config, loggerFactory.CreateLogger<AprsService>());
     }
 
     public async Task StartTracking()
     {
-        this._arpsService.Stream
+        this._aprsService.Stream
             .Subscribe(line =>
             {
                 var result = _streamConverter.ConvertData(line);
@@ -33,6 +38,6 @@ public class LiveGliderService
                     OnDataReceived?.Invoke(result);
                 }
             });
-        await _arpsService.Stream;
+        await _aprsService.Stream;
     }
 }

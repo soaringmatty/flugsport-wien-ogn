@@ -8,6 +8,11 @@ public class FlightDbContext(DbContextOptions<FlightDbContext> options) : DbCont
     public DbSet<Plane> Planes { get; set; }
     public DbSet<FlightPathItem> FlightData { get; set; }
 
+    public void InitializeDatabase()
+    {
+        Database.EnsureCreated();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Plane>()

@@ -1,4 +1,4 @@
-namespace Arps;
+namespace Aprs;
 
 /// <summary>
 /// Representation of current configuration.
