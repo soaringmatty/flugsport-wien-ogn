@@ -1,6 +1,6 @@
 ﻿namespace FlugsportWienOgnApi.Models.Core;
 
-public enum GliderType
+public enum GliderOwnership
 {
     Club,
     Private,

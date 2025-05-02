@@ -2,6 +2,9 @@
 
 namespace FlugsportWienOgnApi.Models.Core;
 
+/// <summary>
+/// Represents a status list item of a known glider including data like TakeOffTime and DistanceFromHome
+/// </summary>
 public class GliderListItem : IComparable<GliderListItem>
 {
     public string Registration { get; set; }

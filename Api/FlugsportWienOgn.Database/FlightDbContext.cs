@@ -5,7 +5,7 @@ namespace FlugsportWienOgn.Database;
 
 public class FlightDbContext(DbContextOptions<FlightDbContext> options) : DbContext(options)
 {
-    public DbSet<Plane> Planes { get; set; }
+    public DbSet<Aircraft> Aircraft { get; set; }
     public DbSet<FlightPathItem> FlightData { get; set; }
 
     public void InitializeDatabase()
@@ -15,9 +15,9 @@ public class FlightDbContext(DbContextOptions<FlightDbContext> options) : DbCont
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Plane>()
+        modelBuilder.Entity<Aircraft>()
             .HasMany(p => p.FlightPath)
-            .WithOne(fd => fd.Plane)
-            .HasForeignKey(fd => fd.PlaneId);
+            .WithOne(fd => fd.Aircraft)
+            .HasForeignKey(fd => fd.AircraftId);
     }
 }

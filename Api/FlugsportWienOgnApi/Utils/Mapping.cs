@@ -10,10 +10,10 @@ public static class Mapping
         List<Flight> flights = new();
         foreach (var rawFlight in rawFlights)
         {
-            var gliderType = KnownGliders.GetGliderTypeByFlarmId(rawFlight.FlarmID);
+            var gliderType = KnownGliders.GetGliderOwnershipByFlarmId(rawFlight.FlarmID);
             var aircraftType = MapAircraftType(rawFlight.Type);
             var displayName = rawFlight.DisplayName;
-            if (gliderType == GliderType.Club)
+            if (gliderType == GliderOwnership.Club)
             {
                 var glider = KnownGliders.ClubGlidersAndMotorplanes.FirstOrDefault(x => x.FlarmId == rawFlight.FlarmID);
                 displayName = glider?.RegistrationShort;

@@ -47,11 +47,11 @@ public class LoxnFlightbookService
         _flightBook = new List<FlightBookItem>();
         _aircraftProvider = aircraftProvider;
         _liveGliderService = liveGliderService;
-        _liveGliderService.OnDataReceived += ProcessFlightDataUpdate;
+        _liveGliderService.FlightDataReceived += ProcessFlightDataUpdate;
         Task.Factory.StartNew(async () =>
         {
             await _aircraftProvider.InitializeAsync(CancellationToken.None);
-            await _liveGliderService.StartTracking();
+            //await _liveGliderService.StartTracking();
         });
     }
 
@@ -76,7 +76,7 @@ public class LoxnFlightbookService
 
         // Check the plane's last event
         var lastFlightBookEntry = _flightBook.LastOrDefault(x => x.FlarmId == flightData.FlarmId);
-        var lastEventType = lastFlightBookEntry != null && !lastFlightBookEntry.LandingTimestamp.HasValue ? FlightEventType.Departure : FlightEventType.Landing;
+        var lastEventType = lastFlightBookEntry != null && !lastFlightBookEntry.LandingTimestamp.HasValue ? FlightEventType.TakeOff : FlightEventType.Landing;
         var lastEventTime = liveFlight.FlightStatusChangedTime ?? DateTime.MinValue;
 
         var lastFlightStatus = liveFlight.FlightStatus;
@@ -87,7 +87,7 @@ public class LoxnFlightbookService
         // Else, check for takeoff and landing events
         if (!isFirstEntry && isFlying && lastFlightStatus == FlightStatus.OnGround)
         {
-            AddFlightEvent(flightData.FlarmId, FlightEventType.Departure, flightPathItem.Timestamp);
+            AddFlightEvent(flightData.FlarmId, FlightEventType.TakeOff, flightPathItem.Timestamp);
             liveFlight.FlightStatusChangedTime = flightPathItem.Timestamp;
         }
         else if (!isFirstEntry && !isFlying && lastFlightStatus == FlightStatus.Flying && elapsedSecondsSinceLastEvent > AFTER_TAKEOFF_EVENT_TIMEOUT)
@@ -98,7 +98,7 @@ public class LoxnFlightbookService
         liveFlight.FlightStatus = isFlying ? FlightStatus.Flying : FlightStatus.OnGround;
 
         // Check for winch launch
-        if (lastFlightBookEntry != null && lastEventType == FlightEventType.Departure && elapsedSecondsSinceLastEvent >= WINCH_LAUNCH_CHECK_TIMEOUT && !lastFlightBookEntry.IsLaunchMethodChecked)
+        if (lastFlightBookEntry != null && lastEventType == FlightEventType.TakeOff && elapsedSecondsSinceLastEvent >= WINCH_LAUNCH_CHECK_TIMEOUT && !lastFlightBookEntry.IsLaunchMethodChecked)
         {
             lastFlightBookEntry.IsWinchLaunch = IsWinchLaunch(flightData.FlarmId, lastEventTime);
             lastFlightBookEntry.IsLaunchMethodChecked = true;
@@ -120,7 +120,7 @@ public class LoxnFlightbookService
             CallSign = aircraftData?.CallSign,
             Model = aircraftData?.Model,
         };
-        if (eventType == FlightEventType.Departure)
+        if (eventType == FlightEventType.TakeOff)
         {
             flightBookEntry.TakeOffTimestamp = timestamp;
             _flightBook.Add(flightBookEntry);

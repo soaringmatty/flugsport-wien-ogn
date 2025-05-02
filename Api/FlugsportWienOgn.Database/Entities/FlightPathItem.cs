@@ -3,11 +3,11 @@
 public class FlightPathItem
 {
     public int Id { get; set; }
-    public int PlaneId { get; set; }
-    public Plane Plane { get; set; }
+    public int AircraftId { get; set; }
+    public Aircraft Aircraft { get; set; }
 
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
+    public float Latitude { get; set; }
+    public float Longitude { get; set; }
     public int Altitude { get; set; }
     public int Speed { get; set; }
     public float VerticalSpeed { get; set; }

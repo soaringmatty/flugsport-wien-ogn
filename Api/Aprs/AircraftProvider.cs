@@ -95,29 +95,6 @@ public class AircraftProvider
             );
             _aircraftList[aircraft.Id] = aircraft;
         }
-
-        //var content = await response.Content.ReadAsStringAsync();
-        //var insertResult = content
-        //    .Replace(_FIELD_ENCLOSURE, string.Empty)
-        //    .Split(_LINE_BREAK)
-        //    .Where(line => !line.StartsWith(_IDENTIFIER_COMMENT))
-        //    .Select(line => line.Split(_FIELD_SEPARATOR))
-        //    .Select(values => values.Select(v => v.Trim()).ToList())
-        //    .Where(values => values.Count >= 7)
-        //    .Where(values => !string.IsNullOrWhiteSpace(values[_INDEX_AIRCRAFT_ID]))
-        //    .Select(values => new Aircraft(
-        //        values[_INDEX_AIRCRAFT_ID],
-        //        values[_INDEX_CALL_SIGN],
-        //        values[_INDEX_REGISTRATION],
-        //        values[_INDEX_MODEL],
-        //        values[_INDEX_TRACKED].Equals(_VALUE_YES) && values[_INDEX_IDENTIFIED].Equals(_VALUE_YES),
-        //        (GlidernetAircraftType)(int.Parse(values[_INDEX_AIRCRAFT_TYPE]))
-        //    ))
-        //    .All(aircraft => _aircraftList.TryAdd(aircraft.Id, aircraft));
-        //if (!insertResult)
-        //{
-        //    throw new Exception("Error during insertion of aircraft.");
-        //}
     }
 
     /// <summary>

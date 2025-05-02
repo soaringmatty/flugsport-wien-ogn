@@ -6,7 +6,6 @@ public class FlightBookItem
     public string Registration { get; set; }
     public string CallSign { get; set; }
     public string Model { get; set; }
-    //public string Type { get; set; }
     public DateTime? TakeOffTimestamp { get; set; }
     public DateTime? LandingTimestamp { get; set; }
     public bool IsWinchLaunch { get; set; } = false;

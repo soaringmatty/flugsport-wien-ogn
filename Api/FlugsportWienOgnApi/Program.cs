@@ -45,8 +45,7 @@ builder.Services.AddCors(options =>
 });
 
 // Register hosted services
-//builder.Services.AddHostedService<AircraftProviderInitializer>();      // IHostedService that calls AircraftProvider.InitializeAsync()
-//builder.Services.AddHostedService<LiveGliderBackgroundService>();     // BackgroundService that runs LiveGliderService.StartTracking()
+builder.Services.AddHostedService<LiveTrackingBackgroundService>();     // BackgroundService that subscribes to APRS Server to receive live position updates
 
 var app = builder.Build();
 
@@ -56,17 +55,6 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
     dbContext.InitializeDatabase();
 }
-
-// Subscribe to APRS Server to receive live position updates
-var liveGliderService = app.Services.GetRequiredService<LiveGliderService>();
-Task.Factory.StartNew(async () =>
-{
-    var aircraftProvider = app.Services.GetRequiredService<AircraftProvider>();
-    var liveTrackingService = app.Services.GetRequiredService<LiveTrackingService>();
-    await aircraftProvider.InitializeAsync(CancellationToken.None);
-    await liveGliderService.StartTracking();
-});
-
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();

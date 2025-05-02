@@ -6,8 +6,6 @@ using FlugsportWienOgnApi.Utils;
 using FlugsportWienOgnApi.Models.Core;
 using Microsoft.EntityFrameworkCore;
 using FlugsportWienOgnApi.Models.LiveTracking;
-using FlugsportWienOgnApi.Models.Aprs;
-using FlugsportWienOgnApi.Models.GlideAndSeek;
 //using FlightPathItem = FlugsportWienOgnApi.Models.LiveTracking.FlightPathItem;
 
 namespace FlugsportWienOgnApi.Services;
@@ -27,8 +25,7 @@ public class LiveTrackingService
         _aircraftProvider = aircraftProvider;
         _austriaGeoCalculator = new AustriaGeoCalculator();
         _liveGliderService = liveGliderService;
-        _liveGliderService.OnDataReceived += AddFlightDataToDatabase;
-        _logger.LogInformation("Airplane Tracking has started");
+        _liveGliderService.FlightDataReceived += AddFlightDataToDatabase;
     }
 
     public async Task<IEnumerable<Flight>> GetFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng, int lastUpdateMaxMinutes = 30)
@@ -37,7 +34,7 @@ public class LiveTrackingService
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
-            var flightQuery = dbContext.Planes.AsQueryable();
+            var flightQuery = dbContext.Aircraft.AsQueryable();
 
             // Filter flights within a certain latitude and longitude range (if parameters are set)
             if (minLat.HasValue || maxLat.HasValue || minLng.HasValue || maxLng.HasValue)
@@ -69,7 +66,7 @@ public class LiveTrackingService
                     FlarmId = plane.FlarmId,
                     DisplayName = plane.CallSign,
                     Registration = plane.Registration,
-                    Type = GliderType.Foreign,
+                    Type = GliderOwnership.Foreign,
                     AircraftType = (AircraftType)plane.AircraftType,
                     Model = plane.Model,
                     Latitude = plane.Latitude,
@@ -93,7 +90,7 @@ public class LiveTrackingService
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
             // Find the plane by FlarmId
-            var plane = await dbContext.Planes
+            var plane = await dbContext.Aircraft
                 .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
 
             if (plane == null)
@@ -104,7 +101,7 @@ public class LiveTrackingService
 
             // Get the flight path items for the plane using PlaneId
             var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.PlaneId == plane.Id) // Filter by PlaneId
+                .Where(fd => fd.AircraftId == plane.Id) // Filter by PlaneId
                 .OrderBy(fd => fd.Timestamp) // Ensure the flight path is ordered by time
                 .Select(fd => new double[]
                 {
@@ -128,7 +125,7 @@ public class LiveTrackingService
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
             // Find the plane by FlarmId
-            var plane = await dbContext.Planes
+            var plane = await dbContext.Aircraft
                 .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
 
             if (plane == null)
@@ -139,7 +136,7 @@ public class LiveTrackingService
 
             // Get the flight path items for the plane using PlaneId
             var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.PlaneId == plane.Id) // Filter by PlaneId
+                .Where(fd => fd.AircraftId == plane.Id) // Filter by PlaneId
                 .OrderBy(fd => fd.Timestamp)
                 // Ensure the flight path is ordered by time
                 .Select(fd => new FlightPathItemDto
@@ -149,6 +146,7 @@ public class LiveTrackingService
                     Speed = fd.Speed,
                     VerticalSpeed = fd.VerticalSpeed,
                     Timestamp = fd.Timestamp,
+                    UnixTimestamp = new DateTimeOffset(fd.Timestamp).ToUnixTimeMilliseconds(),
                     Receiver = fd.Receiver
                 })
                 .ToListAsync(); // Execute query and retrieve the flight path
@@ -169,20 +167,20 @@ public class LiveTrackingService
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-            var planeId = this.AddOrUpdatePlaneEntity(flightData, dbContext);
+            var aircraftId = this.AddOrUpdatePlaneEntity(flightData, dbContext);
 
             var lastTimestamp = dbContext.FlightData
-                .Where(fp => fp.PlaneId == planeId)
-                .Max(fp => (DateTime?)fp.Timestamp);
+                .Where(flightPathItem => flightPathItem.AircraftId == aircraftId)
+                .Max(flightPathItem => (DateTime?)flightPathItem.Timestamp);
 
             if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
             {
                 return;
             }
 
-            var flightPathItem = new FlugsportWienOgn.Database.Entities.FlightPathItem
+            var flightPathItem = new FlightPathItem
             {
-                PlaneId = planeId,
+                AircraftId = aircraftId,
                 Latitude = flightData.Latitude,
                 Longitude = flightData.Longitude,
                 Speed = (int)Math.Round(flightData.Speed),
@@ -200,7 +198,7 @@ public class LiveTrackingService
     private int AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
     {
         // Check if the plane already exists in the database based on a unique identifier, e.g., PlaneId or CallSign
-        var existingPlane = dbContext.Planes
+        var existingPlane = dbContext.Aircraft
             .FirstOrDefault(p => p.FlarmId == flightData.FlarmId);
 
         if (existingPlane != null)
@@ -212,14 +210,14 @@ public class LiveTrackingService
             existingPlane.Altitude = (int)Math.Round(flightData.Altitude);
             existingPlane.VerticalSpeed = flightData.VerticalSpeed;
             existingPlane.LastUpdate = flightData.ReceiverTimeStamp;
-            dbContext.Planes.Update(existingPlane);
+            dbContext.Aircraft.Update(existingPlane);
             return existingPlane.Id;
         }
         else
         {
             // Plane doesn't exist, add a new plane entry
             var aircraftData = _aircraftProvider.Load(flightData.FlarmId);
-            var newPlane = new Plane
+            var newPlane = new FlugsportWienOgn.Database.Entities.Aircraft
             {
                 FlarmId = flightData.FlarmId,
                 Registration = flightData.FlarmId,
@@ -245,18 +243,10 @@ public class LiveTrackingService
                 newPlane.Model = aircraftData.Model;
                 newPlane.AircraftType = (int)MapGlidernetAircraftType(aircraftData.AircraftType);
             }
-            dbContext.Planes.Add(newPlane);
+            dbContext.Aircraft.Add(newPlane);
             dbContext.SaveChanges();
             return newPlane.Id;
         }
-    }
-
-    private Plane AddRegistrationDataToPlaneEntity(Plane existingPlane)
-    {
-        var aircraftData = _aircraftProvider.Load(existingPlane.FlarmId);
-        if (aircraftData == null) { return existingPlane; }
-
-        return existingPlane;
     }
 
     private AircraftType MapGlidernetAircraftType(GlidernetAircraftType rawType)

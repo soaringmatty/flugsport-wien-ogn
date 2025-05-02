@@ -1,6 +1,6 @@
 ﻿namespace FlugsportWienOgn.Database.Entities;
 
-public class Plane
+public class Aircraft
 {
     public int Id { get; set; }
     public string FlarmId { get; set; }

@@ -32,12 +32,13 @@ public static class KnownGliders
         new Glider { Owner = "Andreas Stocker", Registration = "D-6000", RegistrationShort = "MI", Model = "DG-600", FlarmId = "D0114B" },
         new Glider { Owner = "Julia Götz", Registration = "D-2254", RegistrationShort = "HR", Model = "LS1-f", FlarmId = "DDFE83" },
         new Glider { Owner = "Ernst Schicker", Registration = "D-7007", RegistrationShort = "SE", Model = "Mini Nimbus", FlarmId = "3EFBF6" },
+        //new Glider { Owner = "Ernst Schicker", Registration = "D-3533", RegistrationShort = "SC", Model = "Ventus", FlarmId = "??" },
         new Glider { Owner = "Stephan Haupt", Registration = "D-KEVA", RegistrationShort = "O2", Model = "DG-800", FlarmId = "D0019F" },
         new Glider { Owner = "Thomas Dvorak", Registration = "D-1648", RegistrationShort = "DE", Model = "ASW-20", FlarmId = "3EE707" },
         new Glider { Owner = "Christoph Urach", Registration = "D-1890", RegistrationShort = "KA8", Model = "Ka-8", FlarmId = "F64550" },
         new Glider { Owner = "Irmgard Paul", Registration = "D-KXPP", RegistrationShort = "PP", Model = "ASH-26 E", FlarmId = "DDB289" },
         new Glider { Owner = "Sören Rossow", Registration = "D-3060", RegistrationShort = "CZ", Model = "HPH 304CZ-17", FlarmId = "3EEC8B" }, // TODO (DF0F03)
-        //new Glider { Owner = "Kathrin Havemann / Mario Neumann", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", FlarmId = "?D-6928?" }, // TODO
+        new Glider { Owner = "Kathrin Havemann / Mario Neumann", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", FlarmId = "3EFBA7" },
     };
 
     public static IEnumerable<Glider> ClubAndPrivateGliders = ClubGliders.Concat(PrivateGliders);
@@ -46,16 +47,16 @@ public static class KnownGliders
 
     public static IEnumerable<Glider> AllKnownPlanes = ClubGliders.Concat(ClubMotorPlanes).Concat(PrivateGliders);
 
-    public static GliderType GetGliderTypeByFlarmId(string flarmId)
+    public static GliderOwnership GetGliderOwnershipByFlarmId(string flarmId)
     {
         if (ClubGlidersAndMotorplanes.Any(x => x.FlarmId == flarmId))
         {
-            return GliderType.Club;
+            return GliderOwnership.Club;
         }
         if (PrivateGliders.Any(x => x.FlarmId == flarmId))
         {
-            return GliderType.Private;
+            return GliderOwnership.Private;
         }
-        return GliderType.Foreign;
+        return GliderOwnership.Foreign;
     }
 }

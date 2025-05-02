@@ -2,6 +2,6 @@
 
 public enum FlightEventType
 {
-    Departure,
+    TakeOff,
     Landing
 }

@@ -2015,3 +2015,5 @@ Api/FlugsportWienOgnApi/flugsport-wien-ogn.tar
 /Api/FlugsportWienOgn.Database/bin/Debug/net8.0
 /Api/FlugsportWienOgn.Database/obj
 /Client (neu)/flugsport-wien-ogn/.vscode
+Api/Aprs/obj
+Api/Aprs/bin

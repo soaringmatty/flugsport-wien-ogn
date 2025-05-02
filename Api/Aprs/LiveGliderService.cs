@@ -4,13 +4,15 @@ using System.Reactive.Linq;
 
 namespace Aprs;
 
-public class LiveGliderService
+public class LiveGliderService : IAsyncDisposable
 {
     private AprsService _aprsService;
     private StreamConverter _streamConverter;
+    private IDisposable? _aprsSubscription;
     private readonly ILogger<LiveGliderService> _logger;
 
-    public event Action<FlightData>? OnDataReceived;
+    public event Action<FlightData>? FlightDataReceived;
+    public event Action<string>? AprsMessageReceived;
 
     public LiveGliderService(double filterPositionLatitude, double filterPositionLongitude, int filterRadius, ILoggerFactory loggerFactory)
     {
@@ -27,17 +29,30 @@ public class LiveGliderService
         this._aprsService = new AprsService(config, loggerFactory.CreateLogger<AprsService>());
     }
 
-    public async Task StartTracking()
+    public void Start(CancellationToken cancellationToken)
     {
-        this._aprsService.Stream
+        _aprsSubscription = _aprsService.Stream
             .Subscribe(line =>
             {
-                var result = _streamConverter.ConvertData(line);
-                if (result != null)
+                AprsMessageReceived?.Invoke(line);
+                var flightData = _streamConverter.ConvertData(line);
+                if (flightData != null)
                 {
-                    OnDataReceived?.Invoke(result);
+                    FlightDataReceived?.Invoke(flightData);
                 }
-            });
-        await _aprsService.Stream;
+            },
+            ex => _logger.LogError(ex, "Error in APRS observable"),
+            () => _logger.LogInformation("APRS stream completed."));
+
+        // kick off background loop without await
+        _ = _aprsService.StartAsync(cancellationToken);
+    }
+
+    public void Stop() => _aprsSubscription?.Dispose();
+
+    public async ValueTask DisposeAsync()
+    {
+        Stop();
+        await _aprsService.DisposeAsync().ConfigureAwait(false);
     }
 }

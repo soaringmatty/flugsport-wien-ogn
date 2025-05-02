@@ -5,7 +5,7 @@ public class Flight
     public string FlarmId { get; set; }
     public string DisplayName { get; set; }
     public string Registration { get; set; }
-    public GliderType Type { get; set; }
+    public GliderOwnership Type { get; set; }
     public AircraftType AircraftType { get; set; }
     public string Model { get; set; }
     public double Latitude { get; set; }

@@ -1,0 +1,8 @@
+Dockerfile -> gibt an wie das Projekt fürs publishen gebaut werden soll
+docker-compose.yml -> gibt an wie die Services in Docker gestartet werden
+
+Publish:
+docker build -t flugsport-wien-ogn-image -f Dockerfile .
+docker save -o flugsport-wien-ogn.tar flugsport-wien-ogn-image
+
+.tar file auf Server deployen

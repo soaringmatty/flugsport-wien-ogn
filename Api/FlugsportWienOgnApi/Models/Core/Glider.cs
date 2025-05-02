@@ -7,6 +7,5 @@ public class Glider
     public string RegistrationShort { get; set; }
     public string Model { get; set; }
     public string FlarmId { get; set; }
-    public int? SortId { get; set; }
 }
 
