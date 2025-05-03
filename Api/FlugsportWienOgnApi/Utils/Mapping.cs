@@ -1,21 +1,22 @@
 ﻿using FlugsportWienOgnApi.Models.Core;
 using FlugsportWienOgnApi.Models.GlideAndSeek;
+using FlugsportWienOgnApi.Services;
 
 namespace FlugsportWienOgnApi.Utils;
 
 public static class Mapping
 {
-    public static IEnumerable<Flight> MapOgnFlightsResponseToFlights(IEnumerable<GetOgnFlightsResponseDto> rawFlights)
+    public static IEnumerable<Flight> MapOgnFlightsResponseToFlights(IEnumerable<GetOgnFlightsResponseDto> rawFlights, KnownAircraftService knownAircraftService)
     {
         List<Flight> flights = new();
         foreach (var rawFlight in rawFlights)
         {
-            var gliderType = KnownGliders.GetGliderOwnershipByFlarmId(rawFlight.FlarmID);
+            var gliderType = knownAircraftService.GetGliderOwnershipByFlarmId(rawFlight.FlarmID);
             var aircraftType = MapAircraftType(rawFlight.Type);
             var displayName = rawFlight.DisplayName;
             if (gliderType == GliderOwnership.Club)
             {
-                var glider = KnownGliders.ClubGlidersAndMotorplanes.FirstOrDefault(x => x.FlarmId == rawFlight.FlarmID);
+                var glider = knownAircraftService.ClubGlidersAndMotorplanes.FirstOrDefault(x => x.FlarmId == rawFlight.FlarmID);
                 displayName = glider?.RegistrationShort;
             }
             flights.Add(new Flight

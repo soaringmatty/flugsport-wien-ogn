@@ -10,5 +10,5 @@ public class FlightPathItemDto
     public float VerticalSpeed { get; set; }
     public DateTime Timestamp { get; set; }
     public long UnixTimestamp { get; set; }
-    public string Receiver { get; set; }
+    public string? Receiver { get; set; }
 }

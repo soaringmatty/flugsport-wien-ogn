@@ -107,7 +107,6 @@ public partial class StreamConverter
             latitude,
             longitude,
             timestamp,
-            DateTime.Now,
             receiver
         );
     }

@@ -14,18 +14,11 @@ public class LiveGliderService : IAsyncDisposable
     public event Action<FlightData>? FlightDataReceived;
     public event Action<string>? AprsMessageReceived;
 
-    public LiveGliderService(double filterPositionLatitude, double filterPositionLongitude, int filterRadius, ILoggerFactory loggerFactory)
+    public LiveGliderService(AprsConfig config, ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger<LiveGliderService>();
         var streamConverterLogger = loggerFactory.CreateLogger<StreamConverter>();
         _streamConverter = new StreamConverter(streamConverterLogger);
-
-        var config = new AprsConfig
-        {
-            FilterPositionLatitude = filterPositionLatitude,
-            FilterPositionLongitude = filterPositionLongitude,
-            FilterRadius = filterRadius
-        };
         this._aprsService = new AprsService(config, loggerFactory.CreateLogger<AprsService>());
     }
 

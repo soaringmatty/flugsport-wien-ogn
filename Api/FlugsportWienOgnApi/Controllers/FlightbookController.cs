@@ -10,18 +10,21 @@ namespace FlugsportWienOgnApi.Controllers;
 
 [Route("flightbook")]
 [ApiController]
+[Obsolete]
 public class FlightbookController : ControllerBase
 {
     private readonly ILogger<FlightController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly LoxnFlightbookService _loxnFlightbookService;
+    private readonly KnownAircraftService _knownAircraftService;
     private readonly string _flightBookUrl = "https://flightbook.glidernet.org/api/logbook/LOXN/";
 
-    public FlightbookController(ILogger<FlightController> logger, IHttpClientFactory httpClientFactory, LoxnFlightbookService loxnFlightbookService)
+    public FlightbookController(ILogger<FlightController> logger, IHttpClientFactory httpClientFactory, LoxnFlightbookService loxnFlightbookService, KnownAircraftService knownAircraftService)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _loxnFlightbookService = loxnFlightbookService;
+        _knownAircraftService = knownAircraftService;
     }
 
     [HttpGet("loxn")]
@@ -45,7 +48,7 @@ public class FlightbookController : ControllerBase
                 LandingTimestamp = flight.stop_tsp
             });
 
-        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders : KnownGliders.ClubGliders;
+        var knownGliders = includePrivateGliders ? _knownAircraftService.ClubAndPrivateGliders : _knownAircraftService.ClubGliders;
 
         var departureList =
             from flightBook in joinedFlightbook
@@ -81,7 +84,7 @@ public class FlightbookController : ControllerBase
     [HttpGet("loxn/new")]
     public ActionResult<IEnumerable<DepartureListItem>> GetLoxnFlightbookNew([FromQuery] bool includePrivateGliders)
     {
-        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders : KnownGliders.ClubGliders;
+        var knownGliders = includePrivateGliders ? _knownAircraftService.ClubAndPrivateGliders : _knownAircraftService.ClubGliders;
 
         var departureList = _loxnFlightbookService.FlightBook.OrderByDescending(item => item.TakeOffTimestamp);
         return Ok(departureList);

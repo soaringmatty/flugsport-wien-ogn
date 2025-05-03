@@ -27,10 +27,10 @@ namespace FlugsportWienOgnApi.Controllers
             _liveTrackingService = liveTrackingService;
         }
 
-        [HttpGet]
+        [HttpGet("glideAndSeek")]
         public async Task<ActionResult<IEnumerable<Flight>>> GetFlights([FromQuery] string? selectedFlarmId, [FromQuery] bool? glidersOnly, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng)
         {
-            var flights = await _flightService.GetFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
+            var flights = await _flightService.GetGlideAndSeekFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
             if (flights != null)
             {
                 return Ok(flights);
@@ -38,52 +38,40 @@ namespace FlugsportWienOgnApi.Controllers
             return BadRequest();
         }
 
-        [HttpGet("new")]
-        public async Task<ActionResult<IEnumerable<Flight>>> GetFlightsFromDatabase([FromQuery] string? selectedFlarmId, [FromQuery] bool? glidersOnly, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Flight>>> GetFlightsFromDatabase([FromQuery] string? selectedFlarmId, [FromQuery] bool? glidersOnly, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng, [FromQuery] int? lastUpdateMaxMinutes)
         {
-            var flights = await _liveTrackingService.GetFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
+            var flights = await _flightService.GetFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng, lastUpdateMaxMinutes);
             if (flights != null)
             {
                 return Ok(flights);
-            }
-            return BadRequest();
-        }
-
-        [HttpGet("{flarmId}/path")]
-        public async Task<ActionResult<string>> GetFlightPath(string flarmId)
-        {
-            string url = $"https://api.glideandseek.com/v2/track/{flarmId}";
-            var response = await _httpClient.GetFromJsonAsync<GetOgnFlightPathResponse>(url);
-            if (response != null && response.Success)
-            {
-                return Ok(response.Message);
-            }
-            return BadRequest();
-        }
-
-        [HttpGet("{flarmId}/history/new")]
-        public async Task<ActionResult<string>> GetFlightPathFromDatabase(string flarmId)
-        {
-            var flightPath = await _liveTrackingService.GetFlightPath(flarmId);
-            if (flightPath != null)
-            {
-                return Ok(flightPath);
-            }
-            return BadRequest();
-        }
-
-        [HttpGet("{flarmId}/history/new/json")]
-        public async Task<ActionResult<IEnumerable<FlightPathItemDto>>> GetFlightPathFromDatabaseAsJson(string flarmId)
-        {
-            var flightPath = await _liveTrackingService.GetFlightPathAsObjects(flarmId);
-            if (flightPath != null)
-            {
-                return Ok(flightPath);
             }
             return BadRequest();
         }
 
         [HttpGet("{flarmId}/history")]
+        public async Task<ActionResult<string>> GetFlightPathFromDatabase(string flarmId)
+        {
+            var flightPath = await _flightService.GetFlightPath(flarmId);
+            if (flightPath != null)
+            {
+                return Ok(flightPath);
+            }
+            return BadRequest();
+        }
+
+        [HttpGet("{flarmId}/history/json")]
+        public async Task<ActionResult<IEnumerable<FlightPathItemDto>>> GetFlightPathFromDatabaseAsJson(string flarmId)
+        {
+            var flightPath = await _flightService.GetFlightPathAsObjects(flarmId);
+            if (flightPath != null)
+            {
+                return Ok(flightPath);
+            }
+            return BadRequest();
+        }
+
+        [HttpGet("{flarmId}/history/glideAndSeek")]
         public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
         {
             string url = $"https://api.glideandseek.com/v2/history/{flarmId}";

@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aprs.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Aprs;
 
@@ -34,11 +35,11 @@ public class AircraftProvider
     private readonly HttpClient _httpClient;
     private readonly ILogger<AircraftProvider> _logger;
 
-    public AircraftProvider(HttpClient httpClient, ILogger<AircraftProvider> logger)
+    public AircraftProvider(HttpClient httpClient, ILogger<AircraftProvider> logger, IOptions<AprsConfig> config)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _aprsConfig = new AprsConfig();
+        _aprsConfig = config.Value;
     }
 
     /// <summary>

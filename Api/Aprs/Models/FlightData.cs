@@ -10,12 +10,11 @@ public record FlightData(
     float Latitude,
     float Longitude,
     DateTime ReceiverTimeStamp,
-    DateTime Time,
-    string Receiver
+    string? Receiver = null
 )
 {
     public override string ToString()
     {
-        return $"FlightData: {{ flarm-ID: {FlarmId}, altitude: {Altitude}, speed: {Speed}, vertical-speed: {VerticalSpeed}, turn-rate: {TurnRate}, course: {Course}, datetime: {Time}, latitude: {Latitude}, longitude: {Longitude} }}";
+        return $"FlightData: {{ flarm-ID: {FlarmId}, altitude: {Altitude}, speed: {Speed}, vertical-speed: {VerticalSpeed}, turn-rate: {TurnRate}, course: {Course}, time: {ReceiverTimeStamp}, latitude: {Latitude}, longitude: {Longitude} }}";
     }
 }

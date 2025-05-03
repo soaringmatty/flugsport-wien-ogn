@@ -6,7 +6,8 @@ using FlugsportWienOgnApi.Utils;
 using FlugsportWienOgnApi.Models.Core;
 using Microsoft.EntityFrameworkCore;
 using FlugsportWienOgnApi.Models.LiveTracking;
-//using FlightPathItem = FlugsportWienOgnApi.Models.LiveTracking.FlightPathItem;
+using System.Collections.Concurrent;
+using Microsoft.Extensions.Options;
 
 namespace FlugsportWienOgnApi.Services;
 
@@ -16,184 +17,116 @@ public class LiveTrackingService
     private readonly AustriaGeoCalculator _austriaGeoCalculator;
     private readonly AircraftProvider _aircraftProvider;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IOptions<OgnConfig> _config;
     private readonly ILogger<LiveTrackingService> _logger;
 
-    public LiveTrackingService(ILogger<LiveTrackingService> logger, LiveGliderService liveGliderService, IServiceProvider serviceProvider, AircraftProvider aircraftProvider)
+    private readonly ConcurrentDictionary<string, FlightDataBuffer> _buffers = new();
+    private readonly TimeSpan _aggregationWindow = TimeSpan.FromSeconds(3);
+    private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(1));
+
+    public LiveTrackingService(ILogger<LiveTrackingService> logger, LiveGliderService liveGliderService, IServiceProvider serviceProvider, AircraftProvider aircraftProvider, IOptions<OgnConfig> config)
     {
+        _config = config;
         _logger = logger;
         _serviceProvider = serviceProvider;
         _aircraftProvider = aircraftProvider;
         _austriaGeoCalculator = new AustriaGeoCalculator();
         _liveGliderService = liveGliderService;
-        _liveGliderService.FlightDataReceived += AddFlightDataToDatabase;
+        _liveGliderService.FlightDataReceived += BufferFlightData;
     }
 
-    public async Task<IEnumerable<Flight>> GetFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng, int lastUpdateMaxMinutes = 30)
+    private void BufferFlightData(FlightData flightData)
     {
-        using (var scope = _serviceProvider.CreateScope())
+        var buffer = _buffers.GetOrAdd(flightData.FlarmId, _ => new FlightDataBuffer());
+        lock (buffer)
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-
-            var flightQuery = dbContext.Aircraft.AsQueryable();
-
-            // Filter flights within a certain latitude and longitude range (if parameters are set)
-            if (minLat.HasValue || maxLat.HasValue || minLng.HasValue || maxLng.HasValue)
-            {
-                var minLatitude = minLat ?? double.MinValue;
-                var maxLatitude = maxLat ?? double.MaxValue;
-                var minLongitude = minLng ?? double.MinValue;
-                var maxLongitude = maxLng ?? double.MaxValue;
-
-                flightQuery = flightQuery.Where(x =>
-                    x.Latitude >= minLatitude && x.Latitude <= maxLatitude &&
-                    x.Longitude >= minLongitude && x.Longitude <= maxLongitude);
-            }
-            // Filter flights to FlugsportWien related planes only (if parameter is set)
-            if (clubGlidersOnly == true)
-            {
-                flightQuery = flightQuery.Where(x => KnownGliders.ClubGlidersAndMotorplanes.Any(glider => glider.FlarmId == x.FlarmId));
-            }
-            // Filter flights to aircraft type "glider" only (if parameter is set)
-            else if (glidersOnly == true)
-            {
-                flightQuery = flightQuery.Where(x => (AircraftType)x.AircraftType == AircraftType.Unknown);
-            }
-            // Filter flight according to last updated timestamp
-            flightQuery = flightQuery.Where(x => x.LastUpdate > DateTime.Now.AddMinutes(lastUpdateMaxMinutes * -1));
-
-            var currentFlights = await flightQuery.Select(plane => new Flight
-                {
-                    FlarmId = plane.FlarmId,
-                    DisplayName = plane.CallSign,
-                    Registration = plane.Registration,
-                    Type = GliderOwnership.Foreign,
-                    AircraftType = (AircraftType)plane.AircraftType,
-                    Model = plane.Model,
-                    Latitude = plane.Latitude,
-                    Longitude = plane.Longitude,
-                    HeightMSL = plane.Altitude,
-                    HeightAGL = -1,
-                    Timestamp = new DateTimeOffset(plane.LastUpdate).ToUnixTimeMilliseconds(), // Convert timestamp
-                    Speed = plane.Speed,
-                    Vario = plane.VerticalSpeed,
-                    VarioAverage = -1
-                })
-                .ToListAsync();
-            return currentFlights;
+            buffer.Buffer.Add(flightData);
         }
     }
 
-    public async Task<IEnumerable<double[]>> GetFlightPath(string flarmId)
+    public async Task StartFlushBufferLoop(CancellationToken stoppingToken)
     {
-        using (var scope = _serviceProvider.CreateScope())
+        while (await _timer.WaitForNextTickAsync(stoppingToken))
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-
-            // Find the plane by FlarmId
-            var plane = await dbContext.Aircraft
-                .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
-
-            if (plane == null)
+            foreach (var (flarmId, buffer) in _buffers)
             {
-                // Handle the case where the plane is not found (return empty list or throw exception)
-                return Enumerable.Empty<double[]>();
-            }
-
-            // Get the flight path items for the plane using PlaneId
-            var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.AircraftId == plane.Id) // Filter by PlaneId
-                .OrderBy(fd => fd.Timestamp) // Ensure the flight path is ordered by time
-                .Select(fd => new double[]
+                List<FlightData> snapshot;
+                lock (buffer)
                 {
-                    new DateTimeOffset(fd.Timestamp).ToUnixTimeMilliseconds(), // Index 0: Timestamp
-                    0,                                     // Index 1: Always 0
-                    fd.Latitude,                           // Index 2: Latitude
-                    fd.Longitude,                          // Index 3: Longitude
-                    fd.Altitude,                           // Index 4: Altitude
-                    286                                    // Index 5: Ground Height (static value)
-                })
-                .ToListAsync(); // Execute query and retrieve the flight path
+                    if (!buffer.Buffer.Any()) continue;
 
-            return flightPathItems;
+                    var windowStart = DateTime.UtcNow - _aggregationWindow;
+                    if (buffer.Buffer.Max(f => f.ReceiverTimeStamp) - buffer.LastFlushed < _aggregationWindow)
+                        continue;
+
+                    snapshot = buffer.Buffer.ToList();
+                    buffer.Buffer.Clear();
+                    buffer.LastFlushed = DateTime.UtcNow;
+                }
+
+                var aggregated = AggregateBuffer(snapshot);
+                await AddFlightDataToDatabaseAsync(aggregated, stoppingToken);
+            }
         }
     }
 
-    public async Task<IEnumerable<FlightPathItemDto>> GetFlightPathAsObjects(string flarmId)
+    private FlightData AggregateBuffer(List<FlightData> buffer)
     {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-
-            // Find the plane by FlarmId
-            var plane = await dbContext.Aircraft
-                .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
-
-            if (plane == null)
-            {
-                // Handle the case where the plane is not found (return empty list or throw exception)
-                return Enumerable.Empty<FlightPathItemDto>();
-            }
-
-            // Get the flight path items for the plane using PlaneId
-            var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.AircraftId == plane.Id) // Filter by PlaneId
-                .OrderBy(fd => fd.Timestamp)
-                // Ensure the flight path is ordered by time
-                .Select(fd => new FlightPathItemDto
-                {
-                    Location = new Coordinate(fd.Latitude, fd.Longitude),
-                    Altitude = fd.Altitude,
-                    Speed = fd.Speed,
-                    VerticalSpeed = fd.VerticalSpeed,
-                    Timestamp = fd.Timestamp,
-                    UnixTimestamp = new DateTimeOffset(fd.Timestamp).ToUnixTimeMilliseconds(),
-                    Receiver = fd.Receiver
-                })
-                .ToListAsync(); // Execute query and retrieve the flight path
-
-            return flightPathItems;
-        }
+        return new FlightData(
+            buffer.First().FlarmId,
+            buffer.Average(b => b.Speed),
+            buffer.Average(b => b.Altitude),
+            buffer.Average(b => b.VerticalSpeed),
+            buffer.Average(b => b.TurnRate),
+            buffer.Average(b => b.Course),
+            buffer.Average(b => b.Latitude),
+            buffer.Average(b => b.Longitude),
+            buffer.Max(b => b.ReceiverTimeStamp)
+        );
     }
 
-
-    private void AddFlightDataToDatabase(FlightData flightData)
+    private async Task AddFlightDataToDatabaseAsync(FlightData flightData, CancellationToken token)
     {
-        var isInAustria = _austriaGeoCalculator.IsPointInAustria(flightData.Longitude, flightData.Latitude);
-        if (!isInAustria)
+        if (_config.Value.AustrianAirspaceOnly)
+        {
+            // Filter to only flight data in austrian airspace
+            var isInAustria = _austriaGeoCalculator.IsPointInAustria(flightData.Longitude, flightData.Latitude);
+            if (!isInAustria)
+            {
+                return;
+            }
+        }
+
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
+        var aircraftId = AddOrUpdatePlaneEntity(flightData, dbContext);
+
+
+
+        // Ignore flight data if more recent position data is already in database
+        var lastTimestamp = dbContext.FlightData
+            .Where(flightPathItem => flightPathItem.AircraftId == aircraftId)
+            .Max(flightPathItem => (DateTime?)flightPathItem.Timestamp);
+        if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
         {
             return;
         }
 
-        using (var scope = _serviceProvider.CreateScope())
+        var flightPathItem = new FlightPathItem
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-            var aircraftId = this.AddOrUpdatePlaneEntity(flightData, dbContext);
+            AircraftId = aircraftId,
+            Latitude = (float)Math.Round(flightData.Latitude, 5),
+            Longitude = (float)Math.Round(flightData.Longitude, 5),
+            Speed = (int)Math.Round(flightData.Speed),
+            Altitude = (int)Math.Round(flightData.Altitude),
+            VerticalSpeed = flightData.VerticalSpeed,
+            Timestamp = flightData.ReceiverTimeStamp,
+            Receiver = flightData.Receiver,
+        };
 
-            var lastTimestamp = dbContext.FlightData
-                .Where(flightPathItem => flightPathItem.AircraftId == aircraftId)
-                .Max(flightPathItem => (DateTime?)flightPathItem.Timestamp);
-
-            if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
-            {
-                return;
-            }
-
-            var flightPathItem = new FlightPathItem
-            {
-                AircraftId = aircraftId,
-                Latitude = flightData.Latitude,
-                Longitude = flightData.Longitude,
-                Speed = (int)Math.Round(flightData.Speed),
-                Altitude = (int)Math.Round(flightData.Altitude),
-                VerticalSpeed = flightData.VerticalSpeed,
-                Timestamp = flightData.ReceiverTimeStamp,
-                Receiver = flightData.Receiver,
-            };
-            dbContext.FlightData.Add(flightPathItem);
-            dbContext.SaveChanges();
-        }
+        dbContext.FlightData.Add(flightPathItem);
+        await dbContext.SaveChangesAsync(token);
     }
-
 
     private int AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
     {
@@ -266,4 +199,10 @@ public class LiveTrackingService
                 return AircraftType.Unknown;
         }
     }
+}
+
+public class FlightDataBuffer
+{
+    public List<FlightData> Buffer { get; set; } = new();
+    public DateTime LastFlushed { get; set; } = DateTime.MinValue;
 }

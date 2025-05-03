@@ -43,6 +43,7 @@ public class LiveTrackingBackgroundService : BackgroundService
         //_glider.OnDataReceived += _tracker.HandleFlightData;
 
         // Live-Stream starten
+        _ = _tracker.StartFlushBufferLoop(cancellationToken);
         _liveGliderService.Start(cancellationToken);
         _logger.LogInformation("LiveGliderService started.");
 
@@ -57,7 +58,7 @@ public class LiveTrackingBackgroundService : BackgroundService
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Stopping LiveGliderService");
-        //_glider.OnDataReceived -= _tracker.HandleFlightData;
+        //_liveGliderService.FlightDataReceived -= _tracker.HandleFlightData;
         _liveGliderService.Stop();
         await _liveGliderService.DisposeAsync().ConfigureAwait(false);
         await base.StopAsync(cancellationToken).ConfigureAwait(false);

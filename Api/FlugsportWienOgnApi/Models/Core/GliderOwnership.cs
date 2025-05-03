@@ -2,7 +2,7 @@
 
 public enum GliderOwnership
 {
-    Club,
-    Private,
-    Foreign,
+    Club = 0,
+    Private = 1,
+    Foreign = 2,
 }

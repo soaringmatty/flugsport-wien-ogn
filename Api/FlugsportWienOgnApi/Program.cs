@@ -1,8 +1,10 @@
 using Aprs;
 using FlugsportWienOgn.Database;
+using FlugsportWienOgnApi;
 using FlugsportWienOgnApi.Hubs;
 using FlugsportWienOgnApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,21 +18,22 @@ builder.Services.AddSignalR().AddJsonProtocol(options =>
     options.PayloadSerializerOptions.PropertyNamingPolicy = null;
 });
 
+// Add options
+builder.Services.AddOptions<OgnConfig>().Bind(builder.Configuration.GetSection("OgnConfig"));
+builder.Services.AddOptions<AprsConfig>().Bind(builder.Configuration.GetSection("AprsConfig"));
+
 // Register application services
 builder.Services.AddSingleton<AircraftProvider>();
+builder.Services.AddSingleton<KnownAircraftService>();
 builder.Services.AddSingleton<FlightService>();
+builder.Services.AddSingleton<LiveTrackingService>();
 builder.Services.AddSingleton(serviceProvider =>
 {
-    double AUSTRIA_LATITUDE = 47.748870;
-    double AUSTRIA_LONGITUDE = 13.323171;
-    int AUSTRIA_RADIUS = 300; // in km
+    var aprsConfig = serviceProvider.GetRequiredService<IOptions<AprsConfig>>();
     var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-    return new LiveGliderService(AUSTRIA_LATITUDE, AUSTRIA_LONGITUDE, AUSTRIA_RADIUS, loggerFactory);
+    return new LiveGliderService(aprsConfig.Value, loggerFactory);
 });
-builder.Services.AddSingleton<LiveTrackingService>();
 
-//builder.Services.AddDbContext<FlightDbContext>(options =>
-//    options.UseInMemoryDatabase("FlightDatabase"));
 builder.Services.AddDbContext<FlightDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Database")));
 
@@ -45,7 +48,8 @@ builder.Services.AddCors(options =>
 });
 
 // Register hosted services
-builder.Services.AddHostedService<LiveTrackingBackgroundService>();     // BackgroundService that subscribes to APRS Server to receive live position updates
+builder.Services.AddHostedService<LiveTrackingBackgroundService>(); // BackgroundService that subscribes to APRS Server to receive live position updates
+builder.Services.AddHostedService<DailyCleanupService>();
 
 var app = builder.Build();
 

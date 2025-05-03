@@ -12,7 +12,6 @@ namespace Aprs;
 public class AprsService : IAsyncDisposable
 {
     private TcpClient? _client;
-    private IDisposable? _keepAliveSubscription;
     private Task? _processingTask;
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly Subject<string> _subject = new();
@@ -107,7 +106,6 @@ public class AprsService : IAsyncDisposable
             }
             finally
             {
-                _keepAliveSubscription?.Dispose();
                 _client?.Close();
             }
         }
@@ -146,14 +144,6 @@ public class AprsService : IAsyncDisposable
             throw new ArgumentException("Filters not set properly!");
         }
     }
-
-    //public async ValueTask DisposeAsync()
-    //{
-    //    _keepAliveSubscription?.Dispose();
-    //    _client?.Close();
-    //    _subject.Dispose();
-    //    await Task.CompletedTask;
-    //}
 
     public async ValueTask DisposeAsync()
     {

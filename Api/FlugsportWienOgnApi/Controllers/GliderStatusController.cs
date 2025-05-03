@@ -2,6 +2,7 @@
 using FlugsportWienOgnApi.Models.Core;
 using FlugsportWienOgnApi.Models.Flightbook;
 using FlugsportWienOgnApi.Models.GlideAndSeek;
+using FlugsportWienOgnApi.Services;
 using FlugsportWienOgnApi.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,16 +14,18 @@ namespace FlugsportWienOgnApi.Controllers;
 [ApiController]
 public class GliderStatusController : ControllerBase
 {
+    private readonly KnownAircraftService _knownAircraftService;
     private readonly ILogger<GliderStatusController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
     private readonly string _liveFlightsUrl = "https://api.glideandseek.com/v2/aircraft?showOnlyGliders=true&a=52&b=22&c=43&d=7";
     private readonly string _flightBookUrl = "https://flightbook.glidernet.org/api/logbook/LOXN/";
 
-    public GliderStatusController(ILogger<GliderStatusController> logger, IHttpClientFactory httpClientFactory)
+    public GliderStatusController(ILogger<GliderStatusController> logger, IHttpClientFactory httpClientFactory, KnownAircraftService knownAircraftService)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _knownAircraftService = knownAircraftService;
     }
 
     [HttpGet("status")]
@@ -35,7 +38,7 @@ public class GliderStatusController : ControllerBase
         var getFlightsResponse = await client.GetFromJsonAsync<GetOgnFlightsResponse>(_liveFlightsUrl);
         if (getFlightsResponse != null && getFlightsResponse.Success)
         {
-            flights = Mapping.MapOgnFlightsResponseToFlights(getFlightsResponse.Message).ToList();
+            flights = Mapping.MapOgnFlightsResponseToFlights(getFlightsResponse.Message, _knownAircraftService).ToList();
         }
 
         var getFlightbookResponse = await client.GetFromJsonAsync<GetFlightbookResponse>(_flightBookUrl);
@@ -53,7 +56,7 @@ public class GliderStatusController : ControllerBase
                 TakeOffTimestamp = flight.start_tsp,
                 LandingTimestamp = flight.stop_tsp
             });
-        var knowGliderFlightbook = joinedFlightbook.Where(entry => KnownGliders.ClubGliders.Exists(glider => glider.FlarmId == entry.FlarmId));
+        var knowGliderFlightbook = joinedFlightbook.Where(entry => _knownAircraftService.ClubGliders.Exists(glider => glider.FlarmId == entry.FlarmId));
         var latestFlightsFlightbook = knowGliderFlightbook
             .Where(jd => jd.TakeOffTimestamp.HasValue && jd.LandingTimestamp == null)
             .GroupBy(jd => jd.FlarmId)
@@ -61,14 +64,14 @@ public class GliderStatusController : ControllerBase
 
         var homeLatitude = 47.84028;
         var homeLongitude = 16.22139;
-        var knownGliders = includePrivateGliders ? KnownGliders.ClubAndPrivateGliders : KnownGliders.ClubGliders;
+        var knownGliders = includePrivateGliders ? _knownAircraftService.ClubAndPrivateGliders : _knownAircraftService.ClubGliders;
         foreach (var glider in knownGliders)
         {
             var flight = flights.FirstOrDefault(x => x.FlarmId == glider.FlarmId);
             if (flight == null)
             {
                 // Keep private gliders without a signal out of the result
-                if (includePrivateGliders && KnownGliders.PrivateGliders.Any(x => x.FlarmId == glider.FlarmId))
+                if (includePrivateGliders && _knownAircraftService.PrivateGliders.Any(x => x.FlarmId == glider.FlarmId))
                 {
                     continue;
                 }
