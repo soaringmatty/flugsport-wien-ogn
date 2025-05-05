@@ -36,6 +36,8 @@ builder.Services.AddSingleton(serviceProvider =>
 
 builder.Services.AddDbContext<FlightDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Database")));
+    //options.UseNpgsql(builder.Configuration.GetConnectionString("Database")))
+
 
 // Cors policy
 builder.Services.AddCors(options =>

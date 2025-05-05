@@ -9,8 +9,7 @@ public record FlightData(
     float Course,
     float Latitude,
     float Longitude,
-    DateTime ReceiverTimeStamp,
-    string? Receiver = null
+    DateTime ReceiverTimeStamp
 )
 {
     public override string ToString()

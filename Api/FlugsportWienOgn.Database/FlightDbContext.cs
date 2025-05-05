@@ -59,17 +59,19 @@ public class FlightDbContext(DbContextOptions<FlightDbContext> options) : DbCont
             new KnownAircraft { Id = 22, FlarmId = "440523", Registration = "OE-CBB", RegistrationShort = "CBB", Model = "Katana DA 20 A1", AircraftType = 3, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
 
             // ----- Private Gliders ---------------------------------------------
-            new KnownAircraft { Id = 100, FlarmId = "3ECF12", Registration = "D-KTJM", RegistrationShort = "FH", Model = "Valentin Kiwi", AircraftType = 1, OwnershipType = 1, Owner = "Fabian Hoffmann" },
             new KnownAircraft { Id = 101, FlarmId = "D0114B", Registration = "D-6000", RegistrationShort = "MI", Model = "DG‑600", AircraftType = 1, OwnershipType = 1, Owner = "Andreas Stocker" },
-            new KnownAircraft { Id = 102, FlarmId = "DDFE83", Registration = "D-2254", RegistrationShort = "HR", Model = "LS1‑f", AircraftType = 1, OwnershipType = 1, Owner = "Julia Götz" },
-            new KnownAircraft { Id = 103, FlarmId = "3EFBF6", Registration = "D-7007", RegistrationShort = "SE", Model = "Mini Nimbus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" },
-            //new KnownAircraft { Id = ??, FlarmId = "??", Registration = "D-3533", RegistrationShort = "SC", Model = "Ventus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" },
-            new KnownAircraft { Id = 104, FlarmId = "D0019F", Registration = "D-KEVA", RegistrationShort = "O2", Model = "DG‑800", AircraftType = 1, OwnershipType = 1, Owner = "Stephan Haupt" },
-            new KnownAircraft { Id = 105, FlarmId = "3EE707", Registration = "D-1648", RegistrationShort = "DE", Model = "ASW‑20", AircraftType = 1, OwnershipType = 1, Owner = "Thomas Dvorak" },
+            new KnownAircraft { Id = 102, FlarmId = "D0287B", Registration = "D-2254", RegistrationShort = "HR", Model = "LS1‑f", AircraftType = 1, OwnershipType = 1, Owner = "Julia Götz" },
+            new KnownAircraft { Id = 103, FlarmId = "D02864", Registration = "D-KHJH", RegistrationShort = "JA", Model = "HPH 304S Shark", AircraftType = 1, OwnershipType = 1, Owner = "Andreas Stocker / Julia Götz" },
+            //new KnownAircraft { Id = 104, FlarmId = "?? 3EEE64 / D003E9", Registration = "D-3533", RegistrationShort = "SC", Model = "Ventus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" },
+            new KnownAircraft { Id = 105, FlarmId = "D0019F", Registration = "D-KEVA", RegistrationShort = "O2", Model = "DG‑800", AircraftType = 1, OwnershipType = 1, Owner = "Stephan Haupt" },
             new KnownAircraft { Id = 106, FlarmId = "F64550", Registration = "D-1890", RegistrationShort = "KA8", Model = "Ka‑8", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Urach" },
-            new KnownAircraft { Id = 107, FlarmId = "DDB289", Registration = "D-KXPP", RegistrationShort = "PP", Model = "ASH‑26 E", AircraftType = 1, OwnershipType = 1, Owner = "Irmgard Paul" },
-            new KnownAircraft { Id = 108, FlarmId = "3EEC8B", Registration = "D-3060", RegistrationShort = "CZ", Model = "HPH 304CZ‑17", AircraftType = 1, OwnershipType = 1, Owner = "Sören Rossow" }, // TODO (DF0F03)
-            new KnownAircraft { Id = 109, FlarmId = "3EFBA7", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", AircraftType = 1, OwnershipType = 1, Owner = "Mario Neumann" }
+            new KnownAircraft { Id = 107, FlarmId = "DF23C3", Registration = "D-KWMR", RegistrationShort = "MR", Model = "Arcus M", AircraftType = 1, OwnershipType = 1, Owner = "Markus Podivin / Irmgard Paul / Josef Pannagl" },
+            //new KnownAircraft { Id = 108, FlarmId = "?? DF0F03 / 3EEC8B", Registration = "D-3060", RegistrationShort = "CZ", Model = "HPH 304CZ‑17", AircraftType = 1, OwnershipType = 1, Owner = "Sören Rossow" },
+            new KnownAircraft { Id = 109, FlarmId = "3EFBA7", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", AircraftType = 1, OwnershipType = 1, Owner = "Mario Neumann / Kathrin Havemann" },
+            new KnownAircraft { Id = 110, FlarmId = "F90640", Registration = "OE-0789", RegistrationShort = "? 89", Model = "SF-27", AircraftType = 1, OwnershipType = 1, Owner = "Fabian Hoffmann" }, // RegShort & FlarmId nicht bestätigt - DDB2C4?
+            new KnownAircraft { Id = 111, FlarmId = "D006D6", Registration = "D-KXAC", RegistrationShort = "AC", Model = "EB 29 DR", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Jütte" },
+            //new KnownAircraft { Id = 112, FlarmId = "??", Registration = "D-5328", RegistrationShort = "??", Model = "Ventus b", AircraftType = 1, OwnershipType = 1, Owner = "Josef Mayer" },
+            new KnownAircraft { Id = 113, FlarmId = "DD91B7", Registration = "D-7868", RegistrationShort = "FLO", Model = "DG-200", AircraftType = 1, OwnershipType = 1, Owner = "Florian Wögerer" }
         );
     }
 }

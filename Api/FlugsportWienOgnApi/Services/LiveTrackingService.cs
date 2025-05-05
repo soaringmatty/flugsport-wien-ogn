@@ -4,10 +4,9 @@ using FlugsportWienOgn.Database;
 using FlugsportWienOgn.Database.Entities;
 using FlugsportWienOgnApi.Utils;
 using FlugsportWienOgnApi.Models.Core;
-using Microsoft.EntityFrameworkCore;
-using FlugsportWienOgnApi.Models.LiveTracking;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 
 namespace FlugsportWienOgnApi.Services;
 
@@ -96,17 +95,33 @@ public class LiveTrackingService
                 return;
             }
         }
+        if (_config.Value.IgnoreUnregisteredAircraft)
+        {
+            // Filter to only registered aircraft
+            var aircraftData = _aircraftProvider.Load(flightData.FlarmId);
+            if (aircraftData == null)
+            {
+                return;
+            }
+        }
+        if (_config.Value.IgnoreParagliders)
+        {
+            // Filter to all aircraft except hang and paragliders
+            var aircraftData = _aircraftProvider.Load(flightData.FlarmId);
+            if (aircraftData != null && aircraftData.AircraftType == GlidernetAircraftType.HangOrParaglider)
+            {
+                return;
+            }
+        }
 
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-        var aircraftId = AddOrUpdatePlaneEntity(flightData, dbContext);
-
-
+        var aircraftId = await AddOrUpdatePlaneEntity(flightData, dbContext);
 
         // Ignore flight data if more recent position data is already in database
-        var lastTimestamp = dbContext.FlightData
+        var lastTimestamp = await dbContext.FlightData
             .Where(flightPathItem => flightPathItem.AircraftId == aircraftId)
-            .Max(flightPathItem => (DateTime?)flightPathItem.Timestamp);
+            .MaxAsync(flightPathItem => (DateTime?)flightPathItem.Timestamp);
         if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
         {
             return;
@@ -119,16 +134,15 @@ public class LiveTrackingService
             Longitude = (float)Math.Round(flightData.Longitude, 5),
             Speed = (int)Math.Round(flightData.Speed),
             Altitude = (int)Math.Round(flightData.Altitude),
-            VerticalSpeed = flightData.VerticalSpeed,
+            VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1),
             Timestamp = flightData.ReceiverTimeStamp,
-            Receiver = flightData.Receiver,
         };
 
         dbContext.FlightData.Add(flightPathItem);
         await dbContext.SaveChangesAsync(token);
     }
 
-    private int AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
+    private async Task<int> AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
     {
         // Check if the plane already exists in the database based on a unique identifier, e.g., PlaneId or CallSign
         var existingPlane = dbContext.Aircraft
@@ -137,11 +151,12 @@ public class LiveTrackingService
         if (existingPlane != null)
         {
             // Plane exists, so update the current flight data
-            existingPlane.Latitude = flightData.Latitude;
-            existingPlane.Longitude = flightData.Longitude;
+            existingPlane.Latitude = (float)Math.Round(flightData.Latitude, 5);
+            existingPlane.Longitude = (float)Math.Round(flightData.Longitude, 5);
             existingPlane.Speed = (int)Math.Round(flightData.Speed);
             existingPlane.Altitude = (int)Math.Round(flightData.Altitude);
-            existingPlane.VerticalSpeed = flightData.VerticalSpeed;
+            existingPlane.VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1);
+            existingPlane.VerticalSpeedAverage = await GetVerticalSpeedAverage(existingPlane.Id, flightData, dbContext);
             existingPlane.LastUpdate = flightData.ReceiverTimeStamp;
             dbContext.Aircraft.Update(existingPlane);
             return existingPlane.Id;
@@ -156,11 +171,12 @@ public class LiveTrackingService
                 Registration = flightData.FlarmId,
                 CallSign = $"? {flightData.FlarmId.Substring(flightData.FlarmId.Length - 2)}",
                 Model = "Unbekannt",
-                Latitude = flightData.Latitude,
-                Longitude = flightData.Longitude,
+                Latitude = (float)Math.Round(flightData.Latitude, 5),
+                Longitude = (float)Math.Round(flightData.Longitude, 5),
                 Speed = (int)Math.Round(flightData.Speed),
                 Altitude = (int)Math.Round(flightData.Altitude),
-                VerticalSpeed = flightData.VerticalSpeed,
+                VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1),
+                VerticalSpeedAverage = (float)Math.Round(flightData.VerticalSpeed, 1),
                 LastUpdate = flightData.ReceiverTimeStamp,
                 AircraftType = (int)AircraftType.Unknown
             };
@@ -173,13 +189,39 @@ public class LiveTrackingService
                     "??";
                 newPlane.Registration = aircraftData.Registration;
                 newPlane.CallSign = !string.IsNullOrEmpty(aircraftData.CallSign) ? aircraftData.CallSign : calculatedCallSign;
-                newPlane.Model = aircraftData.Model;
+                newPlane.Model = !string.IsNullOrEmpty(aircraftData.Model) ? aircraftData.Model : "Unbekannt";
                 newPlane.AircraftType = (int)MapGlidernetAircraftType(aircraftData.AircraftType);
             }
             dbContext.Aircraft.Add(newPlane);
             dbContext.SaveChanges();
             return newPlane.Id;
         }
+    }
+
+    private async Task<float> GetVerticalSpeedAverage(int aircraftId, FlightData flightPathItem, FlightDbContext dbContext)
+    {
+        // Calculate vario average in last 60s
+        var oneMinuteAgo = DateTime.Now.AddMinutes(-1);
+        var recentFlightData = await dbContext.FlightData
+            .Where(f => f.AircraftId == aircraftId && f.Timestamp >= oneMinuteAgo)
+            .OrderBy(f => f.Timestamp)
+            .ToListAsync();
+
+        float varioAverage = flightPathItem.VerticalSpeed;
+        if (recentFlightData.Count >= 2)
+        {
+            var first = recentFlightData.First();
+            var last = recentFlightData.Last();
+
+            var altitudeDiff = last.Altitude - first.Altitude;
+            var seconds = (last.Timestamp - first.Timestamp).TotalSeconds;
+
+            if (seconds > 0)
+            {
+                varioAverage = (float)(altitudeDiff / seconds);
+            }
+        }
+        return (float)Math.Round(varioAverage, 1);
     }
 
     private AircraftType MapGlidernetAircraftType(GlidernetAircraftType rawType)

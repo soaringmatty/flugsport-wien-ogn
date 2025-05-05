@@ -49,6 +49,13 @@ namespace FlugsportWienOgnApi.Controllers
             return BadRequest();
         }
 
+        [HttpGet("find")]
+        public async Task<ActionResult<IEnumerable<AircraftSearchResultItem>>> Search([FromQuery] string searchText)
+        {
+            var result = await _flightService.SearchAircraftAsync(searchText);
+            return Ok(result);
+        }
+
         [HttpGet("{flarmId}/history")]
         public async Task<ActionResult<string>> GetFlightPathFromDatabase(string flarmId)
         {

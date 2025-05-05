@@ -31,6 +31,7 @@ public class AircraftProvider
     private const int _INDEX_AIRCRAFT_TYPE = 7;
 
     private readonly Dictionary<string, Aircraft> _aircraftList = new Dictionary<string, Aircraft>();
+    private readonly Dictionary<string, GlidernetAircraftType> _modelAircraftTypeDictionary = new Dictionary<string, GlidernetAircraftType>();
     private readonly AprsConfig _aprsConfig;
     private readonly HttpClient _httpClient;
     private readonly ILogger<AircraftProvider> _logger;
@@ -40,6 +41,7 @@ public class AircraftProvider
         _httpClient = httpClient;
         _logger = logger;
         _aprsConfig = config.Value;
+        InitializeModelAircraftTypeDictionary();
     }
 
     /// <summary>
@@ -79,11 +81,11 @@ public class AircraftProvider
             var fields = line
                 .Replace(_FIELD_ENCLOSURE, string.Empty)
                 .Split(_FIELD_SEPARATOR);
-            // Filter for aircraft that consent to tracking and are identified
             if (fields.Length < 7
-                || string.IsNullOrWhiteSpace(fields[_INDEX_AIRCRAFT_ID])
-                || fields[_INDEX_TRACKED] != _VALUE_YES
-                || fields[_INDEX_IDENTIFIED] != _VALUE_YES) continue;
+                || string.IsNullOrWhiteSpace(fields[_INDEX_AIRCRAFT_ID]))
+                //|| fields[_INDEX_TRACKED] != _VALUE_YES
+                //|| fields[_INDEX_IDENTIFIED] != _VALUE_YES)
+                continue;
             if (!int.TryParse(fields[_INDEX_AIRCRAFT_TYPE], NumberStyles.None, CultureInfo.InvariantCulture, out var type)) continue;
 
             var aircraft = new Aircraft(
@@ -92,7 +94,7 @@ public class AircraftProvider
                 fields[_INDEX_REGISTRATION],
                 fields[_INDEX_MODEL],
                 true,
-                (GlidernetAircraftType)type
+                GetCorrectedAircraftType(type, fields[_INDEX_MODEL])
             );
             _aircraftList[aircraft.Id] = aircraft;
         }
@@ -113,5 +115,53 @@ public class AircraftProvider
         return _aircraftList.TryGetValue(aircraftId, out var value)
             ? value
             : null;
+    }
+
+    private GlidernetAircraftType GetCorrectedAircraftType(int type, string model)
+    {
+        var aircraftType = (GlidernetAircraftType)type;
+        if (_modelAircraftTypeDictionary.TryGetValue(model, out GlidernetAircraftType updatedType))
+        {
+            aircraftType = updatedType;
+        }
+        return aircraftType;
+    }
+
+    private void InitializeModelAircraftTypeDictionary()
+    {
+        // Actually TMGs
+        _modelAircraftTypeDictionary.Add("AVo 68 Samburo", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("Carat", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("Grob G109", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("H36 Dimona", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("HK36 Super Dimona", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("L 13 SEH Vivat", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("Motorglider", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("RF 10", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("RF 3", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("RF 4", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("RF 5", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("RF 5 b", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("RF 9", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("SF-25", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("SF-28", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("SFS-31 Milan", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("Valentin Taifun", GlidernetAircraftType.Motorplane);
+
+        // Other
+        _modelAircraftTypeDictionary.Add("Hawker Hurricane", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("Sinus", GlidernetAircraftType.Ultralight);
+        _modelAircraftTypeDictionary.Add("SkyArrow", GlidernetAircraftType.Ultralight);
+        _modelAircraftTypeDictionary.Add("Tetra-15", GlidernetAircraftType.Glider);
+
+        // Unknown
+        _modelAircraftTypeDictionary.Add("A380", GlidernetAircraftType.Unknown);
+        _modelAircraftTypeDictionary.Add("Balloon", GlidernetAircraftType.Unknown); // Balloon
+        _modelAircraftTypeDictionary.Add("Different Aircraft", GlidernetAircraftType.Unknown);
+        _modelAircraftTypeDictionary.Add("Experimental", GlidernetAircraftType.Unknown);
+        _modelAircraftTypeDictionary.Add("Ground Station", GlidernetAircraftType.Unknown);
+        //_modelAircraftTypeDictionary.Add("OldTimer", GlidernetAircraftType.Unknown);
+        _modelAircraftTypeDictionary.Add("Other", GlidernetAircraftType.Unknown);
+        _modelAircraftTypeDictionary.Add("Unknown", GlidernetAircraftType.Unknown);
     }
 }

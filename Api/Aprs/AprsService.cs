@@ -79,7 +79,7 @@ public class AprsService : IAsyncDisposable
                 using var writer = new StreamWriter(stream) { AutoFlush = true };
 
                 await writer.WriteLineAsync(login).ConfigureAwait(false);
-                _logger.LogInformation("Connected to APRS server.");
+                _logger.LogInformation("Connected to APRS server");
 
                 // start keep-alive
                 _ = StartKeepAliveLoop(writer, cancellationToken);
@@ -93,6 +93,7 @@ public class AprsService : IAsyncDisposable
                     _logger.LogTrace(line);
                     _subject.OnNext(line);
                 }
+                _logger.LogWarning("Lost connection to APRS server");
             }
             catch (OperationCanceledException)
             {

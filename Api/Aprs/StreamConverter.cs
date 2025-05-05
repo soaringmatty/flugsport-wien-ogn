@@ -87,7 +87,6 @@ public partial class StreamConverter
 
         var data = match.Groups;
 
-        var receiver = data[1].Value;
         var timestamp = ConvertTimestamp(data, 2).ToLocalTime();
         var latitude = ConvertCoordinateValue(data, 3);
         var longitude = ConvertCoordinateValue(data, 4);
@@ -106,8 +105,7 @@ public partial class StreamConverter
             course,
             latitude,
             longitude,
-            timestamp,
-            receiver
+            timestamp
         );
     }
 
