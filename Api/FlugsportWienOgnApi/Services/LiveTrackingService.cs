@@ -178,7 +178,8 @@ public class LiveTrackingService
                 VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1),
                 VerticalSpeedAverage = (float)Math.Round(flightData.VerticalSpeed, 1),
                 LastUpdate = flightData.ReceiverTimeStamp,
-                AircraftType = (int)AircraftType.Unknown
+                AircraftType = (int)AircraftType.Unknown,
+                IsRegistered = false,
             };
             // Add aircraft data if it is registered
             if (aircraftData != null)
@@ -186,11 +187,12 @@ public class LiveTrackingService
                 var calculatedCallSign =
                     (!string.IsNullOrWhiteSpace(aircraftData.Registration) && aircraftData.Registration.Length >= 4) ?
                     aircraftData.Registration?.Substring(aircraftData.Registration.Length - 2) :
-                    "??";
-                newPlane.Registration = aircraftData.Registration;
+                    $"? {flightData.FlarmId.Substring(flightData.FlarmId.Length - 2)}";
+                newPlane.Registration = !string.IsNullOrEmpty(aircraftData.Registration) ? aircraftData.Registration : flightData.FlarmId;
                 newPlane.CallSign = !string.IsNullOrEmpty(aircraftData.CallSign) ? aircraftData.CallSign : calculatedCallSign;
                 newPlane.Model = !string.IsNullOrEmpty(aircraftData.Model) ? aircraftData.Model : "Unbekannt";
                 newPlane.AircraftType = (int)MapGlidernetAircraftType(aircraftData.AircraftType);
+                newPlane.IsRegistered = !string.IsNullOrEmpty(aircraftData.Registration) ? true : false;
             }
             dbContext.Aircraft.Add(newPlane);
             dbContext.SaveChanges();

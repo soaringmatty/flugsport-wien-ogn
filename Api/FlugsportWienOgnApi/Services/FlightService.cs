@@ -207,47 +207,43 @@ public class FlightService
 
         await using var scope = _serviceProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-        var known = scope.ServiceProvider.GetRequiredService<KnownAircraftService>();
 
-        // Find all search results
-        var candidates = await db.Aircraft
-            .AsNoTracking()
-            .Where(a =>
-                   EF.Functions.Like(a.CallSign.ToLower(), $"%{term}%") ||
-                   EF.Functions.Like(a.Registration.ToLower(), $"%{term}%") ||
-                   EF.Functions.Like(a.FlarmId.ToLower(), $"%{term}%"))
-            .ToListAsync();
-
-        // Prepare known glider sets for priority
-        var clubSet = new HashSet<string>(
-            known.ClubGlidersAndMotorplanes.Select(k => k.FlarmId),
-            StringComparer.OrdinalIgnoreCase);
-
-        var privateSet = new HashSet<string>(
-            known.PrivateGliders.Select(k => k.FlarmId),
-            StringComparer.OrdinalIgnoreCase);
-
-        // Sort by priority and remove dublicates
-        var ordered = candidates
-            .Select(aircraft => new
+        var results = await (
+            from aircraft in db.Aircraft.AsNoTracking()
+            join known in db.KnownAircraft.AsNoTracking()
+                on aircraft.FlarmId equals known.FlarmId into gj
+            from knownAircraft in gj.DefaultIfEmpty()
+            where EF.Functions.Like(aircraft.CallSign.ToLower(), $"%{term}%")
+               || EF.Functions.Like(aircraft.Registration.ToLower(), $"%{term}%")
+               || EF.Functions.Like(aircraft.FlarmId.ToLower(), $"%{term}%")
+               || (knownAircraft != null && EF.Functions.Like(knownAircraft.Owner.ToLower(), $"%{term}%"))
+            select new
             {
                 Aircraft = aircraft,
-                Priority = clubSet.Contains(aircraft.FlarmId) ? 1 :
-                            privateSet.Contains(aircraft.FlarmId) ? 2 : 3,
-                MatchRank = MatchRank(aircraft)
+                Known = knownAircraft
+            }
+        ).ToListAsync();
+
+        var ordered = results
+            .Select(x => new
+            {
+                x.Aircraft,
+                x.Known,
+                Priority = GetPriority(x.Known),
+                MatchRank = GetMatchRank(x.Aircraft, x.Known, term)
             })
             .OrderBy(x => x.Priority)
             .ThenBy(x => x.MatchRank)
             .ThenBy(x => x.Aircraft.Registration ?? x.Aircraft.FlarmId)
-            .DistinctBy(a => a.Aircraft.Id)
+            .DistinctBy(x => x.Aircraft.Id)
             .ToList();
 
-        var result = ordered.Select(x => new AircraftSearchResultItem
+        var mapped = ordered.Select(x => new AircraftSearchResultItem
         {
             FlarmId = x.Aircraft.FlarmId,
             RegistrationShort = x.Aircraft.CallSign,
             Registration = x.Aircraft.Registration,
-            Type = _knownAircraftService.GetGliderOwnershipByFlarmId(x.Aircraft.FlarmId),
+            Type = GetOwnership(x.Known),
             AircraftType = (AircraftType)x.Aircraft.AircraftType,
             Model = x.Aircraft.Model,
             Latitude = x.Aircraft.Latitude,
@@ -257,17 +253,30 @@ public class FlightService
             MatchRank = x.MatchRank
         }).ToList();
 
-        return result;
+        return mapped;
 
-        int MatchRank(Aircraft aircraft)
+        int GetPriority(KnownAircraft? known)
         {
-            if (!string.IsNullOrEmpty(aircraft.CallSign) && aircraft.CallSign.ToLower().Contains(term)) 
-                return 1;
-            if (!string.IsNullOrEmpty(aircraft.Registration) && aircraft.Registration.ToLower().Contains(term)) 
-                return 2;
-            if (!string.IsNullOrEmpty(aircraft.FlarmId) && aircraft.FlarmId.ToLower().Contains(term)) 
+            if (known == null)
                 return 3;
-            return 4;
+            return known.OwnershipType == (int)GliderOwnership.Club ? 1 :
+                   known.OwnershipType == (int)GliderOwnership.Private ? 2 : 3;
+        }
+
+        GliderOwnership GetOwnership(KnownAircraft? known)
+        {
+            if (known == null)
+                return GliderOwnership.Foreign;
+            return (GliderOwnership)known.OwnershipType;
+        }
+
+        int GetMatchRank(Aircraft a, KnownAircraft? k, string term)
+        {
+            if (!string.IsNullOrEmpty(a.CallSign) && a.CallSign.ToLower().Contains(term)) return 1;
+            if (!string.IsNullOrEmpty(a.Registration) && a.Registration.ToLower().Contains(term)) return 2;
+            if (k != null && !string.IsNullOrEmpty(k.Owner) && k.Owner.ToLower().Contains(term)) return 3;
+            if (!string.IsNullOrEmpty(a.FlarmId) && a.FlarmId.ToLower().Contains(term)) return 4;
+            return 5;
         }
     }
 

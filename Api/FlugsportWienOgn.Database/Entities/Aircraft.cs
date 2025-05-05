@@ -15,6 +15,7 @@ public class Aircraft
     public float Latitude { get; set; }
     public float Longitude { get; set; }
     public DateTime LastUpdate { get; set; }
+    public bool IsRegistered { get; set; }
 
     public List<FlightPathItem> FlightPath { get; set; } = new List<FlightPathItem>();
 }
