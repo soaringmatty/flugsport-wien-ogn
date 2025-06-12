@@ -58,45 +58,63 @@ public class AircraftProvider
             throw new ArgumentNullException(nameof(_aprsConfig.DdbAircraftListUrl), "Missing URL in configuration.");
         }
 
-        var client = new HttpClient();
-        using var response = await _httpClient
-            .GetAsync(_aprsConfig.DdbAircraftListUrl, cancellationToken)
-            .ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-
-        _aircraftList.Clear();
-
-        // Stream-based parsing to limit memory usage
-        await using var stream = await response.Content
-            .ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
-        using var reader = new StreamReader(stream);
-
-        string? line;
-        while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (line.Length == 0 || line.StartsWith(_IDENTIFIER_COMMENT)) continue;
+            try
+            {
+                using var response = await _httpClient
+                    .GetAsync(_aprsConfig.DdbAircraftListUrl, cancellationToken)
+                    .ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
 
-            var fields = line
-                .Replace(_FIELD_ENCLOSURE, string.Empty)
-                .Split(_FIELD_SEPARATOR);
-            if (fields.Length < 7
-                || string.IsNullOrWhiteSpace(fields[_INDEX_AIRCRAFT_ID]))
-                //|| fields[_INDEX_TRACKED] != _VALUE_YES
-                //|| fields[_INDEX_IDENTIFIED] != _VALUE_YES)
-                continue;
-            if (!int.TryParse(fields[_INDEX_AIRCRAFT_TYPE], NumberStyles.None, CultureInfo.InvariantCulture, out var type)) continue;
+                _aircraftList.Clear();
 
-            var aircraft = new Aircraft(
-                fields[_INDEX_AIRCRAFT_ID],
-                fields[_INDEX_CALL_SIGN],
-                fields[_INDEX_REGISTRATION],
-                fields[_INDEX_MODEL],
-                true,
-                GetCorrectedAircraftType(type, fields[_INDEX_MODEL])
-            );
-            _aircraftList[aircraft.Id] = aircraft;
+                // Stream-based parsing to limit memory usage
+                await using var stream = await response.Content
+                    .ReadAsStreamAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                using var reader = new StreamReader(stream);
+
+                string? line;
+                while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (line.Length == 0 || line.StartsWith(_IDENTIFIER_COMMENT)) continue;
+
+                    var fields = line
+                        .Replace(_FIELD_ENCLOSURE, string.Empty)
+                        .Split(_FIELD_SEPARATOR);
+
+                    if (fields.Length < 7 || string.IsNullOrWhiteSpace(fields[_INDEX_AIRCRAFT_ID]))
+                        continue;
+
+                    if (!int.TryParse(fields[_INDEX_AIRCRAFT_TYPE], NumberStyles.None, CultureInfo.InvariantCulture, out var type))
+                        continue;
+
+                    var aircraft = new Aircraft(
+                        fields[_INDEX_AIRCRAFT_ID],
+                        fields[_INDEX_CALL_SIGN],
+                        fields[_INDEX_REGISTRATION],
+                        fields[_INDEX_MODEL],
+                        true,
+                        GetCorrectedAircraftType(type, fields[_INDEX_MODEL])
+                    );
+
+                    _aircraftList[aircraft.Id] = aircraft;
+                }
+
+                break; // Erfolg: Schleife verlassen
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogError($"Error while retrieving FlarmNet aircraft database: {ex.Message}. Trying again in 60 seconds...");
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(60), cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { break; }
+            }
         }
     }
 

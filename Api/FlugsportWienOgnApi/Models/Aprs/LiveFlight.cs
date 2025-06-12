@@ -1,4 +1,6 @@
-﻿namespace FlugsportWienOgnApi.Models.Aprs;
+﻿using FlugsportWienOgnApi.Models.Core;
+
+namespace FlugsportWienOgnApi.Models.Aprs;
 
 public class LiveFlight
 {

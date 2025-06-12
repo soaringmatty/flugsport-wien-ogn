@@ -24,13 +24,15 @@ public partial class StreamConverter
     /// <seealso href="https://github.com/dbursem/ogn-client-php/blob/master/lib/OGNClient.php#L87"/>
     /// </remarks>
     private const string _LINE_MATCH_PATTERN =
-        @".*?([A-Za-z0-9]+,[A-Za-z0-9]+,[A-Za-z0-9]+)"  // 1: receiver identifier
-      + @".*?([0-9]{6}h)"                               // 2: timestamp (DDHHMMh or HHMMSSz)
-      + @"([0-9.]*[NS])[/\\]([0-9.]*[WE])"              // 3: latitude, 4: longitude
-      + @".*?(\d{3})/(\d{3})/A=(\d+)"                   // 5: course (°), 6: speed (kn), 7: altitude (ft)
-      + @".*?id[0-3]{1}[A-Fa-f0-9]{1}([A-Za-z0-9]+)"    // 8: aircraft ID
-      + @".*?([-0-9]+)fpm"                              // 9: vertical speed (ft/min)
-      + @".*?([-.0-9]+)rot.*";                          // 10: turn rate (turns per 2 min)
+        @"([A-Z]{3})[A-Z0-9]{6}>"                           // 1: sender device type
+      + @".*?([0-9]{6}h)"                                   // 2: timestamp (DDHHMMh or HHMMSSz)
+      + @"([0-9.]*[NS])[/\\]([0-9.]*[WE])"                  // 3: latitude, 4: longitude
+      + @".*?(\d{3})/(\d{3})/A=(\d+)"                       // 5: course (°), 6: speed (kn), 7: altitude (ft)
+      + @".*?id([0-3]{1}[A-Fa-f0-9]{1})([A-Za-z0-9]{6}) "   // 8: aircraft hex data, 9: aircraft ID
+      + @".*?([-0-9]+)fpm"                                  // 10: vertical speed (ft/min)
+      + @".*?([-.0-9]+)rot.*";                              // 11: turn rate (turns per 2 min)
+    
+    // FLRDF22DA>OGFLR,qAS,EDQK:/074847h5005.40N/01127.79E'006/075/A=004203 !W44! id06DF22DA +059fpm +0.5rot 22.8dB -11.1kHz gps2x3
 
     /// <summary>
     /// Pattern for converting coordinate strings to valid numeric string
@@ -87,25 +89,40 @@ public partial class StreamConverter
 
         var data = match.Groups;
 
-        var timestamp = ConvertTimestamp(data, 2).ToLocalTime();
+        var senderDeviceType = data[1].Value;
+        var timestamp = ConvertTimestamp(data, 2);
         var latitude = ConvertCoordinateValue(data, 3);
         var longitude = ConvertCoordinateValue(data, 4);
-        var course = Convert(data, 5);
-        var speed = Convert(data, 6, _FACTOR_KNOTS_TO_KM_H);
-        var altitude = Convert(data, 7, _FACTOR_FT_TO_M);
-        var aircraftId = data[8].Value;
-        var verticalSpeed = Convert(data, 9, _FACTOR_FT_MIN_TO_M_SEC);
-        var turnRate = Math.Abs(Convert(data, 10, _FACTOR_TURNS_TWO_MIN_TO_TURNS_MIN));
+        var course = ConvertToFloat(data, 5);
+        var speed = ConvertToFloat(data, 6, _FACTOR_KNOTS_TO_KM_H);
+        var altitude = ConvertToFloat(data, 7, _FACTOR_FT_TO_M);
+        var aircraftId = data[9].Value;
+        var verticalSpeed = ConvertToFloat(data, 10, _FACTOR_FT_MIN_TO_M_SEC);
+        var turnRate = Math.Abs(ConvertToFloat(data, 11, _FACTOR_TURNS_TWO_MIN_TO_TURNS_MIN));
+
+        var hexPrefix = data[8].Value; // e.g., "06"
+        var hexByte = Convert.ToByte(hexPrefix, 16); // converts "06" to byte
+
+        bool stealthMode = (hexByte & 0b10000000) != 0;        // Bit 7
+        bool noTracking = (hexByte & 0b01000000) != 0;         // Bit 6
+        int aircraftTypeCode = (hexByte & 0b00111100) >> 2;    // Bits 5–2
+        int addressTypeCode = (hexByte & 0b00000011);          // Bits 1–0
+        var aircraftType = (AprsAircraftType)aircraftTypeCode;
+        var addressType = (AddressType)addressTypeCode;
 
         return new FlightData(
             aircraftId,
-            speed, altitude,
+            speed, 
+            altitude,
             verticalSpeed,
             turnRate,
             course,
             latitude,
             longitude,
-            timestamp
+            timestamp,
+            aircraftType,
+            addressType,
+            !(stealthMode || noTracking)
         );
     }
 
@@ -116,7 +133,7 @@ public partial class StreamConverter
     /// <param name="index">Result index</param>
     /// <param name="factor">The factor that should be applied to the value</param>
     /// <returns></returns>
-    private static float Convert(GroupCollection collection, int index, float factor = 1)
+    private static float ConvertToFloat(GroupCollection collection, int index, float factor = 1)
     {
         var value = collection[index].Value;
         var doubleValue = double.Parse(value, CultureInfo.InvariantCulture);
@@ -173,7 +190,6 @@ public partial class StreamConverter
 
         char suffix = rawTimestamp[^1];
         string core = rawTimestamp.Substring(0, 6);
-        DateTime now = (suffix == 'z') ? DateTime.UtcNow : DateTime.Now;
 
         switch (suffix)
         {
@@ -184,7 +200,6 @@ public partial class StreamConverter
                     int secondZ = int.Parse(core.Substring(4, 2), CultureInfo.InvariantCulture);
 
                     DateTime utcNow = DateTime.UtcNow;
-                    // UTC DateTime is constructed with Kind=Utc
                     return new DateTime(
                         utcNow.Year,
                         utcNow.Month,

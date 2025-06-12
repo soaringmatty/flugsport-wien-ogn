@@ -7,6 +7,7 @@ using FlugsportWienOgnApi.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
+using FlightStatus = FlugsportWienOgnApi.Models.Core.FlightStatus;
 
 namespace FlugsportWienOgnApi.Controllers;
 
@@ -56,7 +57,7 @@ public class GliderStatusController : ControllerBase
                 TakeOffTimestamp = flight.start_tsp,
                 LandingTimestamp = flight.stop_tsp
             });
-        var knowGliderFlightbook = joinedFlightbook.Where(entry => _knownAircraftService.ClubGliders.Exists(glider => glider.FlarmId == entry.FlarmId));
+        var knowGliderFlightbook = joinedFlightbook.Where(entry => _knownAircraftService.ClubGliderFlarmIds.Contains(entry.FlarmId));
         var latestFlightsFlightbook = knowGliderFlightbook
             .Where(jd => jd.TakeOffTimestamp.HasValue && jd.LandingTimestamp == null)
             .GroupBy(jd => jd.FlarmId)
@@ -71,7 +72,7 @@ public class GliderStatusController : ControllerBase
             if (flight == null)
             {
                 // Keep private gliders without a signal out of the result
-                if (includePrivateGliders && _knownAircraftService.PrivateGliders.Any(x => x.FlarmId == glider.FlarmId))
+                if (includePrivateGliders && _knownAircraftService.PrivateGliderFlarmIds.Contains(glider.FlarmId))
                 {
                     continue;
                 }

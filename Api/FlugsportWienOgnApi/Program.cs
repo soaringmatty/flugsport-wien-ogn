@@ -5,6 +5,7 @@ using FlugsportWienOgnApi.Hubs;
 using FlugsportWienOgnApi.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,10 +35,21 @@ builder.Services.AddSingleton(serviceProvider =>
     return new LiveGliderService(aprsConfig.Value, loggerFactory);
 });
 
+// Add database context
 builder.Services.AddDbContext<FlightDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Database")));
-    //options.UseNpgsql(builder.Configuration.GetConnectionString("Database")))
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
+// Add logging
+builder.Host.UseSerilog((context, services, configuration) => {
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext();
+});
+
+// Register hosted services
+builder.Services.AddHostedService<LiveTrackingBackgroundService>(); // BackgroundService that subscribes to APRS Server to receive live position updates
+builder.Services.AddHostedService<DailyCleanupService>();
 
 // Cors policy
 builder.Services.AddCors(options =>
@@ -48,10 +60,6 @@ builder.Services.AddCors(options =>
               .AllowCredentials()
               .SetIsOriginAllowed(_ => true));
 });
-
-// Register hosted services
-builder.Services.AddHostedService<LiveTrackingBackgroundService>(); // BackgroundService that subscribes to APRS Server to receive live position updates
-builder.Services.AddHostedService<DailyCleanupService>();
 
 var app = builder.Build();
 
@@ -64,10 +72,10 @@ using (var scope = app.Services.CreateScope())
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+app.UseSwaggerUI();
+//}
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

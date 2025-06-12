@@ -13,6 +13,11 @@ public class OgnConfig
     public bool IgnoreUnregisteredAircraft { get; set; } = false;
 
     /// <summary>
+    /// Indicates, whether signals from ICAO addresses (Transponder) should be tracked
+    /// </summary>
+    public bool IgnoreIcaoAddress { get; set; } = true;
+
+    /// <summary>
     /// Indicates, whether flight data of registered paragliders and hanggliders should be tracked
     /// </summary>
     public bool IgnoreParagliders { get; set; } = false;

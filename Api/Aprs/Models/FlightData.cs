@@ -9,7 +9,10 @@ public record FlightData(
     float Course,
     float Latitude,
     float Longitude,
-    DateTime ReceiverTimeStamp
+    DateTime ReceiverTimeStamp,
+    AprsAircraftType AircraftType,
+    AddressType AddressType,
+    bool allowTracking
 )
 {
     public override string ToString()

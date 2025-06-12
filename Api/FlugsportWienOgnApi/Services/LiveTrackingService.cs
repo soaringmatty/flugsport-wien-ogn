@@ -15,6 +15,7 @@ public class LiveTrackingService
     private readonly LiveGliderService _liveGliderService;
     private readonly AustriaGeoCalculator _austriaGeoCalculator;
     private readonly AircraftProvider _aircraftProvider;
+    private readonly KnownAircraftService _knownAircraftService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IOptions<OgnConfig> _config;
     private readonly ILogger<LiveTrackingService> _logger;
@@ -23,12 +24,13 @@ public class LiveTrackingService
     private readonly TimeSpan _aggregationWindow = TimeSpan.FromSeconds(3);
     private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(1));
 
-    public LiveTrackingService(ILogger<LiveTrackingService> logger, LiveGliderService liveGliderService, IServiceProvider serviceProvider, AircraftProvider aircraftProvider, IOptions<OgnConfig> config)
+    public LiveTrackingService(ILogger<LiveTrackingService> logger, LiveGliderService liveGliderService, IServiceProvider serviceProvider, AircraftProvider aircraftProvider, IOptions<OgnConfig> config, KnownAircraftService knownAircraftService)
     {
         _config = config;
         _logger = logger;
         _serviceProvider = serviceProvider;
         _aircraftProvider = aircraftProvider;
+        _knownAircraftService = knownAircraftService;
         _austriaGeoCalculator = new AustriaGeoCalculator();
         _liveGliderService = liveGliderService;
         _liveGliderService.FlightDataReceived += BufferFlightData;
@@ -36,6 +38,12 @@ public class LiveTrackingService
 
     private void BufferFlightData(FlightData flightData)
     {
+        // Ignore certain address types
+        if (flightData.AddressType == AddressType.Unknown || (_config.Value.IgnoreIcaoAddress && flightData.AddressType == AddressType.ICAO))
+        {
+            return;
+        }
+
         var buffer = _buffers.GetOrAdd(flightData.FlarmId, _ => new FlightDataBuffer());
         lock (buffer)
         {
@@ -80,7 +88,10 @@ public class LiveTrackingService
             buffer.Average(b => b.Course),
             buffer.Average(b => b.Latitude),
             buffer.Average(b => b.Longitude),
-            buffer.Max(b => b.ReceiverTimeStamp)
+            buffer.Max(b => b.ReceiverTimeStamp),
+            buffer.First().AircraftType,
+            buffer.First().AddressType,
+            true
         );
     }
 
@@ -158,19 +169,22 @@ public class LiveTrackingService
             existingPlane.VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1);
             existingPlane.VerticalSpeedAverage = await GetVerticalSpeedAverage(existingPlane.Id, flightData, dbContext);
             existingPlane.LastUpdate = flightData.ReceiverTimeStamp;
+
+            // Check if unregistered aircraft has been registered recently
+            if (!existingPlane.IsRegistered)
+            {
+                TryUpdateRegistrationData(existingPlane);
+            }
+
             dbContext.Aircraft.Update(existingPlane);
             return existingPlane.Id;
         }
         else
         {
             // Plane doesn't exist, add a new plane entry
-            var aircraftData = _aircraftProvider.Load(flightData.FlarmId);
             var newPlane = new FlugsportWienOgn.Database.Entities.Aircraft
             {
                 FlarmId = flightData.FlarmId,
-                Registration = flightData.FlarmId,
-                CallSign = $"? {flightData.FlarmId.Substring(flightData.FlarmId.Length - 2)}",
-                Model = "Unbekannt",
                 Latitude = (float)Math.Round(flightData.Latitude, 5),
                 Longitude = (float)Math.Round(flightData.Longitude, 5),
                 Speed = (int)Math.Round(flightData.Speed),
@@ -178,32 +192,89 @@ public class LiveTrackingService
                 VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1),
                 VerticalSpeedAverage = (float)Math.Round(flightData.VerticalSpeed, 1),
                 LastUpdate = flightData.ReceiverTimeStamp,
-                AircraftType = (int)AircraftType.Unknown,
+                AircraftType = (int)MapGlidernetAircraftType(flightData.AircraftType),
                 IsRegistered = false,
+                Registration = flightData.FlarmId,
+                CallSign = $"? {flightData.FlarmId[^2..]}",
+                Model = "Unknown"
             };
             // Add aircraft data if it is registered
-            if (aircraftData != null)
-            {
-                var calculatedCallSign =
-                    (!string.IsNullOrWhiteSpace(aircraftData.Registration) && aircraftData.Registration.Length >= 4) ?
-                    aircraftData.Registration?.Substring(aircraftData.Registration.Length - 2) :
-                    $"? {flightData.FlarmId.Substring(flightData.FlarmId.Length - 2)}";
-                newPlane.Registration = !string.IsNullOrEmpty(aircraftData.Registration) ? aircraftData.Registration : flightData.FlarmId;
-                newPlane.CallSign = !string.IsNullOrEmpty(aircraftData.CallSign) ? aircraftData.CallSign : calculatedCallSign;
-                newPlane.Model = !string.IsNullOrEmpty(aircraftData.Model) ? aircraftData.Model : "Unbekannt";
-                newPlane.AircraftType = (int)MapGlidernetAircraftType(aircraftData.AircraftType);
-                newPlane.IsRegistered = !string.IsNullOrEmpty(aircraftData.Registration) ? true : false;
-            }
+            TryUpdateRegistrationData(newPlane);
+
             dbContext.Aircraft.Add(newPlane);
             dbContext.SaveChanges();
             return newPlane.Id;
         }
     }
 
+    private void TryUpdateRegistrationData(FlugsportWienOgn.Database.Entities.Aircraft plane)
+    {
+        var aircraftData = _aircraftProvider.Load(plane.FlarmId);
+        var hasAircraftData = aircraftData != null && !string.IsNullOrWhiteSpace(aircraftData.Registration);
+
+        // If it is a known aircraft -> take data from KnownAircraft table
+        if (_knownAircraftService.AllKnownPlaneFlarmIds.Contains(plane.FlarmId))
+        {
+            var knownAircraftData = _knownAircraftService.AllKnownPlanes.First(x => x.FlarmId == plane.FlarmId);
+            plane.Registration = knownAircraftData.Registration;
+            plane.CallSign = knownAircraftData.RegistrationShort;
+            plane.Model = knownAircraftData.Model;
+            plane.AircraftType = knownAircraftData.AircraftType;
+            plane.IsRegistered = true;
+            return;
+        }
+
+        // Else take data from FlarmNet DB or calculate it if its unregistered
+        plane.Registration = hasAircraftData && aircraftData?.Registration.Length >= 4 
+            ? aircraftData.Registration 
+            : plane.FlarmId;
+        // CallSign calculation priority -> Registered callsign -> Last two digits of registration -> Last two digits of flarmId
+        plane.CallSign = 
+            !string.IsNullOrEmpty(aircraftData?.CallSign)
+                ? aircraftData.CallSign
+                : hasAircraftData && aircraftData?.Registration.Length >= 4
+                    ? plane.Registration[^2..]
+                    : $"? {plane.FlarmId[^2..]}";
+        plane.Model = !string.IsNullOrEmpty(aircraftData?.Model) ? aircraftData.Model : "Unknown";
+        plane.AircraftType = hasAircraftData
+            ? (int)MapGlidernetAircraftType(aircraftData.AircraftType)
+            : plane.AircraftType;
+        plane.IsRegistered = hasAircraftData;
+
+        //if (aircraftData != null && !string.IsNullOrWhiteSpace(aircraftData.Registration))
+        //{
+        //    var calculatedCallSign =
+        //        !string.IsNullOrWhiteSpace(aircraftData.Registration) && aircraftData.Registration.Length >= 4
+        //            ? aircraftData.Registration[^2..]
+        //            : $"? {plane.FlarmId[^2..]}";
+
+        //    plane.Registration = aircraftData.Registration;
+        //    plane.CallSign = !string.IsNullOrEmpty(aircraftData.CallSign) ? aircraftData.CallSign : calculatedCallSign;
+        //    plane.Model = !string.IsNullOrEmpty(aircraftData.Model) ? aircraftData.Model : "Unknown";
+        //    plane.AircraftType = (int)MapGlidernetAircraftType(aircraftData.AircraftType);
+        //    plane.IsRegistered = true;
+        //}
+
+    }
+
+    private void UpdateRegistrationData(FlugsportWienOgn.Database.Entities.Aircraft plane, Aprs.Models.Aircraft aircraftData, string flarmId)
+    {
+        var calculatedCallSign =
+            !string.IsNullOrWhiteSpace(aircraftData.Registration) && aircraftData.Registration.Length >= 4
+                ? aircraftData.Registration[^2..]
+                : $"? {flarmId[^2..]}";
+
+        plane.Registration = aircraftData.Registration;
+        plane.CallSign = !string.IsNullOrEmpty(aircraftData.CallSign) ? aircraftData.CallSign : calculatedCallSign;
+        plane.Model = !string.IsNullOrEmpty(aircraftData.Model) ? aircraftData.Model : "Unknown";
+        plane.AircraftType = (int)MapGlidernetAircraftType(aircraftData.AircraftType);
+        plane.IsRegistered = true;
+    }
+
     private async Task<float> GetVerticalSpeedAverage(int aircraftId, FlightData flightPathItem, FlightDbContext dbContext)
     {
         // Calculate vario average in last 60s
-        var oneMinuteAgo = DateTime.Now.AddMinutes(-1);
+        var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
         var recentFlightData = await dbContext.FlightData
             .Where(f => f.AircraftId == aircraftId && f.Timestamp >= oneMinuteAgo)
             .OrderBy(f => f.Timestamp)
@@ -226,9 +297,9 @@ public class LiveTrackingService
         return (float)Math.Round(varioAverage, 1);
     }
 
-    private AircraftType MapGlidernetAircraftType(GlidernetAircraftType rawType)
+    private AircraftType MapGlidernetAircraftType(GlidernetAircraftType glidernetType)
     {
-        switch (rawType)
+        switch (glidernetType)
         {
             case GlidernetAircraftType.Glider:
                 return AircraftType.Glider;
@@ -239,6 +310,30 @@ public class LiveTrackingService
                 return AircraftType.Helicopter;
             case GlidernetAircraftType.HangOrParaglider:
                 return AircraftType.HangOrParaglider;
+            default:
+                return AircraftType.Unknown;
+        }
+    }
+
+    private AircraftType MapGlidernetAircraftType(AprsAircraftType aprsType)
+    {
+        switch (aprsType)
+        {
+            case AprsAircraftType.GliderOrMotorGlider:
+                return AircraftType.Glider;
+
+            case AprsAircraftType.TowPlane:
+            case AprsAircraftType.PistonAircraft:
+            case AprsAircraftType.JetOrTurboprop:
+                return AircraftType.Motorplane;
+
+            case AprsAircraftType.HangGlider:
+            case AprsAircraftType.Paraglider:
+                return AircraftType.HangOrParaglider;
+
+            case AprsAircraftType.Helicopter:
+                return AircraftType.Helicopter;
+
             default:
                 return AircraftType.Unknown;
         }

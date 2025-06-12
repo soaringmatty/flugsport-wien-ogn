@@ -81,10 +81,10 @@ public class AprsService : IAsyncDisposable
                 await writer.WriteLineAsync(login).ConfigureAwait(false);
                 _logger.LogInformation("Connected to APRS server");
 
-                // start keep-alive
-                _ = StartKeepAliveLoop(writer, cancellationToken);
+                using var keepAliveCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var keepAliveTask = StartKeepAliveLoop(writer, keepAliveCts.Token);
 
-                // read loop
+                // Read data loop
                 while (!cancellationToken.IsCancellationRequested && _client.Connected)
                 {
                     var line = await reader.ReadLineAsync().ConfigureAwait(false);
@@ -94,6 +94,10 @@ public class AprsService : IAsyncDisposable
                     _subject.OnNext(line);
                 }
                 _logger.LogWarning("Lost connection to APRS server");
+
+                // Connection lost -> Stop keep alive loop
+                keepAliveCts.Cancel();
+                await keepAliveTask.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

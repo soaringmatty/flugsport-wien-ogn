@@ -1,18 +1,51 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using FlugsportWienOgn.Database.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace FlugsportWienOgn.Database;
 
-public class FlightDbContext(DbContextOptions<FlightDbContext> options) : DbContext(options)
+public class FlightDbContext : DbContext
 {
     public DbSet<Aircraft> Aircraft { get; set; }
     public DbSet<FlightPathItem> FlightData { get; set; }
     public DbSet<KnownAircraft> KnownAircraft { get; set; }
     public DbSet<CleanupStamp> Cleanup { get; set; }
 
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<FlightDbContext> _logger;
+
+    public FlightDbContext(DbContextOptions<FlightDbContext> options, ILogger<FlightDbContext> logger, IServiceProvider serviceProvider)
+        : base(options)
+    {
+        _serviceProvider = serviceProvider;
+        _logger = logger;
+    }
+
     public void InitializeDatabase()
     {
-        Database.EnsureCreated();
+        const int maxRetries = 10;
+        var retries = 0;
+        while (true)
+        {
+            try
+            {
+                if (Database.EnsureCreated())
+                {
+                    _logger.LogInformation("Database has been created");
+                }
+                else
+                {
+                    _logger.LogInformation("Database already exists");
+                }
+                break;
+            }
+            catch (Exception ex)
+            {
+                if (++retries >= maxRetries) throw;
+                _logger.LogError(ex, "Error while ensuring database is created. Trying again in 3 seconds...");
+                Thread.Sleep(3000);
+            }
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -68,7 +101,7 @@ public class FlightDbContext(DbContextOptions<FlightDbContext> options) : DbCont
             new KnownAircraft { Id = 107, FlarmId = "DF23C3", Registration = "D-KWMR", RegistrationShort = "MR", Model = "Arcus M", AircraftType = 1, OwnershipType = 1, Owner = "Markus Podivin / Irmgard Paul / Josef Pannagl" },
             //new KnownAircraft { Id = 108, FlarmId = "?? DF0F03 / 3EEC8B", Registration = "D-3060", RegistrationShort = "CZ", Model = "HPH 304CZ‑17", AircraftType = 1, OwnershipType = 1, Owner = "Sören Rossow" },
             new KnownAircraft { Id = 109, FlarmId = "3EFBA7", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", AircraftType = 1, OwnershipType = 1, Owner = "Mario Neumann / Kathrin Havemann" },
-            new KnownAircraft { Id = 110, FlarmId = "F90640", Registration = "OE-0789", RegistrationShort = "? 89", Model = "SF-27", AircraftType = 1, OwnershipType = 1, Owner = "Fabian Hoffmann" }, // RegShort & FlarmId nicht bestätigt - DDB2C4?
+            new KnownAircraft { Id = 110, FlarmId = "DDB2C4", Registration = "OE-0789", RegistrationShort = "FH", Model = "SF-27", AircraftType = 1, OwnershipType = 1, Owner = "Fabian Hoffmann" },
             new KnownAircraft { Id = 111, FlarmId = "D006D6", Registration = "D-KXAC", RegistrationShort = "AC", Model = "EB 29 DR", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Jütte" },
             //new KnownAircraft { Id = 112, FlarmId = "??", Registration = "D-5328", RegistrationShort = "??", Model = "Ventus b", AircraftType = 1, OwnershipType = 1, Owner = "Josef Mayer" },
             new KnownAircraft { Id = 113, FlarmId = "DD91B7", Registration = "D-7868", RegistrationShort = "FLO", Model = "DG-200", AircraftType = 1, OwnershipType = 1, Owner = "Florian Wögerer" }

@@ -2,6 +2,7 @@
 using Aprs.Models;
 using FlugsportWienOgnApi.Models.Aprs;
 using FlugsportWienOgnApi.Models.Core;
+using FlightStatus = FlugsportWienOgnApi.Models.Core.FlightStatus;
 
 namespace FlugsportWienOgnApi.Services;
 

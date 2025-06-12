@@ -10,25 +10,24 @@ namespace FlugsportWienOgnApi.Controllers;
 
 [Route("flightbook")]
 [ApiController]
-[Obsolete]
 public class FlightbookController : ControllerBase
 {
     private readonly ILogger<FlightController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly LoxnFlightbookService _loxnFlightbookService;
+    //private readonly LoxnFlightbookService _loxnFlightbookService;
     private readonly KnownAircraftService _knownAircraftService;
     private readonly string _flightBookUrl = "https://flightbook.glidernet.org/api/logbook/LOXN/";
 
-    public FlightbookController(ILogger<FlightController> logger, IHttpClientFactory httpClientFactory, LoxnFlightbookService loxnFlightbookService, KnownAircraftService knownAircraftService)
+    public FlightbookController(ILogger<FlightController> logger, IHttpClientFactory httpClientFactory, KnownAircraftService knownAircraftService)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-        _loxnFlightbookService = loxnFlightbookService;
+        //_loxnFlightbookService = loxnFlightbookService;
         _knownAircraftService = knownAircraftService;
     }
 
     [HttpGet("loxn")]
-    public async Task<ActionResult<IEnumerable<DepartureListItem>>> GetLoxnFlightbook([FromQuery] bool includePrivateGliders)
+    public async Task<ActionResult<IEnumerable<DepartureListItem>>> GetLoxnFlightbook([FromQuery] bool? knownGlidersOnly = false)
     {
         var client = _httpClientFactory.CreateClient();
         var getFlightbookResponse = await client.GetFromJsonAsync<GetFlightbookResponse>(_flightBookUrl);
@@ -48,45 +47,32 @@ public class FlightbookController : ControllerBase
                 LandingTimestamp = flight.stop_tsp
             });
 
-        var knownGliders = includePrivateGliders ? _knownAircraftService.ClubAndPrivateGliders : _knownAircraftService.ClubGliders;
-
         var departureList =
             from flightBook in joinedFlightbook
-            join glider in knownGliders on flightBook.FlarmId equals glider.FlarmId
+            join glider in _knownAircraftService.AllKnownPlanes on flightBook.FlarmId equals glider.FlarmId
             select new DepartureListItem
             {
                 FlarmId = flightBook.FlarmId,
                 Registration = glider.Registration,
                 RegistrationShort = glider.RegistrationShort,
                 Model = glider.Model,
-                TakeOffTimestamp = flightBook.TakeOffTimestamp ?? 0,
-                LandingTimestamp = flightBook.LandingTimestamp ?? 0
+                DepartureTimestamp = flightBook.TakeOffTimestamp * 1000 ?? null,
+                LandingTimestamp = flightBook.LandingTimestamp * 1000 ?? null,
+                LaunchType = (glider.AircraftType != (int)AircraftType.Glider) ? LaunchType.Motorized : LaunchType.Winch,
+                //LaunchHeight = null
             };
-        departureList = departureList.OrderByDescending(item => item.TakeOffTimestamp);
-
-        //DEMO
-        //departureList = new List<DepartureListItem>() {
-        //    new DepartureListItem { FlarmId = "TEST04", Registration = "D-TST4", RegistrationShort = "T4", Model = "Test", TakeOffTimestamp = 1688462400, LandingTimestamp = null },
-        //    new DepartureListItem { FlarmId = "TEST05", Registration = "D-TST5", RegistrationShort = "T5", Model = "Test", TakeOffTimestamp = 1688462500, LandingTimestamp = 1688464000 },
-        //    new DepartureListItem { FlarmId = "TEST06", Registration = "D-TST6", RegistrationShort = "T6", Model = "Test", TakeOffTimestamp = 1688462600, LandingTimestamp = null },
-        //    new DepartureListItem { FlarmId = "TEST07", Registration = "D-TST7", RegistrationShort = "T7", Model = "Test", TakeOffTimestamp = 1688462700, LandingTimestamp = 1688464300 },
-        //    new DepartureListItem { FlarmId = "TEST08", Registration = "D-TST8", RegistrationShort = "T8", Model = "Test", TakeOffTimestamp = 1688462800, LandingTimestamp = null },
-        //    new DepartureListItem { FlarmId = "TEST09", Registration = "D-TST9", RegistrationShort = "T9", Model = "Test", TakeOffTimestamp = 1688462900, LandingTimestamp = 1688464500 },
-        //    new DepartureListItem { FlarmId = "TEST10", Registration = "D-TS10", RegistrationShort = "T10", Model = "Test", TakeOffTimestamp = 1688463000, LandingTimestamp = null },
-        //    new DepartureListItem { FlarmId = "TEST11", Registration = "D-TS11", RegistrationShort = "T11", Model = "Test", TakeOffTimestamp = 1688463100, LandingTimestamp = 1688464600 },
-        //    new DepartureListItem { FlarmId = "TEST12", Registration = "D-TS12", RegistrationShort = "T12", Model = "Test", TakeOffTimestamp = 1688463200, LandingTimestamp = null },
-        //    new DepartureListItem { FlarmId = "TEST13", Registration = "D-TS13", RegistrationShort = "T13", Model = "Test", TakeOffTimestamp = 1688463300, LandingTimestamp = 1688464800 }
-        //};
+        departureList = departureList.OrderByDescending(item => item.DepartureTimestamp);
 
         return Ok(departureList);
     }
 
-    [HttpGet("loxn/new")]
-    public ActionResult<IEnumerable<DepartureListItem>> GetLoxnFlightbookNew([FromQuery] bool includePrivateGliders)
-    {
-        var knownGliders = includePrivateGliders ? _knownAircraftService.ClubAndPrivateGliders : _knownAircraftService.ClubGliders;
+    //[HttpGet("loxn/new")]
+    //[Obsolete]
+    //public ActionResult<IEnumerable<DepartureListItem>> GetLoxnFlightbookNew([FromQuery] bool includePrivateGliders)
+    //{
+    //    var knownGliders = includePrivateGliders ? _knownAircraftService.ClubAndPrivateGliders : _knownAircraftService.ClubGliders;
 
-        var departureList = _loxnFlightbookService.FlightBook.OrderByDescending(item => item.TakeOffTimestamp);
-        return Ok(departureList);
-    }
+    //    var departureList = _loxnFlightbookService.FlightBook.OrderByDescending(item => item.TakeOffTimestamp);
+    //    return Ok(departureList);
+    //}
 }

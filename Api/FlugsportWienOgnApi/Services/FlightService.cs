@@ -5,9 +5,7 @@ using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Models.LiveTracking;
 using FlugsportWienOgnApi.Utils;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.Reactive;
 
 namespace FlugsportWienOgnApi.Services;
 
@@ -54,65 +52,82 @@ public class FlightService
         return null;
     }
 
-
-
     public async Task<IEnumerable<Flight>> GetFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng, int? lastUpdateMaxMinutes)
     {
-        if (!lastUpdateMaxMinutes.HasValue) {
+        if (!lastUpdateMaxMinutes.HasValue)
+        {
             lastUpdateMaxMinutes = _config.Value.FlightDataMaxAge;
         }
 
-        using (var scope = _serviceProvider.CreateScope())
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
+
+        var flightQuery = dbContext.Aircraft.AsQueryable();
+
+        // Filter flights within a certain latitude and longitude range (if parameters are set)
+        if (minLat.HasValue || maxLat.HasValue || minLng.HasValue || maxLng.HasValue)
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
+            var minLatitude = minLat ?? double.MinValue;
+            var maxLatitude = maxLat ?? double.MaxValue;
+            var minLongitude = minLng ?? double.MinValue;
+            var maxLongitude = maxLng ?? double.MaxValue;
 
-            var flightQuery = dbContext.Aircraft.AsQueryable();
-
-            // Filter flights within a certain latitude and longitude range (if parameters are set)
-            if (minLat.HasValue || maxLat.HasValue || minLng.HasValue || maxLng.HasValue)
-            {
-                var minLatitude = minLat ?? double.MinValue;
-                var maxLatitude = maxLat ?? double.MaxValue;
-                var minLongitude = minLng ?? double.MinValue;
-                var maxLongitude = maxLng ?? double.MaxValue;
-
-                flightQuery = flightQuery.Where(x =>
-                    x.Latitude >= minLatitude && x.Latitude <= maxLatitude &&
-                    x.Longitude >= minLongitude && x.Longitude <= maxLongitude);
-            }
-            // Filter flights to FlugsportWien related planes only (if parameter is set)
-            if (clubGlidersOnly == true)
-            {
-                flightQuery = flightQuery.Where(x => _knownAircraftService.ClubGlidersAndMotorplanes.Any(glider => glider.FlarmId == x.FlarmId));
-            }
-            // Filter flights to aircraft type "glider" only (if parameter is set)
-            else if (glidersOnly == true)
-            {
-                flightQuery = flightQuery.Where(x => (AircraftType)x.AircraftType == AircraftType.Unknown);
-            }
-            // Filter flight according to last updated timestamp
-            flightQuery = flightQuery.Where(x => x.LastUpdate > DateTime.Now.AddMinutes(lastUpdateMaxMinutes.Value * -1));
-            var currentFlights = await flightQuery.Select(plane => new Flight
-            {
-                FlarmId = plane.FlarmId,
-                DisplayName = plane.CallSign,
-                Registration = plane.Registration,
-                Type = _knownAircraftService.GetGliderOwnershipByFlarmId(plane.FlarmId),
-                AircraftType = (AircraftType)plane.AircraftType,
-                Model = plane.Model,
-                Latitude = plane.Latitude,
-                Longitude = plane.Longitude,
-                HeightMSL = plane.Altitude,
-                HeightAGL = -1,
-                Timestamp = new DateTimeOffset(plane.LastUpdate).ToUnixTimeMilliseconds(), // Convert timestamp
-                Speed = plane.Speed,
-                Vario = plane.VerticalSpeed,
-                VarioAverage = -1
-            })
-                .ToListAsync();
-            return currentFlights;
+            flightQuery = flightQuery.Where(x =>
+                x.Latitude >= minLatitude && x.Latitude <= maxLatitude &&
+                x.Longitude >= minLongitude && x.Longitude <= maxLongitude);
         }
+
+        // Filter flights to FlugsportWien related planes only (if parameter is set)
+        if (clubGlidersOnly == true)
+        {
+            flightQuery = flightQuery.Where(x => _knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
+        }
+        else if (glidersOnly == true)
+        {
+            flightQuery = flightQuery.Where(x => (AircraftType)x.AircraftType == AircraftType.Glider);
+        }
+
+        // Filter flight according to last updated timestamp
+        flightQuery = flightQuery.Where(x =>
+            x.LastUpdate > DateTime.UtcNow.AddMinutes(lastUpdateMaxMinutes.Value * -1) ||
+            x.FlarmId == selectedFlarmId);
+
+        var aircraftList = await flightQuery.ToListAsync();
+
+        // Add selectedFlarmId if not included in filter
+        if (!string.IsNullOrWhiteSpace(selectedFlarmId) && !aircraftList.Any(f => f.FlarmId == selectedFlarmId))
+        {
+            var selectedFlight = await dbContext.Aircraft
+                .Where(x => x.FlarmId == selectedFlarmId)
+                .FirstOrDefaultAsync();
+            if (selectedFlight != null)
+            {
+                aircraftList.Add(selectedFlight);
+            }
+        }
+
+        var currentFlights = aircraftList.Select(plane => new Flight
+        {
+            FlarmId = plane.FlarmId,
+            DisplayName = plane.CallSign,
+            Registration = plane.Registration,
+            Type = _knownAircraftService.GetGliderOwnershipByFlarmId(plane.FlarmId),
+            AircraftType = (AircraftType)plane.AircraftType,
+            Model = plane.Model,
+            Latitude = plane.Latitude,
+            Longitude = plane.Longitude,
+            HeightMSL = plane.Altitude,
+            HeightAGL = -1,
+            Timestamp = new DateTimeOffset(plane.LastUpdate).ToUnixTimeMilliseconds(),
+            Speed = plane.Speed,
+            Vario = plane.VerticalSpeed,
+            VarioAverage = plane.VerticalSpeedAverage
+        }).ToList();
+
+        return currentFlights;
     }
+
+
 
     /// <summary>
     /// Gets full flight path of a specific aircraft as plain data array (similar to GlideAndSeek)
@@ -198,7 +213,7 @@ public class FlightService
     /// <summary>
     /// Searches for aircraft in the database by a given search text
     /// </summary>
-    public async Task<List<AircraftSearchResultItem>> SearchAircraftAsync(string searchText)
+    public async Task<List<AircraftSearchResultItem>> SearchAircraftAsync(string searchText, int? take)
     {
         if (string.IsNullOrWhiteSpace(searchText))
             return new List<AircraftSearchResultItem>();
@@ -216,6 +231,7 @@ public class FlightService
             where EF.Functions.Like(aircraft.CallSign.ToLower(), $"%{term}%")
                || EF.Functions.Like(aircraft.Registration.ToLower(), $"%{term}%")
                || EF.Functions.Like(aircraft.FlarmId.ToLower(), $"%{term}%")
+               || EF.Functions.Like(aircraft.Model.ToLower(), $"%{term}%")
                || (knownAircraft != null && EF.Functions.Like(knownAircraft.Owner.ToLower(), $"%{term}%"))
             select new
             {
@@ -233,7 +249,9 @@ public class FlightService
                 MatchRank = GetMatchRank(x.Aircraft, x.Known, term)
             })
             .OrderBy(x => x.Priority)
+            .ThenByDescending(x => x.Aircraft.IsRegistered)
             .ThenBy(x => x.MatchRank)
+            .ThenByDescending(x => (int)GetFlightStatus(x.Aircraft.LastUpdate, x.Aircraft.Speed))
             .ThenBy(x => x.Aircraft.Registration ?? x.Aircraft.FlarmId)
             .DistinctBy(x => x.Aircraft.Id)
             .ToList();
@@ -248,11 +266,17 @@ public class FlightService
             Model = x.Aircraft.Model,
             Latitude = x.Aircraft.Latitude,
             Longitude = x.Aircraft.Longitude,
+            Altitude = x.Aircraft.Altitude,
             Timestamp = new DateTimeOffset(x.Aircraft.LastUpdate).ToUnixTimeMilliseconds(),
+            FlightStatus = GetFlightStatus(x.Aircraft.LastUpdate, x.Aircraft.Speed),
             Priority = x.Priority,
             MatchRank = x.MatchRank
         }).ToList();
 
+        if (take.HasValue)
+        {
+            return mapped.Take(take.Value).ToList();
+        }
         return mapped;
 
         int GetPriority(KnownAircraft? known)
@@ -274,10 +298,40 @@ public class FlightService
         {
             if (!string.IsNullOrEmpty(a.CallSign) && a.CallSign.ToLower().Contains(term)) return 1;
             if (!string.IsNullOrEmpty(a.Registration) && a.Registration.ToLower().Contains(term)) return 2;
-            if (k != null && !string.IsNullOrEmpty(k.Owner) && k.Owner.ToLower().Contains(term)) return 3;
-            if (!string.IsNullOrEmpty(a.FlarmId) && a.FlarmId.ToLower().Contains(term)) return 4;
-            return 5;
+            if (!string.IsNullOrEmpty(a.Model) && a.Model.ToLower().Contains(term)) return 3;
+            if (k != null && !string.IsNullOrEmpty(k.Owner) && k.Owner.ToLower().Contains(term)) return 4;
+            if (!string.IsNullOrEmpty(a.FlarmId) && a.FlarmId.ToLower().Contains(term)) return 5;
+            return 6;
         }
+    }
+
+    public FlightStatus GetFlightStatus(DateTime lastUpdate, int speed)
+    {
+        var now = DateTime.UtcNow;
+        var today = now.Date;
+        lastUpdate = lastUpdate.ToUniversalTime();
+
+        // 1. Kein Signal oder altes Signal (nicht heute)
+        if (lastUpdate.Date < today)
+        {
+            return FlightStatus.NoSignal;
+        }
+        var minutesSinceUpdate = (now - lastUpdate).TotalMinutes;
+        bool isFlying = speed >= 30;
+
+        // 3. Wenn fliegt und Signal ist aktuell
+        if (isFlying && minutesSinceUpdate < 30)
+        {
+            return FlightStatus.Flying;
+        }
+        // 4. Wenn fliegt, aber Signal ist älter
+        if (isFlying && minutesSinceUpdate >= 30)
+        {
+            return FlightStatus.FlyingSignalLost;
+        }
+
+        // 5. Ansonsten: am Boden
+        return FlightStatus.OnGround;
     }
 
     private IEnumerable<Flight> FilterFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng)
@@ -292,7 +346,7 @@ public class FlightService
         );
         if (clubGlidersOnly == true)
         {
-            flightsToReturn = flightsToReturn.Where(x => _knownAircraftService.ClubGlidersAndMotorplanes.Any(glider => glider.FlarmId == x.FlarmId));
+            flightsToReturn = flightsToReturn.Where(x => _knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
         }
         else if (glidersOnly == true)
         {

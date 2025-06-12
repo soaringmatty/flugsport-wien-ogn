@@ -6,6 +6,8 @@ public class DepartureListItem
     public string Registration { get; set; }
     public string RegistrationShort { get; set; }
     public string Model { get; set; }
-    public long? TakeOffTimestamp { get; set; }
+    public long? DepartureTimestamp { get; set; }
     public long? LandingTimestamp { get; set; }
+    public LaunchType LaunchType { get; set ; }
+    public int? LaunchHeight { get; set; }
 }
