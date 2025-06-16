@@ -11,7 +11,6 @@ namespace FlugsportWienOgnApi.Services;
 
 public class FlightService(ILogger<FlightService> logger, IServiceProvider serviceProvider, IOptions<OgnConfig> config, KnownAircraftService knownAircraftService)
 {
-    private DateTime _lastUpdateTime;
     private readonly AustriaGeoCalculator _austriaGeoCalculator = new AustriaGeoCalculator();
 
     public IEnumerable<Flight> Flights { get; set; } = new List<Flight>();
@@ -91,14 +90,14 @@ public class FlightService(ILogger<FlightService> logger, IServiceProvider servi
         return currentFlights;
     }
 
-
-
     /// <summary>
-    /// Gets full flight path of a specific aircraft as plain data array (similar to GlideAndSeek)
+    /// Gets full flight path of a specific aircraft as data array
     /// </summary>
     /// <param name="flarmId"></param>
+    /// <param name="startTimestamp"></param>
+    /// <param name="endTimestamp"></param>
     /// <returns></returns>
-    public async Task<IEnumerable<object[]>> GetFlightPath(string flarmId)
+    public async Task<IEnumerable<object[]>> GetFlightPath(string flarmId, DateTimeOffset? startTimestamp, DateTimeOffset? endTimestamp)
     {
         using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
@@ -106,15 +105,25 @@ public class FlightService(ILogger<FlightService> logger, IServiceProvider servi
         // Find the plane by FlarmId
         var plane = await dbContext.Aircraft
             .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
-
         if (plane == null)
         {
             return Enumerable.Empty<object[]>();
         }
 
-        // Get the flight path items for the plane
-        var flightPathItems = await dbContext.FlightData
-            .Where(fd => fd.AircraftId == plane.Id)
+        var query = dbContext.FlightData
+            .Where(fd => fd.AircraftId == plane.Id);
+
+        if (startTimestamp.HasValue)
+        {
+            query = query.Where(fd => fd.Timestamp >= startTimestamp.Value.UtcDateTime);
+        }
+
+        if (endTimestamp.HasValue)
+        {
+            query = query.Where(fd => fd.Timestamp <= endTimestamp.Value.UtcDateTime);
+        }
+
+        var flightPathItems = await query
             .OrderBy(fd => fd.Timestamp)
             .Select(fd => new object[]
             {
@@ -129,6 +138,7 @@ public class FlightService(ILogger<FlightService> logger, IServiceProvider servi
 
         return flightPathItems;
     }
+
 
 
     /// <summary>

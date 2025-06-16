@@ -46,9 +46,9 @@ namespace FlugsportWienOgnApi.Controllers
         }
 
         [HttpGet("{flarmId}/history")]
-        public async Task<ActionResult<IEnumerable<object[]>>> GetFlightPathFromDatabase(string flarmId)
+        public async Task<ActionResult<IEnumerable<object[]>>> GetFlightPathFromDatabase(string flarmId, [FromQuery] DateTimeOffset? startTimestamp, [FromQuery] DateTimeOffset? endTimestamp)
         {
-            var flightPath = await _flightService.GetFlightPath(flarmId);
+            var flightPath = await _flightService.GetFlightPath(flarmId, startTimestamp, endTimestamp);
             if (flightPath != null)
             {
                 return Ok(flightPath);
