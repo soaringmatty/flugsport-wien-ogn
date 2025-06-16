@@ -12,6 +12,8 @@ namespace FlugsportWienOgnApi.Services;
 
 public class LiveTrackingService
 {
+    public event Action<int>? FlightDataAdded;
+
     private readonly LiveGliderService _liveGliderService;
     private readonly AustriaGeoCalculator _austriaGeoCalculator;
     private readonly AircraftProvider _aircraftProvider;
@@ -72,7 +74,11 @@ public class LiveTrackingService
                 }
 
                 var aggregated = AggregateBuffer(snapshot);
-                await AddFlightDataToDatabaseAsync(aggregated, stoppingToken);
+                var aircraftId = await AddFlightDataToDatabaseAsync(aggregated, stoppingToken);
+                if (aircraftId.HasValue)
+                {
+                    FlightDataAdded?.Invoke(aircraftId.Value);
+                }
             }
         }
     }
@@ -95,15 +101,22 @@ public class LiveTrackingService
         );
     }
 
-    private async Task AddFlightDataToDatabaseAsync(FlightData flightData, CancellationToken token)
+    private async Task<int?> AddFlightDataToDatabaseAsync(FlightData flightData, CancellationToken token)
     {
+        // Ignore faulty signals with timestamp thats in the future
+        if (flightData.ReceiverTimeStamp > DateTime.UtcNow.AddMinutes(1))
+        {
+            _logger.LogWarning($"[LiveTracking] Ignoring flight data with future timestamp (FlarmId {flightData.FlarmId}): {flightData.ReceiverTimeStamp:o}");
+            return null;
+        }
+
         if (_config.Value.AustrianAirspaceOnly)
         {
             // Filter to only flight data in austrian airspace
             var isInAustria = _austriaGeoCalculator.IsPointInAustria(flightData.Longitude, flightData.Latitude);
             if (!isInAustria)
             {
-                return;
+                return null;
             }
         }
         if (_config.Value.IgnoreUnregisteredAircraft)
@@ -112,7 +125,7 @@ public class LiveTrackingService
             var aircraftData = _aircraftProvider.Load(flightData.FlarmId);
             if (aircraftData == null)
             {
-                return;
+                return null;
             }
         }
         if (_config.Value.IgnoreParagliders)
@@ -121,7 +134,7 @@ public class LiveTrackingService
             var aircraftData = _aircraftProvider.Load(flightData.FlarmId);
             if (aircraftData != null && aircraftData.AircraftType == GlidernetAircraftType.HangOrParaglider)
             {
-                return;
+                return null;
             }
         }
 
@@ -135,7 +148,16 @@ public class LiveTrackingService
             .MaxAsync(flightPathItem => (DateTime?)flightPathItem.Timestamp);
         if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
         {
-            return;
+            return null;
+        }
+
+        // Delete all flight data related to this aircraft from database, when first signal of the day is received by this aircraft
+        if (lastTimestamp.HasValue && lastTimestamp.Value.Date != flightData.ReceiverTimeStamp.Date)
+        {
+            var oldItems = dbContext.FlightData
+                .Where(fd => fd.AircraftId == aircraftId);
+            dbContext.FlightData.RemoveRange(oldItems);
+            await dbContext.SaveChangesAsync(token);
         }
 
         var flightPathItem = new FlightPathItem
@@ -151,6 +173,7 @@ public class LiveTrackingService
 
         dbContext.FlightData.Add(flightPathItem);
         await dbContext.SaveChangesAsync(token);
+        return aircraftId;
     }
 
     private async Task<int> AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)

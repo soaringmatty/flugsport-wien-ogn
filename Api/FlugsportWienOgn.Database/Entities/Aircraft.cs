@@ -18,5 +18,6 @@ public class Aircraft
     public bool IsRegistered { get; set; }
 
     public List<FlightPathItem> FlightPath { get; set; } = new List<FlightPathItem>();
+    public List<FlightbookEntry> FlightBookEntries { get; set; } = new List<FlightbookEntry>();
 }
 

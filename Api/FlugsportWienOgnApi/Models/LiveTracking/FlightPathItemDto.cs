@@ -4,11 +4,10 @@ namespace FlugsportWienOgnApi.Models.LiveTracking;
 
 public class FlightPathItemDto
 {
-    public Coordinate Location { get; set; }
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
     public int Altitude { get; set; }
     public int Speed { get; set; }
     public float VerticalSpeed { get; set; }
-    public DateTime Timestamp { get; set; }
-    public long UnixTimestamp { get; set; }
-    public string? Receiver { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
 }

@@ -24,6 +24,7 @@ services:
       - "traefik.http.routers.api.rule=Host(`api-test.flugsportwienogn.com`)"
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - "traefik.http.services.api.loadbalancer.server.port=80"
     depends_on:
       - db
     environment:
@@ -35,8 +36,10 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Admin$123
+      POSTGRES_PASSWORD:
       POSTGRES_DB: FlugsportWienOgn
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 

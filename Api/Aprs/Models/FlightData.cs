@@ -12,7 +12,7 @@ public record FlightData(
     DateTime ReceiverTimeStamp,
     AprsAircraftType AircraftType,
     AddressType AddressType,
-    bool allowTracking
+    bool AllowTracking
 )
 {
     public override string ToString()

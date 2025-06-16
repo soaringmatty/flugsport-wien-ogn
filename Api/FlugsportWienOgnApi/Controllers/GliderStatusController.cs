@@ -1,12 +1,9 @@
-﻿using FlugsportWienOgnApi.Models.Aprs;
-using FlugsportWienOgnApi.Models.Core;
+﻿using FlugsportWienOgnApi.Models.Core;
 using FlugsportWienOgnApi.Models.Flightbook;
 using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Services;
 using FlugsportWienOgnApi.Utils;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
 using FlightStatus = FlugsportWienOgnApi.Models.Core.FlightStatus;
 
 namespace FlugsportWienOgnApi.Controllers;
@@ -30,6 +27,7 @@ public class GliderStatusController : ControllerBase
     }
 
     [HttpGet("status")]
+    [Obsolete]
     public async Task<ActionResult<IEnumerable<GliderListItem>>> GetGliderStatusList([FromQuery] bool includePrivateGliders)
     {
         List<GliderListItem> gliderStatusList = new List<GliderListItem>();
@@ -39,7 +37,7 @@ public class GliderStatusController : ControllerBase
         var getFlightsResponse = await client.GetFromJsonAsync<GetOgnFlightsResponse>(_liveFlightsUrl);
         if (getFlightsResponse != null && getFlightsResponse.Success)
         {
-            flights = Mapping.MapOgnFlightsResponseToFlights(getFlightsResponse.Message, _knownAircraftService).ToList();
+            //flights = Mapping.MapOgnFlightsResponseToFlights(getFlightsResponse.Message, _knownAircraftService).ToList();
         }
 
         var getFlightbookResponse = await client.GetFromJsonAsync<GetFlightbookResponse>(_flightBookUrl);
@@ -54,8 +52,8 @@ public class GliderStatusController : ControllerBase
             (flight, device) => new GetFlightbookJoinResult
             {
                 FlarmId = device.Device.address,
-                TakeOffTimestamp = flight.start_tsp,
-                LandingTimestamp = flight.stop_tsp
+                TakeOffTimestamp = flight.start_tsp.HasValue ? DateTimeOffset.FromUnixTimeSeconds(flight.start_tsp.Value) : null,
+                LandingTimestamp = flight.stop_tsp.HasValue ? DateTimeOffset.FromUnixTimeSeconds(flight.stop_tsp.Value) : null
             });
         var knowGliderFlightbook = joinedFlightbook.Where(entry => _knownAircraftService.ClubGliderFlarmIds.Contains(entry.FlarmId));
         var latestFlightsFlightbook = knowGliderFlightbook
@@ -102,13 +100,13 @@ public class GliderStatusController : ControllerBase
                     Registration = glider.Registration,
                     RegistrationShort = glider.RegistrationShort,
                     Model = glider.Model,
-                    TakeOffTimestamp = flightbookEntry == null ? -1 : (long)flightbookEntry.TakeOffTimestamp.Value * (long)1000,
+                    TakeOffTimestamp = flightbookEntry == null ? -1 : (long)flightbookEntry.TakeOffTimestamp.Value.ToUnixTimeMilliseconds(),
                     Status = gliderStatus,
                     Pilot = "Not implemented",
                     DistanceFromHome = distanceFromHome,
                     Altitude = (int)flight.HeightMSL,
                     FlarmId = glider.FlarmId,
-                    Timestamp = flight.Timestamp,
+                    Timestamp = flight.Timestamp.ToUnixTimeMilliseconds(),
                     Longitude = flight.Longitude,
                     Latitude = flight.Latitude,
                 }); ;

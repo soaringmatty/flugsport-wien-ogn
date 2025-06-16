@@ -11,7 +11,7 @@ public class AircraftSearchResultItem
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public int Altitude { get; set; }
-    public long Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
     public FlightStatus FlightStatus { get; set; }
     public int Priority { get; set; }
     public int MatchRank { get; set; }

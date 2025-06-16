@@ -9,57 +9,21 @@ using Microsoft.Extensions.Options;
 
 namespace FlugsportWienOgnApi.Services;
 
-public class FlightService
+public class FlightService(ILogger<FlightService> logger, IServiceProvider serviceProvider, IOptions<OgnConfig> config, KnownAircraftService knownAircraftService)
 {
     private DateTime _lastUpdateTime;
-    private readonly AustriaGeoCalculator _austriaGeoCalculator;
-    private readonly KnownAircraftService _knownAircraftService;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IOptions<OgnConfig> _config;
-    private readonly ILogger<FlightService> _logger;
+    private readonly AustriaGeoCalculator _austriaGeoCalculator = new AustriaGeoCalculator();
 
-    public IEnumerable<Flight> Flights { get; set; }
-
-    public FlightService(ILogger<FlightService> logger, IHttpClientFactory httpClientFactory, IServiceProvider serviceProvider, IOptions<OgnConfig> config, KnownAircraftService knownAircraftService)
-    {
-        _logger = logger;
-        _config = config;
-        _httpClientFactory = httpClientFactory;
-        _serviceProvider = serviceProvider;
-        _austriaGeoCalculator = new AustriaGeoCalculator();
-        _knownAircraftService = knownAircraftService;
-        Flights = new List<Flight>();
-    }
-
-    public async Task<IEnumerable<Flight>> GetGlideAndSeekFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat,  double? maxLng, double? minLng)
-    {
-        var timeSinceLastRequest = DateTime.Now - _lastUpdateTime;
-        if (timeSinceLastRequest.TotalMilliseconds < 2900)
-        {
-            _logger.LogTrace($"Time since last request: {timeSinceLastRequest.TotalMilliseconds} ms. Returning cached flights...");
-            return FilterFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
-        }
-        string url = $"https://api.glideandseek.com/v2/aircraft?showOnlyGliders=false&a=49&b=17.2&c=46.6&d=9.4";
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.GetFromJsonAsync<GetOgnFlightsResponse>(url);
-        if (response != null && response.Success)
-        {
-            _lastUpdateTime = DateTime.Now;
-            Flights = Mapping.MapOgnFlightsResponseToFlights(response.Message, _knownAircraftService);
-            return FilterFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
-        }
-        return null;
-    }
+    public IEnumerable<Flight> Flights { get; set; } = new List<Flight>();
 
     public async Task<IEnumerable<Flight>> GetFlights(string? selectedFlarmId, bool? glidersOnly, bool? clubGlidersOnly, double? maxLat, double? minLat, double? maxLng, double? minLng, int? lastUpdateMaxMinutes)
     {
         if (!lastUpdateMaxMinutes.HasValue)
         {
-            lastUpdateMaxMinutes = _config.Value.FlightDataMaxAge;
+            lastUpdateMaxMinutes = config.Value.FlightDataMaxAge;
         }
 
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
         var flightQuery = dbContext.Aircraft.AsQueryable();
@@ -80,7 +44,7 @@ public class FlightService
         // Filter flights to FlugsportWien related planes only (if parameter is set)
         if (clubGlidersOnly == true)
         {
-            flightQuery = flightQuery.Where(x => _knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
+            flightQuery = flightQuery.Where(x => knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
         }
         else if (glidersOnly == true)
         {
@@ -111,14 +75,14 @@ public class FlightService
             FlarmId = plane.FlarmId,
             DisplayName = plane.CallSign,
             Registration = plane.Registration,
-            Type = _knownAircraftService.GetGliderOwnershipByFlarmId(plane.FlarmId),
+            Type = knownAircraftService.GetGliderOwnershipByFlarmId(plane.FlarmId),
             AircraftType = (AircraftType)plane.AircraftType,
             Model = plane.Model,
             Latitude = plane.Latitude,
             Longitude = plane.Longitude,
             HeightMSL = plane.Altitude,
             HeightAGL = -1,
-            Timestamp = new DateTimeOffset(plane.LastUpdate).ToUnixTimeMilliseconds(),
+            Timestamp = new DateTimeOffset(plane.LastUpdate),
             Speed = plane.Speed,
             Vario = plane.VerticalSpeed,
             VarioAverage = plane.VerticalSpeedAverage
@@ -134,40 +98,38 @@ public class FlightService
     /// </summary>
     /// <param name="flarmId"></param>
     /// <returns></returns>
-    public async Task<IEnumerable<double[]>> GetFlightPath(string flarmId)
+    public async Task<IEnumerable<object[]>> GetFlightPath(string flarmId)
     {
-        using (var scope = _serviceProvider.CreateScope())
+        using var scope = serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
+
+        // Find the plane by FlarmId
+        var plane = await dbContext.Aircraft
+            .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
+
+        if (plane == null)
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-
-            // Find the plane by FlarmId
-            var plane = await dbContext.Aircraft
-                .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
-
-            if (plane == null)
-            {
-                // Handle the case where the plane is not found (return empty list or throw exception)
-                return Enumerable.Empty<double[]>();
-            }
-
-            // Get the flight path items for the plane using PlaneId
-            var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.AircraftId == plane.Id) // Filter by PlaneId
-                .OrderBy(fd => fd.Timestamp) // Ensure the flight path is ordered by time
-                .Select(fd => new double[]
-                {
-                    new DateTimeOffset(fd.Timestamp).ToUnixTimeMilliseconds(), // Index 0: Timestamp
-                    0,                                     // Index 1: Always 0
-                    fd.Latitude,                           // Index 2: Latitude
-                    fd.Longitude,                          // Index 3: Longitude
-                    fd.Altitude,                           // Index 4: Altitude
-                    286                                    // Index 5: Ground Height (static value)
-                })
-                .ToListAsync(); // Execute query and retrieve the flight path
-
-            return flightPathItems;
+            return Enumerable.Empty<object[]>();
         }
+
+        // Get the flight path items for the plane
+        var flightPathItems = await dbContext.FlightData
+            .Where(fd => fd.AircraftId == plane.Id)
+            .OrderBy(fd => fd.Timestamp)
+            .Select(fd => new object[]
+            {
+                fd.Timestamp.ToUniversalTime(),
+                fd.Latitude,
+                fd.Longitude,
+                fd.Altitude,
+                fd.Speed,
+                fd.VerticalSpeed
+            })
+            .ToListAsync();
+
+        return flightPathItems;
     }
+
 
     /// <summary>
     /// Gets full flight path of a specific aircraft as json
@@ -176,35 +138,32 @@ public class FlightService
     /// <returns></returns>
     public async Task<IEnumerable<FlightPathItemDto>> GetFlightPathAsObjects(string flarmId)
     {
-        using (var scope = _serviceProvider.CreateScope())
+        using (var scope = serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
-            // Find the plane by FlarmId
             var plane = await dbContext.Aircraft
                 .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
 
             if (plane == null)
             {
-                // Handle the case where the plane is not found (return empty list or throw exception)
                 return Enumerable.Empty<FlightPathItemDto>();
             }
 
             // Get the flight path items for the plane using PlaneId
             var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.AircraftId == plane.Id) // Filter by PlaneId
+                .Where(fd => fd.AircraftId == plane.Id)
                 .OrderBy(fd => fd.Timestamp)
-                // Ensure the flight path is ordered by time
                 .Select(fd => new FlightPathItemDto
                 {
-                    Location = new Coordinate(fd.Latitude, fd.Longitude),
+                    Latitude = fd.Latitude,
+                    Longitude = fd.Longitude,
                     Altitude = fd.Altitude,
                     Speed = fd.Speed,
                     VerticalSpeed = fd.VerticalSpeed,
                     Timestamp = fd.Timestamp,
-                    UnixTimestamp = new DateTimeOffset(fd.Timestamp).ToUnixTimeMilliseconds(),
                 })
-                .ToListAsync(); // Execute query and retrieve the flight path
+                .ToListAsync();
 
             return flightPathItems;
         }
@@ -220,7 +179,7 @@ public class FlightService
 
         var term = searchText.Trim().ToLowerInvariant();
 
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
 
         var results = await (
@@ -267,7 +226,7 @@ public class FlightService
             Latitude = x.Aircraft.Latitude,
             Longitude = x.Aircraft.Longitude,
             Altitude = x.Aircraft.Altitude,
-            Timestamp = new DateTimeOffset(x.Aircraft.LastUpdate).ToUnixTimeMilliseconds(),
+            Timestamp = new DateTimeOffset(x.Aircraft.LastUpdate),
             FlightStatus = GetFlightStatus(x.Aircraft.LastUpdate, x.Aircraft.Speed),
             Priority = x.Priority,
             MatchRank = x.MatchRank
@@ -346,7 +305,7 @@ public class FlightService
         );
         if (clubGlidersOnly == true)
         {
-            flightsToReturn = flightsToReturn.Where(x => _knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
+            flightsToReturn = flightsToReturn.Where(x => knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
         }
         else if (glidersOnly == true)
         {

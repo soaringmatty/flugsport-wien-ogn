@@ -12,7 +12,7 @@ public class Flight
     public double Longitude { get; set; }
     public float HeightMSL { get; set; }
     public float HeightAGL { get; set; }
-    public long Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
     public float Speed { get; set; }
     public float Vario { get; set; }
     public float VarioAverage { get; set; }

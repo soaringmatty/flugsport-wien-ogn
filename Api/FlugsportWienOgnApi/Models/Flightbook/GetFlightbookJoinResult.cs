@@ -2,7 +2,7 @@
 
 public class GetFlightbookJoinResult
 {
-    public string FlarmId { get; set; }
-    public long? TakeOffTimestamp { get; set; }
-    public long? LandingTimestamp { get; set; }
+    public required string FlarmId { get; set; }
+    public DateTimeOffset? TakeOffTimestamp { get; set; }
+    public DateTimeOffset? LandingTimestamp { get; set; }
 }

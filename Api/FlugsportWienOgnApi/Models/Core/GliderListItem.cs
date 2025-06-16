@@ -17,7 +17,7 @@ public class GliderListItem : IComparable<GliderListItem>
     public int Altitude { get; set; }
     public long TakeOffTimestamp { get; set; }
     public string FlarmId { get; set; }
-    public long Timestamp { get; set; }
+    public long Timestamp { get; set; } // TODO DateTimeOffset
     public double? Longitude { get; set; }
     public double? Latitude { get; set; }
 

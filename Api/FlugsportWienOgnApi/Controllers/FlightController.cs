@@ -27,19 +27,8 @@ namespace FlugsportWienOgnApi.Controllers
             _liveTrackingService = liveTrackingService;
         }
 
-        [HttpGet("glideAndSeek")]
-        public async Task<ActionResult<IEnumerable<Flight>>> GetFlights([FromQuery] string? selectedFlarmId, [FromQuery] bool? glidersOnly, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng)
-        {
-            var flights = await _flightService.GetGlideAndSeekFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng);
-            if (flights != null)
-            {
-                return Ok(flights);
-            }
-            return BadRequest();
-        }
-
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Flight>>> GetFlightsFromDatabase([FromQuery] string? selectedFlarmId, [FromQuery] bool? glidersOnly, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng, [FromQuery] int? lastUpdateMaxMinutes)
+        public async Task<ActionResult<IEnumerable<Flight>>> GetFlights([FromQuery] string? selectedFlarmId, [FromQuery] bool? glidersOnly, [FromQuery] bool? clubGlidersOnly, [FromQuery] double? maxLat, [FromQuery] double? minLat, [FromQuery] double? maxLng, [FromQuery] double? minLng, [FromQuery] int? lastUpdateMaxMinutes)
         {
             var flights = await _flightService.GetFlights(selectedFlarmId, glidersOnly, clubGlidersOnly, maxLat, minLat, maxLng, minLng, lastUpdateMaxMinutes);
             if (flights != null)
@@ -57,7 +46,7 @@ namespace FlugsportWienOgnApi.Controllers
         }
 
         [HttpGet("{flarmId}/history")]
-        public async Task<ActionResult<string>> GetFlightPathFromDatabase(string flarmId)
+        public async Task<ActionResult<IEnumerable<object[]>>> GetFlightPathFromDatabase(string flarmId)
         {
             var flightPath = await _flightService.GetFlightPath(flarmId);
             if (flightPath != null)
@@ -76,25 +65,6 @@ namespace FlugsportWienOgnApi.Controllers
                 return Ok(flightPath);
             }
             return BadRequest();
-        }
-
-        [HttpGet("{flarmId}/history/glideAndSeek")]
-        public async Task<ActionResult<string>> GetFlightHistoryRaw(string flarmId)
-        {
-            string url = $"https://api.glideandseek.com/v2/history/{flarmId}";
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync(url);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return BadRequest("External API request failed.");
-            }
-
-            var content = await response.Content.ReadAsStringAsync();
-            var data = JObject.Parse(content);
-
-            var message = data["message"].ToString();
-            return Ok(message);
         }
     }
 }
