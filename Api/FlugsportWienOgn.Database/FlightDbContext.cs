@@ -30,15 +30,9 @@ public class FlightDbContext : DbContext
         {
             try
             {
-                if (Database.EnsureCreated())
-                {
-                    _logger.LogInformation("Database has been created");
-                }
-                else
-                {
-                    _logger.LogInformation("Database already exists");
-                }
-                break;
+                Database.Migrate();
+                _logger.LogInformation("Database has been created");
+                return;
             }
             catch (Exception ex)
             {

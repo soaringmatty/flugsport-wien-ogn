@@ -45,7 +45,7 @@ public class LiveTrackingBackgroundService : BackgroundService
         // Live-Stream starten
         _ = _tracker.StartFlushBufferLoop(cancellationToken);
         _liveGliderService.Start(cancellationToken);
-        _logger.LogInformation("LiveGliderService started.");
+        _logger.LogInformation("LiveGliderService started - All OGN flight data will be tracked now");
 
         // Block lifetype cycle until shutdown blockieren
         try

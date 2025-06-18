@@ -7,12 +7,13 @@ using FlugsportWienOgnApi.Models.Core;
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using Aircraft = FlugsportWienOgn.Database.Entities.Aircraft;
 
 namespace FlugsportWienOgnApi.Services;
 
 public class LiveTrackingService
 {
-    public event Action<int>? FlightDataAdded;
+    public event Action<Aircraft>? FlightDataAdded;
 
     private readonly LiveGliderService _liveGliderService;
     private readonly AustriaGeoCalculator _austriaGeoCalculator;
@@ -74,10 +75,10 @@ public class LiveTrackingService
                 }
 
                 var aggregated = AggregateBuffer(snapshot);
-                var aircraftId = await AddFlightDataToDatabaseAsync(aggregated, stoppingToken);
-                if (aircraftId.HasValue)
+                var aircraft = await AddFlightDataToDatabaseAsync(aggregated, stoppingToken);
+                if (aircraft != null)
                 {
-                    FlightDataAdded?.Invoke(aircraftId.Value);
+                    FlightDataAdded?.Invoke(aircraft);
                 }
             }
         }
@@ -101,12 +102,12 @@ public class LiveTrackingService
         );
     }
 
-    private async Task<int?> AddFlightDataToDatabaseAsync(FlightData flightData, CancellationToken token)
+    private async Task<Aircraft?> AddFlightDataToDatabaseAsync(FlightData flightData, CancellationToken token)
     {
         // Ignore faulty signals with timestamp thats in the future
         if (flightData.ReceiverTimeStamp > DateTime.UtcNow.AddMinutes(1))
         {
-            _logger.LogWarning($"[LiveTracking] Ignoring flight data with future timestamp (FlarmId {flightData.FlarmId}): {flightData.ReceiverTimeStamp:o}");
+            _logger.LogDebug($"[LiveTracking] Ignoring flight data with future timestamp (FlarmId {flightData.FlarmId}): {flightData.ReceiverTimeStamp:o}");
             return null;
         }
 
@@ -140,11 +141,11 @@ public class LiveTrackingService
 
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-        var aircraftId = await AddOrUpdatePlaneEntity(flightData, dbContext);
+        var aircraft = await AddOrUpdatePlaneEntity(flightData, dbContext);
 
         // Ignore flight data if more recent position data is already in database
         var lastTimestamp = await dbContext.FlightData
-            .Where(flightPathItem => flightPathItem.AircraftId == aircraftId)
+            .Where(flightPathItem => flightPathItem.AircraftId == aircraft.Id)
             .MaxAsync(flightPathItem => (DateTime?)flightPathItem.Timestamp);
         if (lastTimestamp.HasValue && flightData.ReceiverTimeStamp <= lastTimestamp.Value)
         {
@@ -155,28 +156,29 @@ public class LiveTrackingService
         if (lastTimestamp.HasValue && lastTimestamp.Value.Date != flightData.ReceiverTimeStamp.Date)
         {
             var oldItems = dbContext.FlightData
-                .Where(fd => fd.AircraftId == aircraftId);
+                .Where(fd => fd.AircraftId == aircraft.Id);
             dbContext.FlightData.RemoveRange(oldItems);
             await dbContext.SaveChangesAsync(token);
         }
 
         var flightPathItem = new FlightPathItem
         {
-            AircraftId = aircraftId,
+            AircraftId = aircraft.Id,
             Latitude = (float)Math.Round(flightData.Latitude, 5),
             Longitude = (float)Math.Round(flightData.Longitude, 5),
             Speed = (int)Math.Round(flightData.Speed),
             Altitude = (int)Math.Round(flightData.Altitude),
             VerticalSpeed = (float)Math.Round(flightData.VerticalSpeed, 1),
+            Course = (int)flightData.Course,
             Timestamp = flightData.ReceiverTimeStamp,
         };
 
         dbContext.FlightData.Add(flightPathItem);
         await dbContext.SaveChangesAsync(token);
-        return aircraftId;
+        return aircraft;
     }
 
-    private async Task<int> AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
+    private async Task<Aircraft> AddOrUpdatePlaneEntity(FlightData flightData, FlightDbContext dbContext)
     {
         // Check if the plane already exists in the database based on a unique identifier, e.g., PlaneId or CallSign
         var existingPlane = dbContext.Aircraft
@@ -200,7 +202,7 @@ public class LiveTrackingService
             }
 
             dbContext.Aircraft.Update(existingPlane);
-            return existingPlane.Id;
+            return existingPlane;
         }
         else
         {
@@ -226,7 +228,7 @@ public class LiveTrackingService
 
             dbContext.Aircraft.Add(newPlane);
             dbContext.SaveChanges();
-            return newPlane.Id;
+            return newPlane;
         }
     }
 

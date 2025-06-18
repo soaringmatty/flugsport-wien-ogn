@@ -51,8 +51,6 @@ builder.Host.UseSerilog((context, services, configuration) => {
 // Register hosted services
 builder.Services.AddHostedService<LiveTrackingBackgroundService>(); // BackgroundService that subscribes to APRS Server to receive live position updates
 builder.Services.AddHostedService<FlightbookService>();
-// FlightData is not deleted everyday anymore -> instead whenever an aircraft sends its first beacon of the day, all previous flight data of that aircraft is removed
-//builder.Services.AddHostedService<DailyCleanupService>();
 
 // Cors policy
 builder.Services.AddCors(options =>

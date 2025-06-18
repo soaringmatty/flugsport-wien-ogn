@@ -11,5 +11,6 @@ public class FlightPathItem
     public int Altitude { get; set; }
     public int Speed { get; set; }
     public float VerticalSpeed { get; set; }
+    public int Course { get; set; }
     public DateTime Timestamp { get; set; }
 }
