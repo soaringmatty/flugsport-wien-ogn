@@ -6,12 +6,12 @@ namespace FlugsportWienOgnApi.Controllers;
 
 [Route("flightbook")]
 [ApiController]
-public class FlightbookController(ILogger<FlightController> logger, FlightbookService flightbookService) : ControllerBase
+public class FlightbookController(FlightbookService flightbookService) : ControllerBase
 {
     [HttpGet("{icao}")]
-    public async Task<ActionResult<IEnumerable<DepartureListItem>>> GetLoxnInternalFlightbook([FromRoute] string icao, [FromQuery] bool? knownGlidersOnly = false)
+    public async Task<ActionResult<IEnumerable<DepartureListItem>>> GetLoxnInternalFlightbook([FromRoute] string icao, [FromQuery] GliderListFilter filter)
     {
-        var departureList = await flightbookService.GetFlightbookByAirfieldIcao(icao, knownGlidersOnly);
+        var departureList = await flightbookService.GetFlightbookByAirfieldIcao(icao, filter);
         return Ok(departureList);
     }
 }

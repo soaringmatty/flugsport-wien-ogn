@@ -140,12 +140,13 @@ public class FlightbookBackgroundService : BackgroundService
             {
                 _logger.LogInformation($"[Flightbook] Landung erkannt von {aircraft.CallSign} um {newest.Timestamp:HH:mm:ss} - kein Start vorhanden");
 
+                var aircraftType = (AircraftType)aircraft.AircraftType;
                 var newLandingEntry = new FlightbookEntry
                 {
                     AircraftId = aircraft.Id,
                     LandingTimestamp = newest.Timestamp,
                     AirfieldIcao = _airfield.Icao,
-                    LaunchType = (int)LaunchType.Unknown
+                    LaunchType = aircraftType == AircraftType.Glider ? (int)LaunchType.Unknown : (int)LaunchType.Motorized
                 };
                 dbContext.FlightbookEntry.Add(newLandingEntry);
                 await dbContext.SaveChangesAsync();
