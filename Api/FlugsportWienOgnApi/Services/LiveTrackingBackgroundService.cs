@@ -1,5 +1,9 @@
 ﻿using Aprs;
+using FlugsportWienOgn.Database;
+using FlugsportWienOgn.Database.Entities;
 using FlugsportWienOgnApi.Models.Core;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Threading;
 
 namespace FlugsportWienOgnApi.Services;
@@ -9,16 +13,19 @@ public class LiveTrackingBackgroundService : BackgroundService
     private readonly LiveGliderService _liveGliderService;
     private readonly LiveTrackingService _tracker;
     private readonly AircraftProvider _aircraftProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
 
     public LiveTrackingBackgroundService(
         AircraftProvider aircraftProvider,
         LiveGliderService liveGliderService,
         LiveTrackingService tracker,
+        IServiceProvider serviceProvider,
         ILogger<LiveTrackingBackgroundService> logger)
     {
         _aircraftProvider = aircraftProvider;
         _liveGliderService = liveGliderService;
+        _serviceProvider = serviceProvider;
         _tracker = tracker;
         _logger = logger;
     }
@@ -31,6 +38,8 @@ public class LiveTrackingBackgroundService : BackgroundService
             _logger.LogInformation("Initializing AircraftProvider - downloading glidernet ddb...");
             await _aircraftProvider.InitializeAsync(cancellationToken).ConfigureAwait(false);
             _logger.LogInformation("AircraftProvider initialized");
+            await UpdateGliderModelsInDatabase(cancellationToken);
+            
         }
         catch (OperationCanceledException) { return; }
         catch (Exception ex)
@@ -62,5 +71,35 @@ public class LiveTrackingBackgroundService : BackgroundService
         _liveGliderService.Stop();
         await _liveGliderService.DisposeAsync().ConfigureAwait(false);
         await base.StopAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task UpdateGliderModelsInDatabase(CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
+
+        var existingModels = await dbContext.GliderModel
+            .Select(g => g.Model)
+            .ToListAsync(cancellationToken);
+
+        var newModels = _aircraftProvider.GetDistinctGliderModels()
+            .Where(m => !existingModels.Contains(m))
+            .Distinct()
+            .ToList();
+
+        var gliderModelEntities = newModels
+            .Select(m => new GliderModel { Model = m, SelfLaunch = null })
+            .ToList();
+
+        if (gliderModelEntities.Any())
+        {
+            await dbContext.GliderModel.AddRangeAsync(gliderModelEntities, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation($"{gliderModelEntities.Count} new GliderModels have been added to database");
+        }
+        else
+        {
+            _logger.LogInformation($"GliderModels in database are up to date");
+        }
     }
 }

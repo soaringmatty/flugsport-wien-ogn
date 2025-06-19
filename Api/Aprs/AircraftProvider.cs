@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Aprs.Models;
@@ -135,6 +136,16 @@ public class AircraftProvider
             : null;
     }
 
+    public HashSet<string> GetDistinctGliderModels()
+    {
+        return _aircraftList.Values
+            .Where(x => !string.IsNullOrWhiteSpace(x.Model) && x.AircraftType == GlidernetAircraftType.Glider)
+            .Select(a => a.Model.Trim())
+            .Distinct()
+            .Order()
+            .ToHashSet();
+    }
+
     private GlidernetAircraftType GetCorrectedAircraftType(int type, string model)
     {
         var aircraftType = (GlidernetAircraftType)type;
@@ -148,6 +159,8 @@ public class AircraftProvider
     private void InitializeModelAircraftTypeDictionary()
     {
         // Actually TMGs
+        _modelAircraftTypeDictionary.Add("ASK-14", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("ASK-16", GlidernetAircraftType.Motorplane);
         _modelAircraftTypeDictionary.Add("AVo 68 Samburo", GlidernetAircraftType.Motorplane);
         _modelAircraftTypeDictionary.Add("Carat", GlidernetAircraftType.Motorplane);
         _modelAircraftTypeDictionary.Add("Grob G109", GlidernetAircraftType.Motorplane);
@@ -164,6 +177,7 @@ public class AircraftProvider
         _modelAircraftTypeDictionary.Add("SF-25", GlidernetAircraftType.Motorplane);
         _modelAircraftTypeDictionary.Add("SF-28", GlidernetAircraftType.Motorplane);
         _modelAircraftTypeDictionary.Add("SFS-31 Milan", GlidernetAircraftType.Motorplane);
+        _modelAircraftTypeDictionary.Add("SZD-45 Ogar", GlidernetAircraftType.Motorplane);
         _modelAircraftTypeDictionary.Add("Valentin Taifun", GlidernetAircraftType.Motorplane);
 
         // Other
@@ -178,7 +192,6 @@ public class AircraftProvider
         _modelAircraftTypeDictionary.Add("Different Aircraft", GlidernetAircraftType.Unknown);
         _modelAircraftTypeDictionary.Add("Experimental", GlidernetAircraftType.Unknown);
         _modelAircraftTypeDictionary.Add("Ground Station", GlidernetAircraftType.Unknown);
-        //_modelAircraftTypeDictionary.Add("OldTimer", GlidernetAircraftType.Unknown);
         _modelAircraftTypeDictionary.Add("Other", GlidernetAircraftType.Unknown);
         _modelAircraftTypeDictionary.Add("Unknown", GlidernetAircraftType.Unknown);
     }

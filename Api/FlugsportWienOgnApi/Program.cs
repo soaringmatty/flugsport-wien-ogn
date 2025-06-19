@@ -49,8 +49,35 @@ builder.Host.UseSerilog((context, services, configuration) => {
 });
 
 // Register hosted services
-builder.Services.AddHostedService<LiveTrackingBackgroundService>(); // BackgroundService that subscribes to APRS Server to receive live position updates
-builder.Services.AddHostedService<FlightbookService>();
+builder.Services.AddHostedService<LiveTrackingBackgroundService>(); // subscribes to APRS Server to receive live position updates
+
+var airfields = new[]
+{
+    new AirfieldConfig
+    {
+        Icao = "LOXN",
+        GroundHeight = 284,
+        MinLat = 47.825,
+        MaxLat = 47.85,
+        MinLng = 16.2,
+        MaxLng = 16.24
+    },
+    //new AirfieldConfig
+    //{
+    //    Icao = "WOES",
+    //    GroundHeight = 558,
+    //    MinLat = 47.726110,
+    //    MaxLat = 47.736588,
+    //    MinLng = 12.422553,
+    //    MaxLng = 12.451435
+    //}
+};
+
+foreach (var config in airfields)
+{
+    builder.Services.AddSingleton(config);
+    builder.Services.AddHostedService<FlightbookBackgroundService>();
+}
 
 // Cors policy
 builder.Services.AddCors(options =>

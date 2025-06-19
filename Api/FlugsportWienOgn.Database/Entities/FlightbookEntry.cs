@@ -15,7 +15,5 @@ public class FlightbookEntry
 
 
     public Aircraft Aircraft { get; set; }
-
-    [ForeignKey(nameof(TowFlightEntryId))]
     public FlightbookEntry? TowFlightEntry { get; set; }
 }

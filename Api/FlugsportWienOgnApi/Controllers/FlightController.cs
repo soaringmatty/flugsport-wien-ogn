@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Models.Core;
-using Newtonsoft.Json.Linq;
-using FlugsportWienOgnApi.Utils;
 using FlugsportWienOgnApi.Services;
 using FlugsportWienOgnApi.Models.LiveTracking;
 

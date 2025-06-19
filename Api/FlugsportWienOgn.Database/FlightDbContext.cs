@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using FlugsportWienOgn.Database.Entities;
 using Microsoft.Extensions.Logging;
+using FlugsportWienOgn.Database.Seeds;
+using System.Text.Json;
 
 namespace FlugsportWienOgn.Database;
 
@@ -9,8 +11,8 @@ public class FlightDbContext : DbContext
     public DbSet<Aircraft> Aircraft { get; set; }
     public DbSet<FlightPathItem> FlightData { get; set; }
     public DbSet<KnownAircraft> KnownAircraft { get; set; }
-    public DbSet<CleanupStamp> Cleanup { get; set; }
     public DbSet<FlightbookEntry> FlightbookEntry { get; set; }
+    public DbSet<GliderModel> GliderModel { get; set; }
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<FlightDbContext> _logger;
@@ -31,7 +33,9 @@ public class FlightDbContext : DbContext
             try
             {
                 Database.Migrate();
-                _logger.LogInformation("Database has been created");
+                _logger.LogInformation("Database has been checked (created or migrated if necessary)");
+                InitializeGliderModelsFromJson();
+                _logger.LogInformation("Database glider models have been initialized");
                 return;
             }
             catch (Exception ex)
@@ -66,46 +70,55 @@ public class FlightDbContext : DbContext
             .WithOne(x => x.Aircraft)
             .HasForeignKey(x => x.AircraftId);
 
-        // Data seeds
-        modelBuilder.Entity<CleanupStamp>()
-            .HasData(new CleanupStamp
+        modelBuilder.Entity<FlightbookEntry>()
+            .HasOne(e => e.TowFlightEntry)
+            .WithMany()
+            .HasForeignKey(e => e.TowFlightEntryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GliderModel>()
+            .HasIndex(x => x.Model)
+            .IsUnique();
+
+        // Seeds
+        modelBuilder.Entity<KnownAircraft>().HasData(KnownAircraftSeeds.GetKnownAircraftSeeds());
+    }
+
+    private void InitializeGliderModelsFromJson()
+    {
+        var jsonPath = Path.Combine(AppContext.BaseDirectory, "Data", "gliderModels.json");
+        if (!File.Exists(jsonPath))
+        {
+            _logger.LogWarning($"Glider model JSON file not found: {jsonPath}");
+            return;
+        }
+
+        var jsonContent = File.ReadAllText(jsonPath);
+        var modelsFromJson = JsonSerializer.Deserialize<List<GliderModel>>(jsonContent);
+        if (modelsFromJson == null)
+        {
+            _logger.LogWarning("No glider models found in JSON.");
+            return;
+        }
+
+        var dbModels = GliderModel.ToList();
+        foreach (var jsonModel in modelsFromJson)
+        {
+            var existing = dbModels.FirstOrDefault(m => m.Model == jsonModel.Model);
+
+            if (existing == null)
             {
-                Id = 1,
-                LastCleanup = DateOnly.FromDateTime(DateTime.Now.AddDays(-1))
-            });
-
-        modelBuilder.Entity<KnownAircraft>().HasData(
-            // ----- Club Gliders -------------------------------------------------
-            new KnownAircraft { Id = 1, FlarmId = "DD98B4", Registration = "D-0544", RegistrationShort = "DR", Model = "Ventus 2b", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 2, FlarmId = "DD9EA3", Registration = "D-2526", RegistrationShort = "DL", Model = "LS4", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 3, FlarmId = "DDAD0C", Registration = "D-3931", RegistrationShort = "DZ", Model = "ASK 21", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 4, FlarmId = "DD98C1", Registration = "D-9104", RegistrationShort = "DV", Model = "LS4", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 5, FlarmId = "3F0625", Registration = "D-9614", RegistrationShort = "D2B", Model = "Discus‑2b", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 6, FlarmId = "DD9537", Registration = "OE-5446", RegistrationShort = "DX", Model = "ASK 21", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 7, FlarmId = "DDAF0B", Registration = "OE-5491", RegistrationShort = "91", Model = "DG 300 Elan", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 8, FlarmId = "4404FD", Registration = "OE-5603", RegistrationShort = "DS", Model = "Ventus 2b", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 9, FlarmId = "DD9F86", Registration = "OE-5711", RegistrationShort = "DI", Model = "DG 500 Orion", AircraftType = 1, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-
-            // ----- Club Motorplanes -------------------------------------------------
-            new KnownAircraft { Id = 20, FlarmId = "DD9382", Registration = "D-KRES", RegistrationShort = "RES", Model = "Dimona HK 36 TTC", AircraftType = 3, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 21, FlarmId = "440524", Registration = "OE-9466", RegistrationShort = "466", Model = "Dimona HK 36 TTC", AircraftType = 3, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-            new KnownAircraft { Id = 22, FlarmId = "440523", Registration = "OE-CBB", RegistrationShort = "CBB", Model = "Katana DA 20 A1", AircraftType = 3, OwnershipType = 0, Owner = "ASKÖ Flugsport Wien" },
-
-            // ----- Private Gliders ---------------------------------------------
-            new KnownAircraft { Id = 101, FlarmId = "D0114B", Registration = "D-6000", RegistrationShort = "MI", Model = "DG‑600", AircraftType = 1, OwnershipType = 1, Owner = "Andreas Stocker" },
-            new KnownAircraft { Id = 102, FlarmId = "D0287B", Registration = "D-2254", RegistrationShort = "HR", Model = "LS1‑f", AircraftType = 1, OwnershipType = 1, Owner = "Julia Götz" },
-            new KnownAircraft { Id = 103, FlarmId = "D02864", Registration = "D-KHJH", RegistrationShort = "JA", Model = "HPH 304S Shark", AircraftType = 1, OwnershipType = 1, Owner = "Andreas Stocker / Julia Götz" },
-            //new KnownAircraft { Id = 104, FlarmId = "?? 3EEE64 / D003E9", Registration = "D-3533", RegistrationShort = "SC", Model = "Ventus 1", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" },
-            new KnownAircraft { Id = 105, FlarmId = "D0019F", Registration = "D-KEVA", RegistrationShort = "O2", Model = "DG‑800", AircraftType = 1, OwnershipType = 1, Owner = "Stephan Haupt" },
-            new KnownAircraft { Id = 106, FlarmId = "F64550", Registration = "D-1890", RegistrationShort = "KA8", Model = "Ka‑8", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Urach" },
-            new KnownAircraft { Id = 107, FlarmId = "DF23C3", Registration = "D-KWMR", RegistrationShort = "MR", Model = "Arcus M", AircraftType = 1, OwnershipType = 1, Owner = "Markus Podivin / Irmgard Paul / Josef Pannagl" },
-            new KnownAircraft { Id = 108, FlarmId = "3EEC8B", Registration = "D-3060", RegistrationShort = "CZ", Model = "HPH 304CZ‑17", AircraftType = 1, OwnershipType = 1, Owner = "Sören Rossow" },
-            new KnownAircraft { Id = 109, FlarmId = "3EFBA7", Registration = "D-6928", RegistrationShort = "SI", Model = "ASW 28", AircraftType = 1, OwnershipType = 1, Owner = "Mario Neumann / Kathrin Havemann" },
-            new KnownAircraft { Id = 110, FlarmId = "DDB2C4", Registration = "OE-0789", RegistrationShort = "FH", Model = "SF-27", AircraftType = 1, OwnershipType = 1, Owner = "Fabian Hoffmann" },
-            new KnownAircraft { Id = 111, FlarmId = "D006D6", Registration = "D-KXAC", RegistrationShort = "AC", Model = "EB 29 DR", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Jütte" },
-            //new KnownAircraft { Id = 112, FlarmId = "??", Registration = "D-5328", RegistrationShort = "??", Model = "Ventus b", AircraftType = 1, OwnershipType = 1, Owner = "Josef Mayer" },
-            new KnownAircraft { Id = 113, FlarmId = "DD91B7", Registration = "D-7868", RegistrationShort = "FLO", Model = "DG-200", AircraftType = 1, OwnershipType = 1, Owner = "Florian Wögerer" },
-            new KnownAircraft { Id = 114, FlarmId = "3EFBF6", Registration = "D-7007", RegistrationShort = "SE", Model = "Mini Nimbus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" }
-        );
+                GliderModel.Add(new GliderModel
+                {
+                    Model = jsonModel.Model,
+                    SelfLaunch = jsonModel.SelfLaunch
+                });
+            }
+            else if (existing.SelfLaunch != jsonModel.SelfLaunch)
+            {
+                existing.SelfLaunch = jsonModel.SelfLaunch;
+            }
+        }
+        SaveChanges();
     }
 }

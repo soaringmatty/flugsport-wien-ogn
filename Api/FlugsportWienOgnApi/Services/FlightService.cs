@@ -1,7 +1,6 @@
 ﻿using FlugsportWienOgn.Database;
 using FlugsportWienOgn.Database.Entities;
 using FlugsportWienOgnApi.Models.Core;
-using FlugsportWienOgnApi.Models.GlideAndSeek;
 using FlugsportWienOgnApi.Models.LiveTracking;
 using FlugsportWienOgnApi.Utils;
 using Microsoft.EntityFrameworkCore;
