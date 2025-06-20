@@ -42,7 +42,7 @@ public class FlightService(ILogger<FlightService> logger, IServiceProvider servi
         // Filter flights to FlugsportWien related planes only (if parameter is set)
         if (clubGlidersOnly == true)
         {
-            flightQuery = flightQuery.Where(x => knownAircraftService.ClubGlidersAndMotorplaneFlarmIds.Contains(x.FlarmId));
+            flightQuery = flightQuery.Where(x => knownAircraftService.AllKnownPlaneFlarmIds.Contains(x.FlarmId));
         }
         else if (glidersOnly == true)
         {
