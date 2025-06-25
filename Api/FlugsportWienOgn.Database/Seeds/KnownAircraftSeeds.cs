@@ -28,7 +28,7 @@ public static class KnownAircraftSeeds
             new KnownAircraft { Id = 101, FlarmId = "D0114B", Registration = "D-6000", RegistrationShort = "MI", Model = "DG‑600", AircraftType = 1, OwnershipType = 1, Owner = "Andreas Stocker (Andi)" },
             new KnownAircraft { Id = 102, FlarmId = "D0287B", Registration = "D-2254", RegistrationShort = "HR", Model = "LS-1 f", AircraftType = 1, OwnershipType = 1, Owner = "Julia Götz" },
             new KnownAircraft { Id = 103, FlarmId = "D02864", Registration = "D-KHJH", RegistrationShort = "JA", Model = "HPH 304S Shark", AircraftType = 1, OwnershipType = 1, Owner = "Andreas Stocker (Andi) / Julia Götz" },
-            //new KnownAircraft { Id = 104, FlarmId = "?? 3EEE64 / D003E9", Registration = "D-3533", RegistrationShort = "SC", Model = "Ventus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" },
+            //new KnownAircraft { Id = 104, FlarmId = "?? 3EEE64 / D003E9", Registration = "D-3533", RegistrationShort = "SC", Model = "Ventus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker / Christian Schicker" },
             new KnownAircraft { Id = 105, FlarmId = "D0019F", Registration = "D-KEVA", RegistrationShort = "O2", Model = "DG‑800", AircraftType = 1, OwnershipType = 1, Owner = "Stephan Haupt" },
             new KnownAircraft { Id = 106, FlarmId = "F64550", Registration = "D-1890", RegistrationShort = "KA8", Model = "Ka‑8", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Urach" },
             new KnownAircraft { Id = 107, FlarmId = "DF23C3", Registration = "D-KWMR", RegistrationShort = "MR", Model = "Arcus M", AircraftType = 1, OwnershipType = 1, Owner = "Markus Podivin / Irmgard Paul / Josef Pannagl" },
@@ -38,7 +38,10 @@ public static class KnownAircraftSeeds
             new KnownAircraft { Id = 111, FlarmId = "D006D6", Registration = "D-KXAC", RegistrationShort = "AC", Model = "EB 29 DR", AircraftType = 1, OwnershipType = 1, Owner = "Christoph Jütte" },
             //new KnownAircraft { Id = 112, FlarmId = "??", Registration = "D-5328", RegistrationShort = "??", Model = "Ventus b", AircraftType = 1, OwnershipType = 1, Owner = "Josef Mayer" },
             new KnownAircraft { Id = 113, FlarmId = "DD91B7", Registration = "D-7868", RegistrationShort = "FLO", Model = "DG-200", AircraftType = 1, OwnershipType = 1, Owner = "Florian Wögerer" },
-            new KnownAircraft { Id = 114, FlarmId = "3EFBF6", Registration = "D-7007", RegistrationShort = "SE", Model = "Mini Nimbus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" }
+            new KnownAircraft { Id = 114, FlarmId = "3EFBF6", Registration = "D-7007", RegistrationShort = "SE", Model = "Mini Nimbus", AircraftType = 1, OwnershipType = 1, Owner = "Ernst Schicker" },
+
+            // ----- Private Gliders ---------------------------------------------
+            new KnownAircraft { Id = 200, FlarmId = "440313", Registration = "OE-VCB", RegistrationShort = "VCB", Model = "Ultralight", AircraftType = 3, OwnershipType = 1, Owner = "Fabian Hoffmann" },
         ];
     }
 }

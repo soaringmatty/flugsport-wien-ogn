@@ -504,10 +504,12 @@ public class FlightbookBackgroundService : BackgroundService
     {
         int belowCount = 0;
         int lastPeakCurrentCycle = 0;
-        double startCourse = data.First().Course;
+        double? startCourse = null;
 
-        foreach (var point in data)
+        for (int i = 0; i < data.Count; i++)
         {
+            var point = data[i];
+
             // If two concecutive flightPathItems are below last high point -> winch launch finished
             if (point.Altitude > lastPeakCurrentCycle)
             {
@@ -526,17 +528,44 @@ public class FlightbookBackgroundService : BackgroundService
             }
 
             // If glider makes a clear turn -> winch launch finished 
-            double diff = Math.Abs(point.Course - startCourse);
+            if (i < 1) continue;
+
+            var prev = data[i - 1];
+            var current = data[i];
+
+            double deltaLat = current.Latitude - prev.Latitude;
+            double deltaLng = current.Longitude - prev.Longitude;
+
+            double courseRad = Math.Atan2(
+                Math.Sin(DegToRad(deltaLng)) * Math.Cos(DegToRad(current.Latitude)),
+                Math.Cos(DegToRad(prev.Latitude)) * Math.Sin(DegToRad(current.Latitude)) -
+                Math.Sin(DegToRad(prev.Latitude)) * Math.Cos(DegToRad(current.Latitude)) * Math.Cos(DegToRad(deltaLng))
+            );
+
+            double courseDeg = (RadToDeg(courseRad) + 360) % 360;
+
+            if (startCourse == null)
+                startCourse = courseDeg;
+
+            if (i < 2) continue;
+
+            double diff = Math.Abs(courseDeg - startCourse.Value);
             if (diff > 180) diff = 360 - diff;
+
             if (diff > LaunchHeightWinchCourseChangeThreshold)
             {
-                _logger.LogInformation($"[Flightbook] Windenstart: Kursänderung um >60° erkannt");
+                _logger.LogInformation($"[Flightbook] Windenstart: Kursänderung um >{LaunchHeightWinchCourseChangeThreshold}° erkannt (Startkurs: {startCourse:F1}°, Aktuell: {courseDeg:F1}°, Unterschied: {diff:F1}°)");
                 lastPeak = lastPeakCurrentCycle;
                 return lastPeak;
             }
         }
+
         return null;
     }
+
+    // Hilfsfunktionen
+    private static double DegToRad(double deg) => deg * Math.PI / 180.0;
+    private static double RadToDeg(double rad) => rad * 180.0 / Math.PI;
 
     /// <summary>
     /// Tries to detect and return aerotow release altitude by checking for a peak in the altitude or thermaling of the glider

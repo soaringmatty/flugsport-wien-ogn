@@ -114,12 +114,12 @@ public class FlightService(ILogger<FlightService> logger, IServiceProvider servi
 
         if (startTimestamp.HasValue)
         {
-            query = query.Where(fd => fd.Timestamp >= startTimestamp.Value.UtcDateTime);
+            query = query.Where(fd => fd.Timestamp >= startTimestamp.Value.UtcDateTime.AddSeconds(-10));
         }
 
         if (endTimestamp.HasValue)
         {
-            query = query.Where(fd => fd.Timestamp <= endTimestamp.Value.UtcDateTime);
+            query = query.Where(fd => fd.Timestamp <= endTimestamp.Value.UtcDateTime.AddSeconds(5));
         }
 
         var flightPathItems = await query
@@ -136,46 +136,6 @@ public class FlightService(ILogger<FlightService> logger, IServiceProvider servi
             .ToListAsync();
 
         return flightPathItems;
-    }
-
-
-
-    /// <summary>
-    /// Gets full flight path of a specific aircraft as json
-    /// </summary>
-    /// <param name="flarmId"></param>
-    /// <returns></returns>
-    public async Task<IEnumerable<FlightPathItemDto>> GetFlightPathAsObjects(string flarmId)
-    {
-        using (var scope = serviceProvider.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<FlightDbContext>();
-
-            var plane = await dbContext.Aircraft
-                .FirstOrDefaultAsync(p => p.FlarmId == flarmId);
-
-            if (plane == null)
-            {
-                return Enumerable.Empty<FlightPathItemDto>();
-            }
-
-            // Get the flight path items for the plane using PlaneId
-            var flightPathItems = await dbContext.FlightData
-                .Where(fd => fd.AircraftId == plane.Id)
-                .OrderBy(fd => fd.Timestamp)
-                .Select(fd => new FlightPathItemDto
-                {
-                    Latitude = fd.Latitude,
-                    Longitude = fd.Longitude,
-                    Altitude = fd.Altitude,
-                    Speed = fd.Speed,
-                    VerticalSpeed = fd.VerticalSpeed,
-                    Timestamp = fd.Timestamp,
-                })
-                .ToListAsync();
-
-            return flightPathItems;
-        }
     }
 
     /// <summary>

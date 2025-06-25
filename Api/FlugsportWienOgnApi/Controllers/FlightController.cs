@@ -52,16 +52,5 @@ namespace FlugsportWienOgnApi.Controllers
             }
             return BadRequest();
         }
-
-        [HttpGet("{flarmId}/history/json")]
-        public async Task<ActionResult<IEnumerable<FlightPathItemDto>>> GetFlightPathFromDatabaseAsJson(string flarmId)
-        {
-            var flightPath = await _flightService.GetFlightPathAsObjects(flarmId);
-            if (flightPath != null)
-            {
-                return Ok(flightPath);
-            }
-            return BadRequest();
-        }
     }
 }

@@ -59,12 +59,7 @@ public class AprsService : IAsyncDisposable
     private async Task RunAprsStreamReaderLoopAsync(CancellationToken cancellationToken)
     {
         ValidateConfig();
-
-        var latitude = _config.FilterPositionLatitude.ToString(CultureInfo.InvariantCulture);
-        var longitude = _config.FilterPositionLongitude.ToString(CultureInfo.InvariantCulture);
-        var radius = _config.FilterRadius;
-        var login = $"user {_config.AprsUser} pass {_config.AprsPassword} vers ogn_gateway 1.1 filter r/{latitude}/{longitude}/{radius}";
-
+        var login = $"user {_config.AprsUser} pass {_config.AprsPassword} vers ogn_gateway 1.1 filter {_config.AprsFilter}";
         int delay = 1000;
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -141,13 +136,6 @@ public class AprsService : IAsyncDisposable
 
         if (_config.AprsPort == 0)
             throw new ArgumentException("APRS port not set!");
-
-        if (_config.FilterPositionLatitude == 0 ||
-            _config.FilterPositionLongitude == 0 ||
-            _config.FilterRadius == 0)
-        {
-            throw new ArgumentException("Filters not set properly!");
-        }
     }
 
     public async ValueTask DisposeAsync()

@@ -34,11 +34,5 @@ public record AprsConfig
     /// <summary>
     /// Position that should be listened for
     /// </summary>
-    public double FilterPositionLatitude { get; init; }
-    public double FilterPositionLongitude { get; init; }
-
-    /// <summary>
-    /// Radius around the FilterPosition that should be listened for in km.
-    /// </summary>
-    public int FilterRadius { get; init; } = 100;
+    public string AprsFilter { get; init; } = "";
 }
